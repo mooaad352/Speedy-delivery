@@ -13,16 +13,47 @@ if "username" not in st.session_state:
 if "role" not in st.session_state:
     st.session_state.role = ""
 
-# מאגר שליחים ומנהלים
+# מאגר שליחים ומנהלים (עם המספר המעודכן למוחמד)
 if "couriers_db" not in st.session_state:
     st.session_state.couriers_db = {
         "Admin": {"password": "Sma.srablove2028", "role": "מנהל מערכת (Admin)", "phone": "+972500000000"},
-        "mohammad": {"password": "123", "role": "שליח", "phone": "+972501111111"}
+        "mohammad": {"password": "123", "role": "שליח", "phone": "+972502616375"}
     }
 
-# מאגר משלוחים במערכת
+# מאגר משלוחים במערכת (כולל משלוחי הבדיקה שהגדרת)
 if "deliveries" not in st.session_state:
-    st.session_state.deliveries = []
+    st.session_state.deliveries = [
+        {
+            "ברקוד": "TEST-001",
+            "שם לקוח": "סמר שומרי",
+            "שם חברה": "SHEIN",
+            "טלפון": "0502616375",
+            "כתובת מלאה": "רחוב 701 0, כסרא-סמיע (קומה 1)",
+            "רחוב": "701",
+            "בית": "0",
+            "קומה": "1",
+            "עיר": "כסרא-סמיע",
+            "הערות": "משלוח בדיקה",
+            "status": "ממתין",
+            "courier": "mohammad",
+            "date": datetime.now().strftime("%Y-%m-%d")
+        },
+        {
+            "ברקוד": "TEST-002",
+            "שם לקוח": "סראב",
+            "שם חברה": "ניודי",
+            "טלפון": "0503688324",
+            "כתובת מלאה": "אלתותה 10, יאנוח",
+            "רחוב": "אלתותה",
+            "בית": "10",
+            "קומה": "0",
+            "עיר": "יאנוח",
+            "הערות": "משלוח בדיקה",
+            "status": "ממתין",
+            "courier": "mohammad",
+            "date": datetime.now().strftime("%Y-%m-%d")
+        }
+    ]
 
 # --- מסך התחברות ---
 if not st.session_state.logged_in:
@@ -68,16 +99,18 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         with st.form("add_courier_form"):
             new_user = st.text_input("שם משתמש חדש לשליח")
             new_pass = st.text_input("סיסמה לשליח", type="password")
-            new_phone = st.text_input("מספר טלפון של השליח (לדוגמה: +97250...):")
+            new_phone_input = st.text_input("מספר טלפון (לדוגמה: 0502616375):")
             new_role = st.selectbox("תפקיד במערכת", ["שליח", "מנהל מערכת (Admin)"])
             add_btn = st.form_submit_button("שמור שליח חדש")
             
             if add_btn:
                 if new_user and new_pass:
+                    # הוספת קידומת אוטומטית אם המספר מתחיל ב-0
+                    formatted_phone = f"+972{new_phone_input[1:]}" if new_phone_input.startswith("0") else new_phone_input
                     st.session_state.couriers_db[new_user] = {
                         "password": new_pass, 
                         "role": new_role,
-                        "phone": new_phone
+                        "phone": formatted_phone
                     }
                     st.success(f"השליח '{new_user}' נוסף בהצלחה!")
 
@@ -146,7 +179,7 @@ if st.session_state.logged_in:
             cust_name = st.text_input("שם הלקוח:")
             company_name = st.text_input("שם החברה (החנות/העסק):", "SHEIN")
         with col2:
-            cust_phone = st.text_input("מספר טלפון של הלקוח:")
+            raw_cust_phone = st.text_input("מספר טלפון של הלקוח (לדוגמה: 050...):")
             city_name = st.text_input("ישוב / עיר:", "כסרא-סמיע")
         
         col_s1, col_s2, col_s3 = st.columns(3)
@@ -162,12 +195,15 @@ if st.session_state.logged_in:
         submit_del = st.form_submit_button("שמור משלוח במערכת")
         if submit_del:
             if cust_name and street_name and house_num:
+                # המרה אוטומטית של מספר הטלפון של הלקוח לפורמט בינלאומי עם +972
+                formatted_cust_phone = f"+972{raw_cust_phone[1:]}" if raw_cust_phone.startswith("0") else raw_cust_phone
+                
                 full_address = f"{street_name} {house_num}, {city_name}" + (f" (קומה {floor_num})" if floor_num else "")
                 st.session_state.deliveries.append({
                     "ברקוד": barcode_num if barcode_num else "ללא ברקוד",
                     "שם לקוח": cust_name,
                     "שם חברה": company_name if company_name else "החברה",
-                    "טלפון": cust_phone,
+                    "טלפון": formatted_cust_phone,
                     "כתובת מלאה": full_address,
                     "רחוב": street_name,
                     "בית": house_num,
@@ -188,7 +224,7 @@ if st.session_state.logged_in:
     if st.session_state.role == "מנהל מערכת (Admin)":
         current_deliveries = st.session_state.deliveries
     else:
-        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
+        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username]
 
     if len(current_deliveries) == 0:
         st.info("אין עדיין משלוחים לרשימה.")
