@@ -83,7 +83,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
 
     elif admin_menu == "ניהול ועריכת משתמשים (סיסמאות וטלפונים)":
         st.title("👥 ניהול, החלפת סיסמאות ועדכון טלפונים לשליחים")
-        st.write("כאן תוכל לעדכן את הסיסמה أو מספר הטלפון של כל משתמש במערכת:")
+        st.write("כאן תוכל לעדכן את הסיסמה או מספר הטלפון של כל משתמש במערכת:")
         
         for usr, info in st.session_state.couriers_db.items():
             with st.expander(f"עריכת משתמש: {usr} ({info.get('role', '')})"):
@@ -106,7 +106,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         
         summary_data = []
         for courier in couriers_list:
-            completed_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == courier and d.get("status"] == "נמסר"]
+            completed_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == courier and d.get("status") == "נמסר"]
             total_count = len(completed_deliveries)
             summary_data.append({
                 "שם השליח": courier,
@@ -137,10 +137,10 @@ if st.session_state.logged_in:
     st.title("🚚 מערכת ניהול וסידור משלוחים")
 
     if st.session_state.role != "מנהל מערכת (Admin)":
-        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] != "נמסר"])
+        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
         st.info(f"📦 יש לך כרגע **{my_deliveries_count}** משלוחים פעילים לביצוע להיום.")
 
-    # הוספת משלוח חדש עם שדה ברקוד חכם המותאם למקלדות סריקה / מצלמות ניידות
+    # הוספת משלוח חדש עם שדה ברקוד חכם וכתובת מפורטת (רחוב, מספר בית, קומה)
     st.subheader("➕ הוספת משלוח חדש (עם מספר מעקב / ברקוד)")
     st.info("💡 טיפ לשליחים: לחץ על שדה 'מספר מעקב / ברקוד'. בטלפונים רבים, המקלדת תציע לחצן 'סריקת טקסט / Scan Text' שמאפשר לצלם את הברקוד והמספר יוקלד אוטומטית.")
     
