@@ -82,7 +82,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
                     st.success(f"השליח '{new_user}' נוסף בהצלחה!")
 
     elif admin_menu == "ניהול ועריכת משתמשים (סיסמאות וטלפונים)":
-        st.title("👥 ניהול, החלפת סיסמאות وעדכון טלפונים לשליחים")
+        st.title("👥 ניהול, החלפת סיסמאות ועדכון טלפונים לשליחים")
         st.write("כאן תוכל לעדכן את הסיסמה או מספר הטלפון של כל משתמש במערכת:")
         
         for usr, info in st.session_state.couriers_db.items():
@@ -106,7 +106,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         
         summary_data = []
         for courier in couriers_list:
-            completed_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == courier and d.get("status"] == "נמסר"]
+            completed_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == courier and d.get("status") == "נמסר"]
             total_count = len(completed_deliveries)
             summary_data.append({
                 "שם השליח": courier,
@@ -137,15 +137,15 @@ if st.session_state.logged_in:
     st.title("🚚 מערכת ניהול וסידור משלוחים")
 
     if st.session_state.role != "מנהל מערכת (Admin)":
-        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] != "נמסר"])
+        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
         st.info(f"📦 יש לך כרגע **{my_deliveries_count}** משלוחים פעילים לביצוע להיום.")
 
-    # הוספת משלוח חדש עם סריקה מהירה במקלדת הניידת וכתובת מחולקת
+    # הוספת משלוח חדש עם סריקה מהירה וכתובת מחולקת
     st.subheader("➕ הוספת משלוח חדש")
-    st.info("💡 **איך לסרוק מהר ובלי תקלות?** לחץ על שדה 'מספר מעקב / ברקוד'. במקלדת הטלפון שלך יופיע לחצן סריקה (סמל של מצלמה/ברקוד או Scan Text) – לחץ עליו, כוון אל הברקוד, והוא ייקלט מיד בצורה מושלמת!")
+    st.info("💡 **טיפ לשליחים:** לחץ על שדה 'מספר מעקב / ברקוד'. במקלדת הטלפון יופיע כפתור סריקה (מצלמה/ברקוד) לסריקה מהירה ומדויקת.")
     
     with st.form("delivery_form", clear_on_submit=True):
-        barcode_num = st.text_input("מספר מעקב / ברקוד (לחץ לסריקה מהירה במקלדת):")
+        barcode_num = st.text_input("מספר מעקב / ברקוד (או סריקה דרך המקלדת):")
         cust_name = st.text_input("שם הלקוח:")
         company_name = st.text_input("שם החברה (החנות/העסק שממנו המשלוח):")
         cust_phone = st.text_input("מספר טלפון של הלקוח (לשליחת הודעה):")
@@ -190,7 +190,7 @@ if st.session_state.logged_in:
     if st.session_state.role == "מנהל מערכת (Admin)":
         current_deliveries = st.session_state.deliveries
     else:
-        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username]
+        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
 
     if len(current_deliveries) == 0:
         st.info("אין עדיין משלוחים לרשימה.")
