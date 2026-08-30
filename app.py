@@ -137,15 +137,63 @@ if st.session_state.logged_in:
     st.title("🚚 מערכת ניהול וסידור משלוחים")
 
     if st.session_state.role != "מנהל מערכת (Admin)":
-        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
+        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] != "נמסר"])
         st.info(f"📦 יש לך כרגע **{my_deliveries_count}** משלוחים פעילים לביצוע להיום.")
 
-    # הוספת משלוח חדש עם תמיכה בהקלדה קולית
-    st.subheader("➕ הוספת משלוח חדש (עם אופציית הקלדה קולית)")
-    st.info("🎙️ **טיפ לחסכון בזמן:** לחץ על שדה 'מספר מעקב / ברקוד' או על שאר השדות, ובמקש הרווח/מיקרופון במקלדת הטלפון השתמש ב**הקלדה קולית** כדי להכתיב את המספרים או השמות במהירות מבלי להקליד ידנית!")
-    
+    # רכיב הקלדה קולית מובנה בעברית/ערבית ישירות באפליקציה
+    st.subheader("🎙️ הכתבה קולית חכמה (עברית / ערבית)")
+    st.write("לחץ על כפתור המיקרופון כדי להכתיב את מספר המעקב או הכתובת בקולך מבלי להקליד:**")
+
+    voice_component = """
+    <div style="background-color: #f1f3f5; padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #ced4da;">
+        <button onclick="startListening('he-IL')" style="background-color: #007bff; color: white; padding: 8px 15px; font-size: 14px; border: none; border-radius: 5px; cursor: pointer; margin: 5px;">🎙️ הקלט בעברית</button>
+        <button onclick="startListening('ar-IL')" style="background-color: #28a745; color: white; padding: 8px 15px; font-size: 14px; border: none; border-radius: 5px; cursor: pointer; margin: 5px;">🎙️ تسجيل باللغة العربية</button>
+        <p id="voice-status" style="margin-top: 8px; font-weight: bold; color: #333; font-size: 14px;"></p>
+        <input type="text" id="voice-result" placeholder="הטקסט המוקלט יופיע כאן..." style="width: 100%; padding: 8px; margin-top: 5px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px;" readonly>
+    </div>
+
+    <script>
+        function startListening(lang) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert("הדפדפן שלך אינו תומך בהקלדה קולית.");
+                return;
+            }
+            const recognition = new SpeechRecognition();
+            recognition.lang = lang;
+            recognition.interimResults = false;
+
+            document.getElementById('voice-status').innerText = "מקשיב... דבר אל המיקרופון";
+
+            recognition.onresult = function(event) {
+                const speechToText = event.results[0][0].transcript;
+                document.getElementById('voice-result').value = speechToText;
+                document.getElementById('voice-status').innerText = "זהה בהצלחה: " + speechToText;
+                
+                // העתקת הטקסט ל-LocalStorage כדי שהמשתמש יוכל להעתיק בקלות
+                navigator.clipboard.writeText(speechToText).catch(() => {});
+            };
+
+            recognition.onerror = function(event) {
+                document.getElementById('voice-status').innerText = "שגיאה בזיהוי קולי, נסה שוב.";
+            };
+
+            recognition.onend = function() {
+                if(document.getElementById('voice-status').innerText.includes("מקשיב")) {
+                    document.getElementById('voice-status').innerText = "ההקלטה הסתיימה.";
+                }
+            };
+
+            recognition.start();
+        }
+    </script>
+    """
+    st.components.v1.html(voice_component, height=170)
+
+    # הוספת משלוח חדש
+    st.subheader("➕ הוספת משלוח חדש לפי כתובת מדויקת")
     with st.form("delivery_form", clear_on_submit=True):
-        barcode_num = st.text_input("מספר מעקב / ברקוד (אפשר להקליד או להשתמש בהקלדה קולית במקלדת):")
+        barcode_num = st.text_input("מספר מעקב / ברקוד:")
         cust_name = st.text_input("שם הלקוח:")
         company_name = st.text_input("שם החברה (החנות/העסק שממנו המשלוח):")
         cust_phone = st.text_input("מספר טלפון של הלקוח (לשליחת הודעה):")
@@ -180,7 +228,7 @@ if st.session_state.logged_in:
                     "courier": st.session_state.username if st.session_state.role != "מנהל מערכת (Admin)" else "mohammad",
                     "date": datetime.now().strftime("%Y-%m-%d")
                 })
-                st.success("המשלוח נוסף בהצלחה למערכת!")
+                st.success("המשלוח נוסף בהצלחה!")
             else:
                 st.warning("נא למלא לפחות שם לקוח, שם רחוב ומספר בית.")
 
@@ -190,7 +238,7 @@ if st.session_state.logged_in:
     if st.session_state.role == "מנהל מערכת (Admin)":
         current_deliveries = st.session_state.deliveries
     else:
-        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
+        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username]
 
     if len(current_deliveries) == 0:
         st.info("אין עדיין משלוחים לרשימה.")
@@ -214,7 +262,6 @@ if st.session_state.logged_in:
                             item["status"] = "נמסר"
                             st.success("המשלוח עודכן כנמסר!")
                             
-                            # שליחת הודעה מותאמת אישית ללקוח עם שם החברה
                             cust_tel = item.get("טלפון", "")
                             comp_name = item.get("שם חברה", "החברה")
                             if cust_tel:
