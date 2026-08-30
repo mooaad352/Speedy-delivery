@@ -173,7 +173,6 @@ st.sidebar.markdown("---")
 lang_choice = st.sidebar.selectbox("🌐 Language / لغة / שפה", ["العربية (Arabic)", "עברית (Hebrew)", "English"], index=1)
 t = TRANSLATIONS[lang_choice]
 
-# התאמת כיוון הטקסט (RTL לערבית ועברית, LTR לאנגלית)
 is_rtl = lang_choice in ["العربية (Arabic)", "עברית (Hebrew)"]
 dir_style = "rtl" if is_rtl else "ltr"
 
@@ -185,7 +184,7 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-# --- מנגנון שמירת חיבור גם אחרי רענון (Refresh Persistence) ---
+# --- מנגנון שמירת חיבור גם אחרי רענון ---
 query_params = st.query_params
 
 if "logged_in" not in st.session_state:
@@ -226,7 +225,6 @@ if "deliveries" not in st.session_state:
         }
     ]
 
-# --- פונקציית התנתקות ---
 def logout_user():
     st.session_state.logged_in = False
     st.session_state.username = ""
@@ -295,6 +293,19 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
                         "phone": clean_phone
                     }
                     st.success("Added successfully!")
+                    
+                    # הצגת קישור אישי והודעת וואטסאפ מוכנה לשליחה לשליח החדש
+                    base_url = "https://your-app-url.streamlit.app" # ניתן לעדכן לכתובת האתר שלך בענן
+                    login_link = f"{base_url}?username={urllib.parse.quote(new_user)}"
+                    
+                    st.info(f"🔗 קישור התחברות ישיר לשליח החדש:\n`{login_link}`")
+                    
+                    courier_phone = clean_phone
+                    if courier_phone:
+                        wa_msg = f"مرحباً {new_user}, تم إضافتك كمندوب في نظام التوصيل. يمكنك الدخول عبر الرابط التالي:\n{login_link}\nكلمة المرور هي: {new_pass}"
+                        encoded_wa = urllib.parse.quote(wa_msg)
+                        wa_url = f"https://wa.me/{courier_phone}?text={encoded_wa}"
+                        st.markdown(f"[📲 إرسال تفاصيل الدخول للشليح عبر الواتساب (Send Login via WhatsApp)]({wa_url})", unsafe_allow_html=True)
 
     elif admin_menu == t["manage_users"]:
         st.title(t["manage_users"])
@@ -346,13 +357,12 @@ if st.session_state.logged_in:
     st.title(t["title"])
 
     if st.session_state.role != "מנהל מערכת (Admin)":
-        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
+        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] != "נמסר"])
         st.info(f"📦 {t['active_deliveries']} **{my_deliveries_count}** {t['active_deliveries_end']}")
 
     current_time_il_str = get_israel_time()
     st.caption(f"🕒 {t['current_time']} **{current_time_il_str}** | 🏁 {t['start_point_label']} **{start_point}**")
 
-    # הוספת משלוח מהירה וישירה (מותאם לכפרים ללא רחובות)
     st.subheader(t["add_new_del"])
     
     with st.form("delivery_form", clear_on_submit=True):
@@ -414,7 +424,6 @@ if st.session_state.logged_in:
             else:
                 st.warning(t["fill_required"])
 
-    # רשימת המשלוחים להיום וניהול מהיר
     st.subheader(t["list_title"])
     
     if st.button(t["sort_btn"]):
@@ -433,7 +442,7 @@ if st.session_state.logged_in:
     if st.session_state.role == "מנהל מערכת (Admin)":
         current_deliveries = st.session_state.deliveries
     else:
-        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
+        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username]
 
     if len(current_deliveries) == 0:
         st.info(t["no_deliveries"])
@@ -470,7 +479,6 @@ if st.session_state.logged_in:
                             st.success(t["delivered_success"])
                             st.rerun()
                 
-                # --- אפשרות עריכת משלוח ---
                 with st.expander(f"{t['edit_del']} #{index}"):
                     with st.form(f"edit_delivery_form_{index}"):
                         e_barcode = st.text_input(t["barcode"], value=item.get("ברקוד", ""))
