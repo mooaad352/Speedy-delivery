@@ -158,7 +158,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         
         summary_data = []
         for courier in couriers_list:
-            completed_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == courier and d.get("status") == "נמסר"]
+            completed_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == courier and d.get("status") == "נמסר"]
             total_count = len(completed_deliveries)
             summary_data.append({
                 "שם השליח": courier,
@@ -182,7 +182,6 @@ if st.session_state.logged_in:
 
     st.sidebar.markdown("---")
     st.sidebar.subheader("📍 בחירת נקודת מוצא להפצה")
-    # כאן השליח יכול לבחור או להקליד מאיפה הוא רוצה להתחיל להפיץ
     start_point = st.sidebar.text_input("נקודת התחלה (עיר / כתובת ממנה אתה יוצא):", "כסרא-סמיע")
 
     st.title("🚚 מערכת ניהול וסידור משלוחים מהירה")
@@ -220,7 +219,6 @@ if st.session_state.logged_in:
         submit_del = st.form_submit_button("שמור משלוח במערכת")
         if submit_del:
             if cust_name and street_name and house_num:
-                # סידור מספר הטלפון של הלקוח בפורמט הבינלאומי התקין לוואטסאפ (ללא 0 בהתחלה ועם 972)
                 clean_cust_phone = raw_cust_phone.replace("+", "").strip()
                 if clean_cust_phone.startswith("0"):
                     clean_cust_phone = "972" + clean_cust_phone[1:]
@@ -271,7 +269,6 @@ if st.session_state.logged_in:
                     if item.get('הערות'):
                         st.caption(f"הערות: {item.get('הערות')}")
                 with col2:
-                    # ניווט מנקודת המוצא שבחר השליח ישירות לכתובת המשלוח
                     dest_address = item.get('כתובת מלאה', '')
                     waze_url = f"https://www.waze.com/ul?from={urllib.parse.quote(start_point)}&q={urllib.parse.quote(dest_address)}&navigate=yes"
                     st.markdown(f"[🚗 נווט מ-{start_point} ב-Waze]({waze_url})", unsafe_allow_html=True)
@@ -281,7 +278,6 @@ if st.session_state.logged_in:
                             item["status"] = "נמסר"
                             st.success("המשלוח עודכן כנמסר!")
                             
-                            # שליחת הודעת וואטסאפ ללקוח עם המספר התקין
                             cust_tel = item.get("טלפון", "").strip()
                             comp_name = item.get("שם חברה", "החברה")
                             customer_name = item.get("שם לקוח", "לקוח")
