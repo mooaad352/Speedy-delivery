@@ -1,10 +1,13 @@
 import streamlit as st
 import urllib.parse
-from datetime import datetime
-import pytz
+from datetime import datetime, timezone, timedelta
 
-# הגדרת אזור זמן ישראל
-ISRAEL_TZ = pytz.timezone('Asia/Jerusalem')
+# הגדרת שעון ישראל (UTC+2 / UTC+3 - שעון מקומי)
+ISRAEL_OFFSET = timedelta(hours=2)
+
+def get_israel_time():
+    # פונקציה פשוטה לקבלת שעה מדויקת בלי צורך בספריות חיצוניות
+    return datetime.now(timezone(ISRAEL_OFFSET)).strftime("%Y-%m-%d %H:%M")
 
 # הגדרת עיצוב הדף
 st.set_page_config(page_title="מערכת ניהול משלוחים מהירה", page_icon="🚚", layout="wide")
@@ -26,7 +29,7 @@ if "couriers_db" not in st.session_state:
 
 # מאגר משלוחים במערכת (כולל משלוחי הבדיקה)
 if "deliveries" not in st.session_state:
-    current_time_il = datetime.now(ISRAEL_TZ).strftime("%Y-%m-%d %H:%M")
+    current_time_il = get_israel_time()
     st.session_state.deliveries = [
         {
             "ברקוד": "TEST-001",
@@ -176,7 +179,7 @@ if st.session_state.logged_in:
         st.info(f"📦 יש לך כרגע **{my_deliveries_count}** משלוחים פעילים לביצוע להיום.")
 
     # הצגת השעה הנוכחית בישראל
-    current_time_il_str = datetime.now(ISRAEL_TZ).strftime("%H:%M - %d/%m/%Y")
+    current_time_il_str = get_israel_time()
     st.caption(f"🕒 שעון ישראל נוכחי במערכת: **{current_time_il_str}**")
 
     # הוספת משלוח מהירה וישירה
@@ -208,7 +211,7 @@ if st.session_state.logged_in:
                 formatted_cust_phone = f"+972{raw_cust_phone[1:]}" if raw_cust_phone.startswith("0") else raw_cust_phone
                 
                 full_address = f"{street_name} {house_num}, {city_name}" + (f" (קומה {floor_num})" if floor_num else "")
-                added_time = datetime.now(ISRAEL_TZ).strftime("%Y-%m-%d %H:%M")
+                added_time = get_israel_time()
                 
                 st.session_state.deliveries.append({
                     "ברקוד": barcode_num if barcode_num else "ללא ברקוד",
@@ -247,11 +250,10 @@ if st.session_state.logged_in:
                     status_emoji = "✅ נמסר" if item.get("status") == "נמסר" else "⏳ ממתין"
                     st.markdown(f"**#{index} | {status_emoji} | ברקוד:** {item.get('ברקוד')} | **לקוח:** {item.get('שם לקוח')} | **חברה:** {item.get('שם חברה')}")
                     st.write(f"📍 **כתובת:** {item.get('כתובת מלאה')}")
-                    st.caption(זמן_הוספה := f"נוסף בתאריך ושעה: {item.get('date', 'היום')}")
+                    st.caption(f"נוסף בתאריך ושעה: {item.get('date', 'היום')}")
                     if item.get('הערות'):
                         st.caption(f"הערות: {item.get('הערות')}")
                 with col2:
-                    # חישוב ניווט שמתחשב בנקודת המוצא שהשליח הגדיר בצד ימין
                     dest_address = item.get('כתובת מלאה', '')
                     waze_url = f"https://www.waze.com/ul?from={urllib.parse.quote(start_point)}&q={urllib.parse.quote(dest_address)}&navigate=yes"
                     st.markdown(f"[🚗 נווט מ-{start_point} ב-Waze]({waze_url})", unsafe_allow_html=True)
