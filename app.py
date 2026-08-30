@@ -20,7 +20,7 @@ if "couriers_db" not in st.session_state:
         "mohammad": {"password": "123", "role": "שליח", "phone": "+972502616375"}
     }
 
-# מאגר משלוחים במערכת (כולל משלוחי הבדיקה שהגדרת)
+# מאגר משלוחים במערכת (כולל משלוחי הבדיקה)
 if "deliveries" not in st.session_state:
     st.session_state.deliveries = [
         {
@@ -105,7 +105,6 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
             
             if add_btn:
                 if new_user and new_pass:
-                    # הוספת קידומת אוטומטית אם המספר מתחיל ב-0
                     formatted_phone = f"+972{new_phone_input[1:]}" if new_phone_input.startswith("0") else new_phone_input
                     st.session_state.couriers_db[new_user] = {
                         "password": new_pass, 
@@ -195,7 +194,6 @@ if st.session_state.logged_in:
         submit_del = st.form_submit_button("שמור משלוח במערכת")
         if submit_del:
             if cust_name and street_name and house_num:
-                # המרה אוטומטית של מספר הטלפון של הלקוח לפורמט בינלאומי עם +972
                 formatted_cust_phone = f"+972{raw_cust_phone[1:]}" if raw_cust_phone.startswith("0") else raw_cust_phone
                 
                 full_address = f"{street_name} {house_num}, {city_name}" + (f" (קומה {floor_num})" if floor_num else "")
@@ -224,7 +222,7 @@ if st.session_state.logged_in:
     if st.session_state.role == "מנהל מערכת (Admin)":
         current_deliveries = st.session_state.deliveries
     else:
-        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username]
+        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
 
     if len(current_deliveries) == 0:
         st.info("אין עדיין משלוחים לרשימה.")
