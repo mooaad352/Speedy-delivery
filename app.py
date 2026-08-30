@@ -12,8 +12,6 @@ if "username" not in st.session_state:
     st.session_state.username = ""
 if "role" not in st.session_state:
     st.session_state.role = ""
-if "scanned_barcode" not in st.session_state:
-    st.session_state.scanned_barcode = ""
 
 # מאגר שליחים ומנהלים
 if "couriers_db" not in st.session_state:
@@ -85,7 +83,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
 
     elif admin_menu == "ניהול ועריכת משתמשים (סיסמאות וטלפונים)":
         st.title("👥 ניהול, החלפת סיסמאות ועדכון טלפונים לשליחים")
-        st.write("כאן תוכל לעדכן את הסיסמה או מספר הטלפון של כל משתמש במערכת:")
+        st.write("כאן תוכל לעדכן את הסיסמה أو מספר הטלפון של כל משתמש במערכת:")
         
         for usr, info in st.session_state.couriers_db.items():
             with st.expander(f"עריכת משתמש: {usr} ({info.get('role', '')})"):
@@ -108,7 +106,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         
         summary_data = []
         for courier in couriers_list:
-            completed_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == courier and d.get("status") == "נמסר"]
+            completed_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == courier and d.get("status"] == "נמסר"]
             total_count = len(completed_deliveries)
             summary_data.append({
                 "שם השליח": courier,
@@ -139,62 +137,15 @@ if st.session_state.logged_in:
     st.title("🚚 מערכת ניהול וסידור משלוחים")
 
     if st.session_state.role != "מנהל מערכת (Admin)":
-        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
+        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] != "נמסר"])
         st.info(f"📦 יש לך כרגע **{my_deliveries_count}** משלוחים פעילים לביצוע להיום.")
 
-    # --- רכיב סריקת ברקוד אמיתי (HTML5 Barcode Scanner) ---
-    st.subheader("📷 סורק ברקוד / QR למדבקות")
-    st.write("לחץ על הכפתור למטה כדי להפעיל את המצלמה כסורק ברקודים אמיתי:")
-
-    barcode_html = """
-    <div style="background-color: #f0f2f6; padding: 15px; border-radius: 10px; text-align: center;">
-        <p style="font-weight: bold; margin-bottom: 10px;">לחץ לסריקת ברקוד דרך המצלמה:</p>
-        <button onclick="startScanner()" style="background-color: #ff4b4b; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 5px; cursor: pointer;">פתח סורק ברקוד 📷</button>
-        <div id="interactive" class="viewport" style="width: 100%; max-width: 400px; margin: 10px auto;"></div>
-        <p id="scan-result" style="font-weight: bold; color: green; margin-top: 10px;"></p>
-    </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-    <script>
-    function startScanner() {
-        Quagga.init({
-            inputStream : {
-                name : "Live",
-                type : "LiveStream",
-                target: document.querySelector('#interactive'),
-                constraints: {
-                    facingMode: "environment"
-                }
-            },
-            decoder : {
-                readers : ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader"]
-            }
-        }, function(err) {
-            if (err) {
-                console.log(err);
-                alert("שגיאה בהפעלת המצלמה: " + err);
-                return
-            }
-            Quagga.start();
-        });
-
-        Quagga.onDetected(function(result) {
-            var code = result.codeResult.code;
-            document.querySelector('#scan-result').innerText = "זוהה בהצלחה: " + code;
-            Quagga.stop();
-            // שליחת הברקוד ל-Streamlit באמצעות אירוע או שינוי כתובת
-            window.parent.postMessage({type: 'streamlit:setComponentValue', value: code}, '*');
-        });
-    }
-    </script>
-    """
-    st.components.v1.html(barcode_html, height=250)
-
-    # שדה קליטת הברקוד למערכת
-    scanned_code_input = st.text_input("מספר מעקב / ברקוד שנסרק (או הקלדה ידנית):", value=st.session_state.scanned_barcode)
-
-    # הוספת משלוח חדש עם כתובת מפורטת (רחוב, מספר בית, קומה)
-    st.subheader("➕ הוספת משלוח חדש לפי פרטים מדויקים")
+    # הוספת משלוח חדש עם שדה ברקוד חכם המותאם למקלדות סריקה / מצלמות ניידות
+    st.subheader("➕ הוספת משלוח חדש (עם מספר מעקב / ברקוד)")
+    st.info("💡 טיפ לשליחים: לחץ על שדה 'מספר מעקב / ברקוד'. בטלפונים רבים, המקלדת תציע לחצן 'סריקת טקסט / Scan Text' שמאפשר לצלם את הברקוד והמספר יוקלד אוטומטית.")
+    
     with st.form("delivery_form", clear_on_submit=True):
+        barcode_num = st.text_input("מספר מעקב / ברקוד (או סריקה):")
         cust_name = st.text_input("שם הלקוח:")
         company_name = st.text_input("שם החברה (החנות/העסק שממנו המשלוח):")
         cust_phone = st.text_input("מספר טלפון של הלקוח (לשליחת הודעה):")
@@ -215,7 +166,7 @@ if st.session_state.logged_in:
             if cust_name and street_name and house_num:
                 full_address = f"{street_name} {house_num}, {city_name}" + (f" (קומה {floor_num})" if floor_num else "")
                 st.session_state.deliveries.append({
-                    "ברקוד": scanned_code_input if scanned_code_input else "ללא ברקוד",
+                    "ברקוד": barcode_num if barcode_num else "ללא ברקוד",
                     "שם לקוח": cust_name,
                     "שם חברה": company_name if company_name else "החברה",
                     "טלפון": cust_phone,
@@ -229,13 +180,12 @@ if st.session_state.logged_in:
                     "courier": st.session_state.username if st.session_state.role != "מנהל מערכת (Admin)" else "mohammad",
                     "date": datetime.now().strftime("%Y-%m-%d")
                 })
-                st.success("המשלוח נוסף בהצלחה למערכת עם כל הפרטים!")
-                st.session_state.scanned_barcode = ""
+                st.success("המשלוח נוסף בהצלחה למערכת!")
             else:
                 st.warning("נא למלא לפחות שם לקוח, שם רחוב ומספר בית.")
 
-    # רשימת המשלוחים להיום وעדכון סטטוס
-    st.subheader("📋 רשימת המשלוחים להיום وעדכון סטטוס")
+    # רשימת המשלוחים להיום ועדכון סטטוס
+    st.subheader("📋 רשימת המשלוחים להיום ועדכון סטטוס")
     
     if st.session_state.role == "מנהל מערכת (Admin)":
         current_deliveries = st.session_state.deliveries
