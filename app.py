@@ -140,12 +140,12 @@ if st.session_state.logged_in:
         my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
         st.info(f"📦 יש לך כרגע **{my_deliveries_count}** משלוחים פעילים לביצוע להיום.")
 
-    # הוספת משלוח חדש עם סריקה מהירה וכתובת מחולקת
-    st.subheader("➕ הוספת משלוח חדש")
-    st.info("💡 **טיפ לשליחים:** לחץ על שדה 'מספר מעקב / ברקוד'. במקלדת הטלפון יופיע כפתור סריקה (מצלמה/ברקוד) לסריקה מהירה ומדויקת.")
+    # הוספת משלוח חדש עם תמיכה בהקלדה קולית
+    st.subheader("➕ הוספת משלוח חדש (עם אופציית הקלדה קולית)")
+    st.info("🎙️ **טיפ לחסכון בזמן:** לחץ על שדה 'מספר מעקב / ברקוד' או על שאר השדות, ובמקש הרווח/מיקרופון במקלדת הטלפון השתמש ב**הקלדה קולית** כדי להכתיב את המספרים או השמות במהירות מבלי להקליד ידנית!")
     
     with st.form("delivery_form", clear_on_submit=True):
-        barcode_num = st.text_input("מספר מעקב / ברקוד (או סריקה דרך המקלדת):")
+        barcode_num = st.text_input("מספר מעקב / ברקוד (אפשר להקליד או להשתמש בהקלדה קולית במקלדת):")
         cust_name = st.text_input("שם הלקוח:")
         company_name = st.text_input("שם החברה (החנות/העסק שממנו המשלוח):")
         cust_phone = st.text_input("מספר טלפון של הלקוח (לשליחת הודעה):")
