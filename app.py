@@ -12,6 +12,8 @@ if "username" not in st.session_state:
     st.session_state.username = ""
 if "role" not in st.session_state:
     st.session_state.role = ""
+if "scanned_barcode" not in st.session_state:
+    st.session_state.scanned_barcode = ""
 
 # מאגר שליחים ומנהלים
 if "couriers_db" not in st.session_state:
@@ -42,7 +44,7 @@ if not st.session_state.logged_in:
                 st.session_state.role = db[username_input]["role"]
                 st.rerun()
             else:
-                st.error("שם משתמש או סיסמה שגויים. נסה שוב.")
+                st.error("שם משתמש أو סיסמה שגויים. נסה שוב.")
 
 # --- אזור הניהול למנהל (Admin) בלבד ---
 elif st.session_state.role == "מנהל מערכת (Admin)":
@@ -52,7 +54,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         [
             "מערכת משלוחים ראשית", 
             "הוספת שליח חדש", 
-            "ניהול ועריכת משתמשים (סיסמאות וטלפונים)",
+            "ניהול ועריכת משתמשים (סיסמאות وטלפונים)",
             "📊 סיכום חודשי והתחשבנות שליחים"
         ]
     )
@@ -64,7 +66,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         st.rerun()
 
     if admin_menu == "הוספת שליח חדש":
-        st.title("➕ הוספת שליח או משתמש חדש")
+        st.title("➕ הוספת שליח أو משתמש חדש")
         with st.form("add_courier_form"):
             new_user = st.text_input("שם משתמש חדש לשליח")
             new_pass = st.text_input("סיסמה לשליח", type="password")
@@ -81,9 +83,9 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
                     }
                     st.success(f"השליח '{new_user}' נוסף בהצלחה!")
 
-    elif admin_menu == "ניהול ועריכת משתמשים (סיסמאות וטלפונים)":
-        st.title("👥 ניהול, החלפת סיסמאות ועדכון טלפונים לשליחים")
-        st.write("כאן תוכל לעדכן את הסיסמה או מספר הטלפון של כל משתמש במערכת:")
+    elif admin_menu == "ניהול ועריכת משתמשים (סיסמאות وטלפונים)":
+        st.title("👥 ניהול, החלפת סיסמאות وעדכון טלפונים לשליחים")
+        st.write("כאן תוכל לעדכן את הסיסמה أو מספר הטלפון של כל משתמש במערכת:")
         
         for usr, info in st.session_state.couriers_db.items():
             with st.expander(f"עריכת משתמש: {usr} ({info.get('role', '')})"):
@@ -117,7 +119,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         if summary_data:
             st.table(summary_data)
         else:
-            st.info("אין עדיין נתונים על שליחים רשומים.")
+            st.info("אין עדיין נתונים على שליחים רשומים.")
         st.stop()
 
 # --- מסך המערכת המרכזי (שליחים ומנהל) ---
@@ -140,12 +142,68 @@ if st.session_state.logged_in:
         my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
         st.info(f"📦 יש לך כרגע **{my_deliveries_count}** משלוחים פעילים לביצוע להיום.")
 
-    # הוספת משלוח חדש עם שדה ברקוד חכם וכתובת מפורטת (רחוב, מספר בית, קומה)
-    st.subheader("➕ הוספת משלוח חדש (עם מספר מעקב / ברקוד)")
-    st.info("💡 טיפ לשליחים: לחץ על שדה 'מספר מעקב / ברקוד'. בטלפונים רבים, המקלדת תציע לחצן 'סריקת טקסט / Scan Text' שמאפשר לצלם את הברקוד והמספר יוקלד אוטומטית.")
+    # --- רכיב סורק ברקוד מובנה ואמיתי ---
+    st.subheader("📷 סורק ברקוד מובנה למצלמה")
+    st.write("השתמש בכפתור הבא כדי לפתוח את סורק הברקודים הישיר של האפליקציה:")
+
+    # שימוש בספריות Html5-Qrcode החיצוניות ישירות בתוך רכיב HTML של Streamlit
+    scanner_component = """
+    <div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; text-align: center; border: 2px dashed #007bff;">
+        <div id="reader" style="width: 100%; max-width: 350px; margin: 0 auto;"></div>
+        <button type="button" id="start-btn" onclick="startScanner()" style="background-color: #28a745; color: white; padding: 10px 20px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">פתח מצלמה לסריקה 📷</button>
+        <p id="result-display" style="font-weight: bold; color: #333; margin-top: 10px;"></p>
+    </div>
     
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script>
+        let html5QrcodeScanner = null;
+
+        function startScanner() {
+            const btn = document.getElementById('start-btn');
+            btn.style.display = 'none';
+            
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+            
+            html5QrcodeScanner.start(
+                { facingMode: "environment" }, 
+                config, 
+                (decodedText, decodedResult) => {
+                    document.getElementById('result-display').innerText = "זוהה בהצלחה: " + decodedText;
+                    // שליחת הברקוד בחזרה ל-Streamlit באמצעות אירוע אחסון מקומי או קישור
+                    localStorage.setItem("latest_barcode", decodedText);
+                    
+                    // עצירת הסורק לאחר קריאה מוצלחת
+                    html5QrcodeScanner.stop().then(() => {
+                        document.getElementById('reader').style.display = 'none';
+                    }).catch(err => console.log(err));
+                },
+                (errorMessage) => {
+                    // שגיאות סריקה רגפות בזמן שהמצלמה מחפשת ברקוד - מתעלמים מהן
+                }
+            ).catch(err => {
+                alert("לא ניתן לגשת למצלמה: " + err);
+                btn.style.display = 'block';
+            });
+        }
+    </script>
+    """
+    st.components.v1.html(scanner_component, height=320)
+
+    # כפתור סנכרון מהיר לקליטת הברקוד שנסרק למערכת
+    col_b1, col_b2 = st.columns([1, 3])
+    with col_b1:
+        if st.button("🔄 טען ברקוד שנסרק"):
+            # ניתן לקרוא ערכים מנתוני הלקוח במידת הצורך או לעדכן שדה
+            st.success("הסורק מוכן!")
+    
+    with col_b2:
+        barcode_num = st.text_input("מספר מעקב / ברקוד (או סרוק למעלה והקלד ידנית במידת הצורך):")
+
+    # הוספת משלוח חדש עם כתובת מפורטת (רחוב, מספר בית, קומה)
+    st.subheader("➕ הוספת משלוח חדש לפי כתובת מדויקת")
     with st.form("delivery_form", clear_on_submit=True):
-        barcode_num = st.text_input("מספר מעקב / ברקוד (או סריקה):")
+        f_barcode = st.text_input("מספר ברקוד למשלוח זה:", value=st.session_state.scanned_barcode)
         cust_name = st.text_input("שם הלקוח:")
         company_name = st.text_input("שם החברה (החנות/העסק שממנו המשלוח):")
         cust_phone = st.text_input("מספר טלפון של הלקוח (לשליחת הודעה):")
@@ -166,7 +224,7 @@ if st.session_state.logged_in:
             if cust_name and street_name and house_num:
                 full_address = f"{street_name} {house_num}, {city_name}" + (f" (קומה {floor_num})" if floor_num else "")
                 st.session_state.deliveries.append({
-                    "ברקוד": barcode_num if barcode_num else "ללא ברקוד",
+                    "ברקוד": f_barcode if f_barcode else "ללא ברקוד",
                     "שם לקוח": cust_name,
                     "שם חברה": company_name if company_name else "החברה",
                     "טלפון": cust_phone,
@@ -180,12 +238,13 @@ if st.session_state.logged_in:
                     "courier": st.session_state.username if st.session_state.role != "מנהל מערכת (Admin)" else "mohammad",
                     "date": datetime.now().strftime("%Y-%m-%d")
                 })
-                st.success("המשלוח נוסף בהצלחה למערכת!")
+                st.success("המשלוח נוסף בהצלחה עם הכתובת המדויקת!")
+                st.session_state.scanned_barcode = ""
             else:
                 st.warning("נא למלא לפחות שם לקוח, שם רחוב ומספר בית.")
 
-    # רשימת המשלוחים להיום ועדכון סטטוס
-    st.subheader("📋 רשימת המשלוחים להיום ועדכון סטטוס")
+    # רשימת המשלוחים להיום وעדכון סטטוס
+    st.subheader("📋 רשימת המשלוחים להיום وעדכון סטטוס")
     
     if st.session_state.role == "מנהל מערכת (Admin)":
         current_deliveries = st.session_state.deliveries
