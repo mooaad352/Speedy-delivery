@@ -47,8 +47,8 @@ if not st.session_state.logged_in:
 
 # --- אזור מנהל המערכת (Admin) ---
 elif st.session_state.role == "מנהל מערכת (Admin)":
-    st.sidebar.title(f"مرحباً, מנהל")
-    menu = st.sidebar.radio("תפריט ניהול", ["לוח בקרה ראשי", "הוספת שליח חדש", "ניהול משתמשים קיימים", "צפייה بكل המשלוחים"])
+    st.sidebar.title("مرحباً, מנהל")
+    menu = st.sidebar.radio("תפריט ניהול", ["לוח בקרה ראשי", "הוספת שליח חדש", "ניהול משתמשים קיימים", "צפייה בכל המשלוחים"])
     
     if st.sidebar.button("התנתק (Logout)"):
         st.session_state.logged_in = False
@@ -57,7 +57,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         st.rerun()
 
     if menu == "לוח בקרה ראשי":
-        st.title("📊 لוח בקרה למנהל (Admin Dashboard)")
+        st.title("📊 לוח בקרה למנהל (Admin Dashboard)")
         col1, col2, col3 = st.columns(3)
         col1.metric("סך הכל שליחים", len(st.session_state.couriers_db))
         col2.metric("סך הכל משלוחים", len(st.session_state.deliveries))
@@ -81,7 +81,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         users_data = [{"שם משתמש": usr, "סיסמה": info["password"], "תפקיד": info["role"]} for usr, info in st.session_state.couriers_db.items()]
         st.table(users_data)
 
-    elif menu == "צפייה بكل המשלוחים":
+    elif menu == "צפייה בכל המשלוחים":
         st.title("📦 כל המשלוחים במערכת")
         st.table(st.session_state.deliveries)
 
@@ -98,7 +98,6 @@ else:
 
     if courier_menu == "המשלוחים שלי":
         st.title(f"📦 המשלוחים של השליח: {st.session_state.username}")
-        # סינון משלוחים ששייכים לשליח המחובר
         my_deliveries = [d for d in st.session_state.deliveries if d["courier"] == st.session_state.username]
         if my_deliveries:
             st.table(my_deliveries)
@@ -109,12 +108,10 @@ else:
         st.title("📷 סריקת ברקוד / קוד QR משלוח")
         st.write("השתמש במצלמת המכשיר כדי לסרוק ברקוד של חבילה:")
         
-        # כאן מופעל סורק ה-QR האמיתי
         scanned_code = qrcode_scanner(key='qrcode_scanner')
         
         if scanned_code:
-            st.success(فحوصات ناجחה! זוהה קוד: **{scanned_code}**")
-            # אפשר להוסיף פעולות אוטומטיות לפי הקוד שנסרק
+            st.success(f"זוהה קוד בהצלחה: {scanned_code}")
 
     elif courier_menu == "הוספת משלוחים":
         st.title("➕ הוספת משלוח חדש לשטח")
@@ -132,7 +129,7 @@ else:
                         "customer": cust_name,
                         "address": cust_addr,
                         "phone": cust_phone,
-                        "שליח": "ממתין",
+                        "status": "ממתין",
                         "courier": st.session_state.username
                     })
                     st.success("המשלוח נוסף בהצלחה למערכת שלך!")
