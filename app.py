@@ -137,17 +137,13 @@ if st.session_state.logged_in:
     st.title("🚚 מערכת ניהול וסידור משלוחים")
 
     if st.session_state.role != "מנהל מערכת (Admin)":
-        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
+        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] != "נמסר"])
         st.info(f"📦 יש לך כרגע **{my_deliveries_count}** משלוחים פעילים לביצוע להיום.")
 
-    # --- הוספת סורק ברקוד / QR חזרה ---
-    st.subheader("📷 סריקת מדבקת משלוח (QR / ברקוד)")
-    scan_checkbox = st.checkbox("פתח מצלמה לסריקה")
-    if scan_checkbox:
-        st.info("מצלמת הסריקה מוכנה לקליטת ברקודים ומדבקות משלוח...")
-
-    # הוספת משלוח חדש
-    st.subheader("➕ הוספת משלוח חדש")
+    # הוספת משלוח חדש עם תמיכה מהירה בסורקים חיצוניים / מקלדת חכמה
+    st.subheader("➕ הוספת משלוח חדש (תומך סריקה מהירה)")
+    st.info("💡 טיפ לחיסכון בזמן: פשוט לחץ על שדה הטקסט והשתמש בסורק הברקוד או במקלדת החכמה של הטלפון כדי לקלוט נתונים באופן מיידי.")
+    
     with st.form("delivery_form", clear_on_submit=True):
         cust_name = st.text_input("שם הלקוח:")
         company_name = st.text_input("שם החברה (החנות/העסק שממנו המשלוח):")
@@ -178,10 +174,10 @@ if st.session_state.logged_in:
     if st.session_state.role == "מנהל מערכת (Admin)":
         current_deliveries = st.session_state.deliveries
     else:
-        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
+        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username]
 
     if len(current_deliveries) == 0:
-        st.info("עדיין לא נוספו משלוחים לרשימה.")
+        st.info("אין עדיין משלוחים לרשימה.")
     else:
         for index, item in enumerate(current_deliveries, start=1):
             with st.container():
@@ -196,7 +192,7 @@ if st.session_state.logged_in:
                     waze_url = f"https://www.waze.com/ul?q={encoded_address}&navigate=yes"
                     st.markdown(f"[🚗 נווט ב-Waze]({waze_url})", unsafe_allow_html=True)
                 with col3:
-                    if item.get("status") != "נמסר":
+                    if item.get("status"] != "נמסר":
                         if st.button(f"סמן כנמסר #{index}", key=f"deliver_{index}"):
                             item["status"] = "נמסר"
                             st.success("המשלוח עודכן כנמסר!")
