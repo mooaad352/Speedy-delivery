@@ -45,7 +45,7 @@ if not st.session_state.logged_in:
 
 # --- אזור הניהול למנהל (Admin) בלבד ---
 elif st.session_state.role == "מנהל מערכת (Admin)":
-    st.sidebar.title(f"مرحباً, מנהל ראשי")
+    st.sidebar.title("مرحباً, מנהל ראשי")
     admin_menu = st.sidebar.radio("תפריט ניהול", ["מערכת משלוחים ראשית", "הוספת שליח חדש", "ניהול משתמשים קיימים"])
     
     if st.sidebar.button("התנתק (Logout)"):
@@ -85,7 +85,6 @@ if st.session_state.logged_in:
 
     st.sidebar.markdown("---")
     st.sidebar.subheader("הגדרות מערכת")
-    # תיבת טקסט חופשית לגמרי לכתובת המוצא
     start_point = st.sidebar.text_input("כתובת נקודת מוצא (הקלדה חופשית)", "חיפה")
     st.sidebar.info("💡 טיפ: באייפון ניתן לשמור את האתר (PWA) כקיצור דרך במסך הבית.")
 
@@ -101,7 +100,7 @@ if st.session_state.logged_in:
     st.subheader("➕ הוספת משלוח חדש")
     with st.form("delivery_form", clear_on_submit=True):
         cust_name = st.text_input("שם הלקוח:")
-        cust_phone = st.text_input("מספר טלפון של הלקוח (לדוגמה: +972501111111):")
+        cust_phone = st.text_input("מספר טלפון של הלקוח:")
         cust_address = st.text_input("כתובת למשלוח (הקלדה חופשית):")
         cust_notes = st.text_input("הערות מיוחדות למשלוח (אופציונלי):")
         
@@ -113,24 +112,24 @@ if st.session_state.logged_in:
                     "טלפון": cust_phone,
                     "כתובת": cust_address,
                     "הערות": cust_notes,
-                    "שליח": st.session_state.username
+                    "courier": st.session_state.username
                 })
                 st.success("המשלוח נוסף בהצלחה למערכת!")
             else:
                 st.warning("נא למלא לפחות שם לקוח וכתובת.")
 
-    # נקודת מוצא למסלול (חופשי לגמרי)
+    # נקודת מוצא למסלול
     st.subheader("🧭 בחירת נקודת מוצא למסלול")
     st.write(f"נקודת המוצא הנוכחית שלך למסלול: **{start_point}** (ניתן לשנות בתפריט בצד שמאל).")
 
-    # רשימת המשלוחים להיום עם סידור אוטומטי וכפתורי ניווט ל-Waze
+    # רשימת המשלוחים להיום וניווט חכם
     st.subheader("📋 רשימת המשלוחים להיום וניווט חכם")
     
-    # סינון משלוחים לפי השליח המחובר (או הצגה מלאה למנהל)
+    # סינון בטוח שלא יגרום לשגיאה אם שדה ה-courier חסר בפריטים ישנים
     if st.session_state.role == "מנהל מערכת (Admin)":
         current_deliveries = st.session_state.deliveries
     else:
-        current_deliveries = [d for d in st.session_state.deliveries if d["courier"] == st.session_state.username]
+        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
 
     if len(current_deliveries) == 0:
         st.info("עדיין לא נוספו משלוחים לרשימה.")
@@ -141,12 +140,11 @@ if st.session_state.logged_in:
             with st.container():
                 col1, col2 = st.columns([3, 1])
                 with col1:
-                    st.markdown(f"**#{index} | לקוח:** {item['שם לקוח']} | **כתובת:** {item['כתובת']} | **טלפון:** {item['טלפון']}")
-                    if item['הערות']:
-                        st.caption(f"הערות: {item['הערות']}")
+                    st.markdown(f"**#{index} | לקוח:** {item.get('שם לקוח', '')} | **כתובת:** {item.get('כתובת', '')} | **טלפון:** {item.get('טלפון', '')}")
+                    if item.get('הערות'):
+                        st.caption(f"הערות: {item.get('הערות')}")
                 with col2:
-                    # יצירת קישור ניווט אוטומטי ומדויק ל-Waze לפי הכתובת
-                    encoded_address = urllib.parse.quote(item['כתובת'])
+                    encoded_address = urllib.parse.quote(item.get('כתובת', ''))
                     waze_url = f"https://www.waze.com/ul?q={encoded_address}&navigate=yes"
                     st.markdown(f"[🚗 נווט ב-Waze]({waze_url})", unsafe_allow_html=True)
                 st.markdown("---")
