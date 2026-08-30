@@ -52,7 +52,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         [
             "מערכת משלוחים ראשית", 
             "הוספת שליח חדש", 
-            "ניהול ועריכת משתמשים (סיסמאות וטלפונים)",
+            "ניהול ועריכת משתמשים (סיסמאות وטלפונים)",
             "📊 סיכום חודשי והתחשבנות שליחים"
         ]
     )
@@ -81,7 +81,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
                     }
                     st.success(f"השליח '{new_user}' נוסף בהצלחה!")
 
-    elif admin_menu == "ניהול ועריכת משתמשים (סיסמאות וטלפונים)":
+    elif admin_menu == "ניהול ועריכת משתמשים (סיסמאות وטלפונים)":
         st.title("👥 ניהול, החלפת סיסמאות وעדכון טלפונים לשליחים")
         st.write("כאן תוכל לעדכן את הסיסמה أو מספר הטלפון של כל משתמש במערכת:")
         
@@ -106,7 +106,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         
         summary_data = []
         for courier in couriers_list:
-            completed_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == courier and d.get("status") == "נמסר"]
+            completed_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == courier and d.get("status") == "נמסר"]
             total_count = len(completed_deliveries)
             summary_data.append({
                 "שם השליח": courier,
@@ -142,10 +142,10 @@ if st.session_state.logged_in:
 
     # הוספת משלוח חדש עם תמיכה בסורקי ברקוד חיצוניים / הקלדה מהירה
     st.subheader("➕ הוספת משלוח חדש (תומך סריקת ברקוד ישירה)")
-    st.info("💡 טיפ לשליחים: אם אתה משתמש בסורק ברקוד ידני (לייזר/בלוטות'), פשוט לחץ על השדה הראשון וסרוק את הברקוד – המספר יוקלד מיד אוטומטית.")
+    st.info("💡 טיפ לשליחים: אם אתה משתמש בסורק ברקוד ידני (לייזר/בלוטות'), פשוט לחץ על השדה הראשון وסרוק את הברקוד – המספר יוקלד מיד אוטומטית.")
     
     with st.form("delivery_form", clear_on_submit=True):
-        cust_name = st.text_input("שם הלקוח / או סריקת ברקוד מספר מעקב:")
+        cust_name = st.text_input("שם הלקוח / أو סריקת ברקוד מספר מעקב:")
         company_name = st.text_input("שם החברה (החנות/העסק שממנו המשלוח):")
         cust_phone = st.text_input("מספר טלפון של הלקוח (לשליחת הודעה):")
         cust_address = st.text_input("כתובת למשלוח (הקלדה חופשית):")
