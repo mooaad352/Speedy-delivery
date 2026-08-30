@@ -12,6 +12,8 @@ if "username" not in st.session_state:
     st.session_state.username = ""
 if "role" not in st.session_state:
     st.session_state.role = ""
+if "scanned_barcode" not in st.session_state:
+    st.session_state.scanned_barcode = ""
 
 # מאגר שליחים ומנהלים
 if "couriers_db" not in st.session_state:
@@ -42,7 +44,7 @@ if not st.session_state.logged_in:
                 st.session_state.role = db[username_input]["role"]
                 st.rerun()
             else:
-                st.error("שם משתמש أو סיסמה שגויים. נסה שוב.")
+                st.error("שם משתמש או סיסמה שגויים. נסה שוב.")
 
 # --- אזור הניהול למנהל (Admin) בלבד ---
 elif st.session_state.role == "מנהל מערכת (Admin)":
@@ -52,7 +54,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         [
             "מערכת משלוחים ראשית", 
             "הוספת שליח חדש", 
-            "ניהול ועריכת משתמשים (סיסמאות وטלפונים)",
+            "ניהול ועריכת משתמשים (סיסמאות וטלפונים)",
             "📊 סיכום חודשי והתחשבנות שליחים"
         ]
     )
@@ -64,7 +66,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         st.rerun()
 
     if admin_menu == "הוספת שליח חדש":
-        st.title("➕ הוספת שליח أو משתמש חדש")
+        st.title("➕ הוספת שליח או משתמש חדש")
         with st.form("add_courier_form"):
             new_user = st.text_input("שם משתמש חדש לשליח")
             new_pass = st.text_input("סיסמה לשליח", type="password")
@@ -81,9 +83,9 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
                     }
                     st.success(f"השליח '{new_user}' נוסף בהצלחה!")
 
-    elif admin_menu == "ניהול ועריכת משתמשים (סיסמאות وטלפונים)":
-        st.title("👥 ניהול, החלפת סיסמאות وעדכון טלפונים לשליחים")
-        st.write("כאן תוכל לעדכן את הסיסמה أو מספר הטלפון של כל משתמש במערכת:")
+    elif admin_menu == "ניהול ועריכת משתמשים (סיסמאות וטלפונים)":
+        st.title("👥 ניהול, החלפת סיסמאות ועדכון טלפונים לשליחים")
+        st.write("כאן תוכל לעדכן את הסיסמה או מספר הטלפון של כל משתמש במערכת:")
         
         for usr, info in st.session_state.couriers_db.items():
             with st.expander(f"עריכת משתמש: {usr} ({info.get('role', '')})"):
@@ -117,7 +119,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         if summary_data:
             st.table(summary_data)
         else:
-            st.info("אין עדיין נתונים على שליחים רשומים.")
+            st.info("אין עדיין נתונים על שליחים רשומים.")
         st.stop()
 
 # --- מסך המערכת המרכזי (שליחים ומנהל) ---
@@ -140,33 +142,97 @@ if st.session_state.logged_in:
         my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
         st.info(f"📦 יש לך כרגע **{my_deliveries_count}** משלוחים פעילים לביצוע להיום.")
 
-    # הוספת משלוח חדש עם תמיכה בסורקי ברקוד חיצוניים / הקלדה מהירה
-    st.subheader("➕ הוספת משלוח חדש (תומך סריקת ברקוד ישירה)")
-    st.info("💡 טיפ לשליחים: אם אתה משתמש בסורק ברקוד ידני (לייזר/בלוטות'), פשוט לחץ על השדה הראשון وסרוק את הברקוד – המספר יוקלד מיד אוטומטית.")
-    
+    # --- רכיב סריקת ברקוד אמיתי (HTML5 Barcode Scanner) ---
+    st.subheader("📷 סורק ברקוד / QR למדבקות")
+    st.write("לחץ על הכפתור למטה כדי להפעיל את המצלמה כסורק ברקודים אמיתי:")
+
+    barcode_html = """
+    <div style="background-color: #f0f2f6; padding: 15px; border-radius: 10px; text-align: center;">
+        <p style="font-weight: bold; margin-bottom: 10px;">לחץ לסריקת ברקוד דרך המצלמה:</p>
+        <button onclick="startScanner()" style="background-color: #ff4b4b; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 5px; cursor: pointer;">פתח סורק ברקוד 📷</button>
+        <div id="interactive" class="viewport" style="width: 100%; max-width: 400px; margin: 10px auto;"></div>
+        <p id="scan-result" style="font-weight: bold; color: green; margin-top: 10px;"></p>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <script>
+    function startScanner() {
+        Quagga.init({
+            inputStream : {
+                name : "Live",
+                type : "LiveStream",
+                target: document.querySelector('#interactive'),
+                constraints: {
+                    facingMode: "environment"
+                }
+            },
+            decoder : {
+                readers : ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader"]
+            }
+        }, function(err) {
+            if (err) {
+                console.log(err);
+                alert("שגיאה בהפעלת המצלמה: " + err);
+                return
+            }
+            Quagga.start();
+        });
+
+        Quagga.onDetected(function(result) {
+            var code = result.codeResult.code;
+            document.querySelector('#scan-result').innerText = "זוהה בהצלחה: " + code;
+            Quagga.stop();
+            // שליחת הברקוד ל-Streamlit באמצעות אירוע או שינוי כתובת
+            window.parent.postMessage({type: 'streamlit:setComponentValue', value: code}, '*');
+        });
+    }
+    </script>
+    """
+    st.components.v1.html(barcode_html, height=250)
+
+    # שדה קליטת הברקוד למערכת
+    scanned_code_input = st.text_input("מספר מעקב / ברקוד שנסרק (או הקלדה ידנית):", value=st.session_state.scanned_barcode)
+
+    # הוספת משלוח חדש עם כתובת מפורטת (רחוב, מספר בית, קומה)
+    st.subheader("➕ הוספת משלוח חדש לפי פרטים מדויקים")
     with st.form("delivery_form", clear_on_submit=True):
-        cust_name = st.text_input("שם הלקוח / أو סריקת ברקוד מספר מעקב:")
+        cust_name = st.text_input("שם הלקוח:")
         company_name = st.text_input("שם החברה (החנות/העסק שממנו המשלוח):")
         cust_phone = st.text_input("מספר טלפון של הלקוח (לשליחת הודעה):")
-        cust_address = st.text_input("כתובת למשלוח (הקלדה חופשית):")
+        
+        col_s1, col_s2, col_s3 = st.columns(3)
+        with col_s1:
+            street_name = st.text_input("שם רחוב:")
+        with col_s2:
+            house_num = st.text_input("מספר בית:")
+        with col_s3:
+            floor_num = st.text_input("קומה (אופציונלי):")
+            
+        city_name = st.text_input("ישוב / עיר:", "כסרא-סמיע")
         cust_notes = st.text_input("הערות מיוחדות למשלוח (אופציונלי):")
         
         submit_del = st.form_submit_button("שמור משלוח")
         if submit_del:
-            if cust_name and cust_address:
+            if cust_name and street_name and house_num:
+                full_address = f"{street_name} {house_num}, {city_name}" + (f" (קומה {floor_num})" if floor_num else "")
                 st.session_state.deliveries.append({
+                    "ברקוד": scanned_code_input if scanned_code_input else "ללא ברקוד",
                     "שם לקוח": cust_name,
                     "שם חברה": company_name if company_name else "החברה",
                     "טלפון": cust_phone,
-                    "כתובת": cust_address,
+                    "כתובת מלאה": full_address,
+                    "רחוב": street_name,
+                    "בית": house_num,
+                    "קומה": floor_num,
+                    "עיר": city_name,
                     "הערות": cust_notes,
                     "status": "ממתין",
                     "courier": st.session_state.username if st.session_state.role != "מנהל מערכת (Admin)" else "mohammad",
                     "date": datetime.now().strftime("%Y-%m-%d")
                 })
-                st.success("המשלוח נוסף בהצלחה למערכת!")
+                st.success("המשלוח נוסף בהצלחה למערכת עם כל הפרטים!")
+                st.session_state.scanned_barcode = ""
             else:
-                st.warning("נא למלא לפחות שם לקוח أو מספר ברקוד وכתובת.")
+                st.warning("נא למלא לפחות שם לקוח, שם רחוב ומספר בית.")
 
     # רשימת המשלוחים להיום وעדכון סטטוס
     st.subheader("📋 רשימת המשלוחים להיום وעדכון סטטוס")
@@ -184,11 +250,12 @@ if st.session_state.logged_in:
                 col1, col2, col3 = st.columns([2, 1, 1])
                 with col1:
                     status_emoji = "✅ נמסר" if item.get("status") == "נמסר" else "⏳ ממתין"
-                    st.markdown(f"**#{index} | {status_emoji} | לקוח/ברקוד:** {item.get('שם לקוח')} | **חברה:** {item.get('שם חברה')} | **כתובת:** {item.get('כתובת')}")
+                    st.markdown(f"**#{index} | {status_emoji} | ברקוד:** {item.get('ברקוד')} | **לקוח:** {item.get('שם לקוח')} | **חברה:** {item.get('שם חברה')}")
+                    st.write(f"📍 **כתובת:** {item.get('כתובת מלאה')}")
                     if item.get('הערות'):
                         st.caption(f"הערות: {item.get('הערות')}")
                 with col2:
-                    encoded_address = urllib.parse.quote(item.get('כתובת', ''))
+                    encoded_address = urllib.parse.quote(item.get('כתובת מלאה', ''))
                     waze_url = f"https://www.waze.com/ul?q={encoded_address}&navigate=yes"
                     st.markdown(f"[🚗 נווט ב-Waze]({waze_url})", unsafe_allow_html=True)
                 with col3:
