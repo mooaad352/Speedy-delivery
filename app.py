@@ -137,12 +137,12 @@ if st.session_state.logged_in:
     st.title("🚚 מערכת ניהול וסידור משלוחים")
 
     if st.session_state.role != "מנהל מערכת (Admin)":
-        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] != "נמסר"])
+        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
         st.info(f"📦 יש לך כרגע **{my_deliveries_count}** משלוחים פעילים לביצוע להיום.")
 
     # --- הוספת כלי סריקת ברקוד ייעודי למצלמה ---
     st.subheader("📷 סורק ברקוד / QR מהיר למדבקות")
-    st.write("צלם את הברקוד או מדבקת המשלוח דרך המצלמה כדי לקלוט נתונים אוטומטית:")
+    st.write("צלם את הברקוד أو מדבקת המשלוח דרך המצלמה כדי לקלוט נתונים אוטומטית:")
     
     scanned_image = st.camera_input("לחץ כאן לצילום וסריקת מדבקת המשלוח")
     if scanned_image:
@@ -198,7 +198,7 @@ if st.session_state.logged_in:
                     waze_url = f"https://www.waze.com/ul?q={encoded_address}&navigate=yes"
                     st.markdown(f"[🚗 נווט ב-Waze]({waze_url})", unsafe_allow_html=True)
                 with col3:
-                    if item.get("status"] != "נמסר":
+                    if item.get("status") != "נמסר":
                         if st.button(f"סמן כנמסר #{index}", key=f"deliver_{index}"):
                             item["status"] = "נמסר"
                             st.success("המשלוח עודכן כנמסר!")
