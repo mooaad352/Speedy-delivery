@@ -347,7 +347,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
             
             courier_phone = st.session_state.couriers_db[courier].get("phone", "")
             
-            with st.expander(f"👤 שליח: {courier} | משלוחים שבוצעו: {total_count} | סכום לפני מע"מ: ₪{amount_before_vat:.2f} | אחרי מע"מ (18%): ₪{amount_after_vat:.2f}"):
+            with st.expander(f"👤 שליח: {courier} | משלוחים שבוצעו: {total_count} | סכום לפני מעמ: ₪{amount_before_vat:.2f} | אחרי מעמ: ₪{amount_after_vat:.2f}"):
                 st.write(f"📞 טלפון השליח: {courier_phone}")
                 st.write(f"📊 פירוט חישוב:")
                 st.write(f"- סך משלוחים: {total_count}")
@@ -382,7 +382,7 @@ if st.session_state.logged_in:
     st.title(t["title"])
 
     if st.session_state.role != "מנהל מערכת (Admin)":
-        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] != "נמסר"])
+        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
         st.info(f"📦 {t['active_deliveries']} **{my_deliveries_count}** {t['active_deliveries_end']}")
 
     current_time_il_str = get_israel_time()
