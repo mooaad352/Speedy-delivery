@@ -11,11 +11,11 @@ if "username" not in st.session_state:
 if "role" not in st.session_state:
     st.session_state.role = ""
 
-# מאגר שליחים התחלתי (ניתן להוסיף עוד ישירות מהמערכת)
+# מאגר שליחים ומנהלים
 if "couriers_db" not in st.session_state:
     st.session_state.couriers_db = {
-        "admin": {"password": "admin123", "role": "מנהל מערכת (Admin)"},
-        "mohammad": {"password": "123", "role": "شליח"}
+        "Admin": {"password": "Sma.srablove2028", "role": "מנהל מערכת (Admin)"},
+        "mohammad": {"password": "123", "role": "שליח"}
     }
 
 # --- מסך התחברות ---
@@ -68,7 +68,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         with st.form("add_courier_form"):
             new_user = st.text_input("שם משתמש חדש (באנגלית או מספרים)")
             new_pass = st.text_input("סיסמה לשליח", type="password")
-            new_role = st.selectbox("תפקיד במערכת", ["شליח", "מנהל מערכת (Admin)"])
+            new_role = st.selectbox("תפקיד במערכת", ["שליח", "מנהל מערכת (Admin)"])
             add_btn = st.form_submit_button("שמור שליח חדש")
             
             if add_btn:
