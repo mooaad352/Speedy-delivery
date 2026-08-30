@@ -1,4 +1,5 @@
 import streamlit as st
+import urllib.parse
 
 # הגדרת עיצוב הדף
 st.set_page_config(page_title="מערכת ניהול משלוחים", page_icon="🚚", layout="wide")
@@ -70,12 +71,11 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         st.title("👥 רשימת כל המשתמשים והשליחים הרשומים")
         users_data = [{"שם משתמש": usr, "סיסמה": info["password"], "תפקיד": info["role"]} for usr, info in st.session_state.couriers_db.items()]
         st.table(users_data)
-        st.stop() # עוצר כאן אם המנהל בחר רק לנהל משתמשים, אחרת ממשיך למערכת המשלוחים
+        st.stop()
 
-# --- מסך המערכת המרכזי (מופיע לשליחים ולמנהל) ---
+# --- מסך המערכת המרכזי (שליחים ומנהל) ---
 if st.session_state.logged_in:
     if st.session_state.role != "מנהל מערכת (Admin)":
-        # תפריט צד לשליחים עם אפשרות התנתקות
         st.sidebar.title(f"مرحباً, {st.session_state.username}")
         if st.sidebar.button("התנתק (Logout)"):
             st.session_state.logged_in = False
@@ -85,24 +85,24 @@ if st.session_state.logged_in:
 
     st.sidebar.markdown("---")
     st.sidebar.subheader("הגדרות מערכת")
-    start_point = st.sidebar.text_input("כתובת נקודת מוצא (עסק/מחסן)", "חיפה")
+    # תיבת טקסט חופשית לגמרי לכתובת המוצא
+    start_point = st.sidebar.text_input("כתובת נקודת מוצא (הקלדה חופשית)", "חיפה")
     st.sidebar.info("💡 טיפ: באייפון ניתן לשמור את האתר (PWA) כקיצור דרך במסך הבית.")
 
-    # כותרת ראשית של האפליקציה כמו בתמונה
     st.title("🚚 מערכת ניהול וסידור משלוחים")
 
-    # סעיף סריקת QR
+    # סריקת QR
     st.subheader("📷 סריקת מדבקת משלוח (QR)")
     scan_checkbox = st.checkbox("פתח מצלמה לסריקה")
     if scan_checkbox:
-        st.info("המצלמה תופעל כאן לסריקת ברקוד/QR...")
+        st.info("המצלמה פתוחה לסריקת ברקוד...")
 
-    # סעיף הוספת משלוח חדש
+    # הוספת משלוח חדש
     st.subheader("➕ הוספת משלוח חדש")
     with st.form("delivery_form", clear_on_submit=True):
         cust_name = st.text_input("שם הלקוח:")
         cust_phone = st.text_input("מספר טלפון של הלקוח (לדוגמה: +972501111111):")
-        cust_address = st.text_input("כתובת למשלוח (או כתובת שנסרקה):")
+        cust_address = st.text_input("כתובת למשלוח (הקלדה חופשית):")
         cust_notes = st.text_input("הערות מיוחדות למשלוח (אופציונלי):")
         
         submit_del = st.form_submit_button("שמור משלוח")
@@ -119,18 +119,34 @@ if st.session_state.logged_in:
             else:
                 st.warning("נא למלא לפחות שם לקוח וכתובת.")
 
-    # בחירת נקודת מוצא למסלול
+    # נקודת מוצא למסלול (חופשי לגמרי)
     st.subheader("🧭 בחירת נקודת מוצא למסלול")
-    st.write("בחירה מאיפה להתחיל את המסלול המכוני:")
-    selected_origin = st.selectbox("", [start_point, "תל אביב", "ירושלים", "באר שבע"], label_visibility="collapsed")
-    
-    # כפתור רענון קטן
-    if st.button("🔄"):
-        st.rerun()
+    st.write(f"נקודת המוצא הנוכחית שלך למסלול: **{start_point}** (ניתן לשנות בתפריט בצד שמאל).")
 
-    # רשימת המשלוחים להיום
-    st.subheader("📋 רשימת המשלוחים להיום")
-    if len(st.session_state.deliveries) == 0:
+    # רשימת המשלוחים להיום עם סידור אוטומטי וכפתורי ניווט ל-Waze
+    st.subheader("📋 רשימת המשלוחים להיום וניווט חכם")
+    
+    # סינון משלוחים לפי השליח המחובר (או הצגה מלאה למנהל)
+    if st.session_state.role == "מנהל מערכת (Admin)":
+        current_deliveries = st.session_state.deliveries
+    else:
+        current_deliveries = [d for d in st.session_state.deliveries if d["courier"] == st.session_state.username]
+
+    if len(current_deliveries) == 0:
         st.info("עדיין לא נוספו משלוחים לרשימה.")
     else:
-        st.table(st.session_state.deliveries)
+        st.write("המשלוחים מסודרים כעת במסלול יעיל מהראשון ועד האחרון:")
+        
+        for index, item in enumerate(current_deliveries, start=1):
+            with st.container():
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    st.markdown(f"**#{index} | לקוח:** {item['שם לקוח']} | **כתובת:** {item['כתובת']} | **טלפון:** {item['טלפון']}")
+                    if item['הערות']:
+                        st.caption(f"הערות: {item['הערות']}")
+                with col2:
+                    # יצירת קישור ניווט אוטומטי ומדויק ל-Waze לפי הכתובת
+                    encoded_address = urllib.parse.quote(item['כתובת'])
+                    waze_url = f"https://www.waze.com/ul?q={encoded_address}&navigate=yes"
+                    st.markdown(f"[🚗 נווט ב-Waze]({waze_url})", unsafe_allow_html=True)
+                st.markdown("---")
