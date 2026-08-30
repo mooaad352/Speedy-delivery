@@ -1,5 +1,4 @@
 import streamlit as st
-from streamlit_qrcode_scanner import qrcode_scanner
 
 # הגדרת עיצוב הדף
 st.set_page_config(page_title="מערכת ניהול משלוחים", page_icon="🚚", layout="wide")
@@ -21,14 +20,12 @@ if "couriers_db" not in st.session_state:
 
 # מאגר משלוחים במערכת
 if "deliveries" not in st.session_state:
-    st.session_state.deliveries = [
-        {"id": "DEL-101", "customer": "אחמד סלאמה", "address": "כפר סמיע", "phone": "0500000000", "status": "ממתין", "courier": "mohammad"}
-    ]
+    st.session_state.deliveries = []
 
 # --- מסך התחברות ---
 if not st.session_state.logged_in:
     st.title("🚚 מערכת ניהול משלוחים חכמה")
-    st.subheader("כניסת משתמשים ומנהלים")
+    st.subheader("כניסת משתמשים ושליחים")
     
     with st.form("login_form"):
         username_input = st.text_input("שם משתמש")
@@ -45,10 +42,10 @@ if not st.session_state.logged_in:
             else:
                 st.error("שם משתמש או סיסמה שגויים. נסה שוב.")
 
-# --- אזור מנהל המערכת (Admin) ---
+# --- אזור הניהול למנהל (Admin) בלבד ---
 elif st.session_state.role == "מנהל מערכת (Admin)":
-    st.sidebar.title("مرحباً, מנהל")
-    menu = st.sidebar.radio("תפריט ניהול", ["לוח בקרה ראשי", "הוספת שליח חדש", "ניהול משתמשים קיימים", "צפייה בכל המשלוחים"])
+    st.sidebar.title(f"مرحباً, מנהל ראשי")
+    admin_menu = st.sidebar.radio("תפריט ניהול", ["מערכת משלוחים ראשית", "הוספת שליח חדש", "ניהול משתמשים קיימים"])
     
     if st.sidebar.button("התנתק (Logout)"):
         st.session_state.logged_in = False
@@ -56,17 +53,10 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         st.session_state.role = ""
         st.rerun()
 
-    if menu == "לוח בקרה ראשי":
-        st.title("📊 לוח בקרה למנהל (Admin Dashboard)")
-        col1, col2, col3 = st.columns(3)
-        col1.metric("סך הכל שליחים", len(st.session_state.couriers_db))
-        col2.metric("סך הכל משלוחים", len(st.session_state.deliveries))
-        col3.metric("סטטוס חיבור", "מחובר כעת 🟢")
-
-    elif menu == "הוספת שליח חדש":
+    if admin_menu == "הוספת שליח חדש":
         st.title("➕ הוספת שליח או משתמש חדש")
         with st.form("add_courier_form"):
-            new_user = st.text_input("שם משתמש חדש")
+            new_user = st.text_input("שם משתמש חדש לשליח")
             new_pass = st.text_input("סיסמה לשליח", type="password")
             new_role = st.selectbox("תפקיד במערכת", ["שליח", "מנהל מערכת (Admin)"])
             add_btn = st.form_submit_button("שמור שליח חדש")
@@ -76,60 +66,71 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
                     st.session_state.couriers_db[new_user] = {"password": new_pass, "role": new_role}
                     st.success(f"השליח '{new_user}' נוסף בהצלחה!")
 
-    elif menu == "ניהול משתמשים קיימים":
+    elif admin_menu == "ניהול משתמשים קיימים":
         st.title("👥 רשימת כל המשתמשים והשליחים הרשומים")
         users_data = [{"שם משתמש": usr, "סיסמה": info["password"], "תפקיד": info["role"]} for usr, info in st.session_state.couriers_db.items()]
         st.table(users_data)
+        st.stop() # עוצר כאן אם המנהל בחר רק לנהל משתמשים, אחרת ממשיך למערכת המשלוחים
 
-    elif menu == "צפייה בכל המשלוחים":
-        st.title("📦 כל המשלוחים במערכת")
-        st.table(st.session_state.deliveries)
+# --- מסך המערכת המרכזי (מופיע לשליחים ולמנהל) ---
+if st.session_state.logged_in:
+    if st.session_state.role != "מנהל מערכת (Admin)":
+        # תפריט צד לשליחים עם אפשרות התנתקות
+        st.sidebar.title(f"مرحباً, {st.session_state.username}")
+        if st.sidebar.button("התנתק (Logout)"):
+            st.session_state.logged_in = False
+            st.session_state.username = ""
+            st.session_state.role = ""
+            st.rerun()
 
-# --- אזור השליחים ---
-else:
-    st.sidebar.title(f"مرحباً, {st.session_state.username}")
-    courier_menu = st.sidebar.radio("תפריט שליח", ["המשלוחים שלי", "סריקת ברקוד / QR", "הוספת משלוחים"])
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("הגדרות מערכת")
+    start_point = st.sidebar.text_input("כתובת נקודת מוצא (עסק/מחסן)", "חיפה")
+    st.sidebar.info("💡 טיפ: באייפון ניתן לשמור את האתר (PWA) כקיצור דרך במסך הבית.")
+
+    # כותרת ראשית של האפליקציה כמו בתמונה
+    st.title("🚚 מערכת ניהול וסידור משלוחים")
+
+    # סעיף סריקת QR
+    st.subheader("📷 סריקת מדבקת משלוח (QR)")
+    scan_checkbox = st.checkbox("פתח מצלמה לסריקה")
+    if scan_checkbox:
+        st.info("המצלמה תופעל כאן לסריקת ברקוד/QR...")
+
+    # סעיף הוספת משלוח חדש
+    st.subheader("➕ הוספת משלוח חדש")
+    with st.form("delivery_form", clear_on_submit=True):
+        cust_name = st.text_input("שם הלקוח:")
+        cust_phone = st.text_input("מספר טלפון של הלקוח (לדוגמה: +972501111111):")
+        cust_address = st.text_input("כתובת למשלוח (או כתובת שנסרקה):")
+        cust_notes = st.text_input("הערות מיוחדות למשלוח (אופציונלי):")
+        
+        submit_del = st.form_submit_button("שמור משלוח")
+        if submit_del:
+            if cust_name and cust_address:
+                st.session_state.deliveries.append({
+                    "שם לקוח": cust_name,
+                    "טלפון": cust_phone,
+                    "כתובת": cust_address,
+                    "הערות": cust_notes,
+                    "שליח": st.session_state.username
+                })
+                st.success("המשלוח נוסף בהצלחה למערכת!")
+            else:
+                st.warning("נא למלא לפחות שם לקוח וכתובת.")
+
+    # בחירת נקודת מוצא למסלול
+    st.subheader("🧭 בחירת נקודת מוצא למסלול")
+    st.write("בחירה מאיפה להתחיל את המסלול המכוני:")
+    selected_origin = st.selectbox("", [start_point, "תל אביב", "ירושלים", "באר שבע"], label_visibility="collapsed")
     
-    if st.sidebar.button("התנתק (Logout)"):
-        st.session_state.logged_in = False
-        st.session_state.username = ""
-        st.session_state.role = ""
+    # כפתור רענון קטן
+    if st.button("🔄"):
         st.rerun()
 
-    if courier_menu == "המשלוחים שלי":
-        st.title(f"📦 המשלוחים של השליח: {st.session_state.username}")
-        my_deliveries = [d for d in st.session_state.deliveries if d["courier"] == st.session_state.username]
-        if my_deliveries:
-            st.table(my_deliveries)
-        else:
-            st.info("אין לך משלוחים מוקצים כרגע.")
-
-    elif courier_menu == "סריקת ברקוד / QR":
-        st.title("📷 סריקת ברקוד / קוד QR משלוח")
-        st.write("השתמש במצלמת המכשיר כדי לסרוק ברקוד של חבילה:")
-        
-        scanned_code = qrcode_scanner(key='qrcode_scanner')
-        
-        if scanned_code:
-            st.success(f"זוהה קוד בהצלחה: {scanned_code}")
-
-    elif courier_menu == "הוספת משלוחים":
-        st.title("➕ הוספת משלוח חדש לשטח")
-        with st.form("add_del_form"):
-            del_id = st.text_input("מספר חבילה / ברקוד")
-            cust_name = st.text_input("שם הלקוח")
-            cust_addr = st.text_input("כתובת למשלוח")
-            cust_phone = st.text_input("מספר טלפון")
-            submit_delivery = st.form_submit_button("שמור משלוח")
-            
-            if submit_delivery:
-                if del_id and cust_name:
-                    st.session_state.deliveries.append({
-                        "id": del_id,
-                        "customer": cust_name,
-                        "address": cust_addr,
-                        "phone": cust_phone,
-                        "status": "ממתין",
-                        "courier": st.session_state.username
-                    })
-                    st.success("המשלוח נוסף בהצלחה למערכת שלך!")
+    # רשימת המשלוחים להיום
+    st.subheader("📋 רשימת המשלוחים להיום")
+    if len(st.session_state.deliveries) == 0:
+        st.info("עדיין לא נוספו משלוחים לרשימה.")
+    else:
+        st.table(st.session_state.deliveries)
