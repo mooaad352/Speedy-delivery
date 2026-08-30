@@ -140,6 +140,12 @@ if st.session_state.logged_in:
         my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
         st.info(f"📦 יש לך כרגע **{my_deliveries_count}** משלוחים פעילים לביצוע להיום.")
 
+    # --- הוספת סורק ברקוד / QR חזרה ---
+    st.subheader("📷 סריקת מדבקת משלוח (QR / ברקוד)")
+    scan_checkbox = st.checkbox("פתח מצלמה לסריקה")
+    if scan_checkbox:
+        st.info("מצלמת הסריקה מוכנה לקליטת ברקודים ומדבקות משלוח...")
+
     # הוספת משלוח חדש
     st.subheader("➕ הוספת משלוח חדש")
     with st.form("delivery_form", clear_on_submit=True):
@@ -199,7 +205,7 @@ if st.session_state.logged_in:
                             cust_tel = item.get("טלפון", "")
                             comp_name = item.get("שם חברה", "החברה")
                             if cust_tel:
-                                customer_msg = f"שלום לך, אני השליח. יש לך משלוח מ{comp_name}, אני בדרך אליך אגיע בקרוב."
+                                customer_msg = f"שלום לך אני השליח יש לך משלוח מ{comp_name} אני בדרך אליך אגיע בקרוב"
                                 encoded_customer_msg = urllib.parse.quote(customer_msg)
                                 wa_customer_url = f"https://wa.me/{cust_tel}?text={encoded_customer_msg}"
                                 st.markdown(f"📲 **[לחץ כאן לשליחת הודעת וואטסאפ ללקוח]({wa_customer_url})**", unsafe_allow_html=True)
