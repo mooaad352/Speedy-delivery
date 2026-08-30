@@ -27,7 +27,7 @@ if "deliveries" not in st.session_state:
             "ברקוד": "TEST-001",
             "שם לקוח": "סמר שומרי",
             "שם חברה": "SHEIN",
-            "טלפון": "0502616375",
+            "טלפון": "+972502616375",
             "כתובת מלאה": "רחוב 701 0, כסרא-סמיע (קומה 1)",
             "רחוב": "701",
             "בית": "0",
@@ -42,7 +42,7 @@ if "deliveries" not in st.session_state:
             "ברקוד": "TEST-002",
             "שם לקוח": "סראב",
             "שם חברה": "ניודי",
-            "טלפון": "0503688324",
+            "טלפון": "+972503688324",
             "כתובת מלאה": "אלתותה 10, יאנוח",
             "רחוב": "אלתותה",
             "בית": "10",
@@ -165,7 +165,7 @@ if st.session_state.logged_in:
     st.title("🚚 מערכת ניהול וסידור משלוחים מהירה")
 
     if st.session_state.role != "מנהל מערכת (Admin)":
-        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
+        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] != "נמסר"])
         st.info(f"📦 יש לך כרגע **{my_deliveries_count}** משלוחים פעילים לביצוע להיום.")
 
     # הוספת משלוח מהירה וישירה
@@ -222,7 +222,7 @@ if st.session_state.logged_in:
     if st.session_state.role == "מנהל מערכת (Admin)":
         current_deliveries = st.session_state.deliveries
     else:
-        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
+        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username]
 
     if len(current_deliveries) == 0:
         st.info("אין עדיין משלוחים לרשימה.")
@@ -231,7 +231,7 @@ if st.session_state.logged_in:
             with st.container():
                 col1, col2, col3 = st.columns([2, 1, 1])
                 with col1:
-                    status_emoji = "✅ נמסר" if item.get("status") == "נמסר" else "⏳ ממתין"
+                    status_emoji = "✅ נמסר" if item.get("status"] == "נמסר" else "⏳ ממתין"
                     st.markdown(f"**#{index} | {status_emoji} | ברקוד:** {item.get('ברקוד')} | **לקוח:** {item.get('שם לקוח')} | **חברה:** {item.get('שם חברה')}")
                     st.write(f"📍 **כתובת:** {item.get('כתובת מלאה')}")
                     if item.get('הערות'):
@@ -241,18 +241,29 @@ if st.session_state.logged_in:
                     waze_url = f"https://www.waze.com/ul?q={encoded_address}&navigate=yes"
                     st.markdown(f"[🚗 נווט ב-Waze]({waze_url})", unsafe_allow_html=True)
                 with col3:
-                    if item.get("status") != "נמסר":
+                    if item.get("status"] != "נמסר":
                         if st.button(f"סמן כנמסר #{index}", key=f"deliver_{index}"):
                             item["status"] = "נמסר"
                             st.success("המשלוח עודכן כנמסר!")
                             
-                            cust_tel = item.get("טלפון", "")
+                            # יצירת הודעת וואטסאפ אוטומטית שנפתחת מיד
+                            cust_tel = item.get("טלפון", "").replace("+", "")
                             comp_name = item.get("שם חברה", "החברה")
+                            customer_name = item.get("שם לקוח", "לקוח")
+                            
                             if cust_tel:
-                                customer_msg = f"שלום לך אני השליח יש לך משלוח מ{comp_name} אני בדרך אליך אגיע בקרוב"
+                                customer_msg = f"שלום {customer_name}, אני השליח. יש לך משלוח מ{comp_name}, אני בדרך אליך אגיע בקרוב מאוד! 🚚"
                                 encoded_customer_msg = urllib.parse.quote(customer_msg)
                                 wa_customer_url = f"https://wa.me/{cust_tel}?text={encoded_customer_msg}"
-                                st.markdown(f"📲 **[לחץ כאן לשליחת הודעת וואטסאפ ללקוח]({wa_customer_url})**", unsafe_allow_html=True)
+                                
+                                # מציג כפתור בולט שמפנה ישירות לוואטסאפ של הלקוח
+                                st.markdown(f"""
+                                    <div style="background-color: #d4edda; padding: 10px; border-radius: 5px; text-align: center; margin-top: 5px;">
+                                        <a href="{wa_customer_url}" target="_blank" style="color: #155724; font-weight: bold; font-size: 16px; text-decoration: none;">
+                                            📲 לחץ כאן לשליחת הודעת וואטסאפ ללקוח
+                                        </a>
+                                    </div>
+                                """, unsafe_allow_html=True)
                             
                             st.rerun()
                 st.markdown("---")
