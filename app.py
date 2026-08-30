@@ -42,7 +42,7 @@ if not st.session_state.logged_in:
                 st.session_state.role = db[username_input]["role"]
                 st.rerun()
             else:
-                st.error("שם משתמש או סיסמה שגויים. נסה שוב.")
+                st.error("שם משתמש أو סיסמה שגויים. נסה שוב.")
 
 # --- אזור הניהול למנהל (Admin) בלבד ---
 elif st.session_state.role == "מנהל מערכת (Admin)":
@@ -64,7 +64,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         st.rerun()
 
     if admin_menu == "הוספת שליח חדש":
-        st.title("➕ הוספת שליח או משתמש חדש")
+        st.title("➕ הוספת שליח أو משתמש חדש")
         with st.form("add_courier_form"):
             new_user = st.text_input("שם משתמש חדש לשליח")
             new_pass = st.text_input("סיסמה לשליח", type="password")
@@ -82,8 +82,8 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
                     st.success(f"השליח '{new_user}' נוסף בהצלחה!")
 
     elif admin_menu == "ניהול ועריכת משתמשים (סיסמאות וטלפונים)":
-        st.title("👥 ניהול, החלפת סיסמאות ועדכון טלפונים לשליחים")
-        st.write("כאן תוכל לעדכן את הסיסמה או מספר הטלפון של כל משתמש במערכת:")
+        st.title("👥 ניהול, החלפת סיסמאות وעדכון טלפונים לשליחים")
+        st.write("כאן תוכל לעדכן את הסיסמה أو מספר הטלפון של כל משתמש במערכת:")
         
         for usr, info in st.session_state.couriers_db.items():
             with st.expander(f"עריכת משתמש: {usr} ({info.get('role', '')})"):
@@ -106,7 +106,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         
         summary_data = []
         for courier in couriers_list:
-            completed_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == courier and d.get("status") == "נמסר"]
+            completed_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == courier and d.get("status") == "נמסר"]
             total_count = len(completed_deliveries)
             summary_data.append({
                 "שם השליח": courier,
@@ -117,7 +117,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         if summary_data:
             st.table(summary_data)
         else:
-            st.info("אין עדיין נתונים על שליחים רשומים.")
+            st.info("אין עדיין נתונים على שליחים רשומים.")
         st.stop()
 
 # --- מסך המערכת המרכזי (שליחים ומנהל) ---
@@ -140,18 +140,12 @@ if st.session_state.logged_in:
         my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
         st.info(f"📦 יש לך כרגע **{my_deliveries_count}** משלוחים פעילים לביצוע להיום.")
 
-    # --- הוספת כלי סריקת ברקוד ייעודי למצלמה ---
-    st.subheader("📷 סורק ברקוד / QR מהיר למדבקות")
-    st.write("צלם את הברקוד أو מדבקת המשלוח דרך המצלמה כדי לקלוט נתונים אוטומטית:")
+    # הוספת משלוח חדש עם תמיכה בסורקי ברקוד חיצוניים / הקלדה מהירה
+    st.subheader("➕ הוספת משלוח חדש (תומך סריקת ברקוד ישירה)")
+    st.info("💡 טיפ לשליחים: אם אתה משתמש בסורק ברקוד ידני (לייזר/בלוטות'), פשוט לחץ על השדה הראשון וסרוק את הברקוד – המספר יוקלד מיד אוטומטית.")
     
-    scanned_image = st.camera_input("לחץ כאן לצילום וסריקת מדבקת המשלוח")
-    if scanned_image:
-        st.success("המדבקה צולמה בהצלחה! הנתונים נקלטו למערכת.")
-
-    # הוספת משלוח חדש
-    st.subheader("➕ הוספת משלוח חדש")
     with st.form("delivery_form", clear_on_submit=True):
-        cust_name = st.text_input("שם הלקוח:")
+        cust_name = st.text_input("שם הלקוח / או סריקת ברקוד מספר מעקב:")
         company_name = st.text_input("שם החברה (החנות/העסק שממנו המשלוח):")
         cust_phone = st.text_input("מספר טלפון של הלקוח (לשליחת הודעה):")
         cust_address = st.text_input("כתובת למשלוח (הקלדה חופשית):")
@@ -172,10 +166,10 @@ if st.session_state.logged_in:
                 })
                 st.success("המשלוח נוסף בהצלחה למערכת!")
             else:
-                st.warning("נא למלא לפחות שם לקוח וכתובת.")
+                st.warning("נא למלא לפחות שם לקוח أو מספר ברקוד وכתובת.")
 
-    # רשימת המשלוחים להיום ועדכון סטטוס
-    st.subheader("📋 רשימת המשלוחים להיום ועדכון סטטוס")
+    # רשימת המשלוחים להיום وעדכון סטטוס
+    st.subheader("📋 רשימת המשלוחים להיום وעדכון סטטוס")
     
     if st.session_state.role == "מנהל מערכת (Admin)":
         current_deliveries = st.session_state.deliveries
@@ -190,7 +184,7 @@ if st.session_state.logged_in:
                 col1, col2, col3 = st.columns([2, 1, 1])
                 with col1:
                     status_emoji = "✅ נמסר" if item.get("status") == "נמסר" else "⏳ ממתין"
-                    st.markdown(f"**#{index} | {status_emoji} | לקוח:** {item.get('שם לקוח')} | **חברה:** {item.get('שם חברה')} | **כתובת:** {item.get('כתובת')}")
+                    st.markdown(f"**#{index} | {status_emoji} | לקוח/ברקוד:** {item.get('שם לקוח')} | **חברה:** {item.get('שם חברה')} | **כתובת:** {item.get('כתובת')}")
                     if item.get('הערות'):
                         st.caption(f"הערות: {item.get('הערות')}")
                 with col2:
