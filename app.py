@@ -294,8 +294,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
                     }
                     st.success("Added successfully!")
                     
-                    # הצגת קישור אישי והודעת וואטסאפ מוכנה לשליחה לשליח החדש
-                    base_url = "https://your-app-url.streamlit.app" # ניתן לעדכן לכתובת האתר שלך בענן
+                    base_url = "https://share.streamlit.io"
                     login_link = f"{base_url}?username={urllib.parse.quote(new_user)}"
                     
                     st.info(f"🔗 קישור התחברות ישיר לשליח החדש:\n`{login_link}`")
@@ -357,7 +356,7 @@ if st.session_state.logged_in:
     st.title(t["title"])
 
     if st.session_state.role != "מנהל מערכת (Admin)":
-        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] != "נמסר"])
+        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
         st.info(f"📦 {t['active_deliveries']} **{my_deliveries_count}** {t['active_deliveries_end']}")
 
     current_time_il_str = get_israel_time()
@@ -442,7 +441,7 @@ if st.session_state.logged_in:
     if st.session_state.role == "מנהל מערכת (Admin)":
         current_deliveries = st.session_state.deliveries
     else:
-        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username]
+        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
 
     if len(current_deliveries) == 0:
         st.info(t["no_deliveries"])
