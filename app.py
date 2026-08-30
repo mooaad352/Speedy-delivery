@@ -137,12 +137,12 @@ if st.session_state.logged_in:
     st.title("🚚 מערכת ניהול וסידור משלוחים")
 
     if st.session_state.role != "מנהל מערכת (Admin)":
-        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] != "נמסר"])
+        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
         st.info(f"📦 יש לך כרגע **{my_deliveries_count}** משלוחים פעילים לביצוע להיום.")
 
     # רכיב הקלדה קולית מובנה בעברית/ערבית ישירות באפליקציה
     st.subheader("🎙️ הכתבה קולית חכמה (עברית / ערבית)")
-    st.write("לחץ על כפתור המיקרופון כדי להכתיב את מספר המעקב או הכתובת בקולך מבלי להקליד:**")
+    st.write("לחץ על כפתור המיקרופון כדי להכתיב את מספר המעקב או הכתובת בקולך מבלי להקליד:")
 
     voice_component = """
     <div style="background-color: #f1f3f5; padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #ced4da;">
@@ -169,8 +169,6 @@ if st.session_state.logged_in:
                 const speechToText = event.results[0][0].transcript;
                 document.getElementById('voice-result').value = speechToText;
                 document.getElementById('voice-status').innerText = "זהה בהצלחה: " + speechToText;
-                
-                // העתקת הטקסט ל-LocalStorage כדי שהמשתמש יוכל להעתיק בקלות
                 navigator.clipboard.writeText(speechToText).catch(() => {});
             };
 
@@ -238,7 +236,7 @@ if st.session_state.logged_in:
     if st.session_state.role == "מנהל מערכת (Admin)":
         current_deliveries = st.session_state.deliveries
     else:
-        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username]
+        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
 
     if len(current_deliveries) == 0:
         st.info("אין עדיין משלוחים לרשימה.")
