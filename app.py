@@ -4,9 +4,13 @@ from datetime import datetime, timezone, timedelta
 
 # הגדרת שעון ישראל (UTC+2 / UTC+3)
 ISRAEL_OFFSET = timedelta(hours=2)
+ADMIN_PHONE = "972502616375"  # מספר הטלפון שלך כאדמין
 
 def get_israel_time():
     return datetime.now(timezone(ISRAEL_OFFSET)).strftime("%Y-%m-%d %H:%M")
+
+def get_current_date():
+    return datetime.now(timezone(ISRAEL_OFFSET))
 
 # הגדרת עיצוב הדף (כיוון מימין לשמאל כברירת מחדל)
 st.set_page_config(page_title="Speedy Delivery - מערכת ניהול משלוחים", page_icon="🚚", layout="wide")
@@ -25,7 +29,7 @@ TRANSLATIONS = {
         "main_sys": "نظام الشحنات الرئيسي",
         "add_courier": "إضافة مندوب جديد",
         "manage_users": "إدارة وتعديل المستخدمين",
-        "monthly_report": "📊 تقرير الحسابات الشهري",
+        "monthly_report": "📊 تقرير الحسابات الشهري والرواتب",
         "current_loc": "📍 موقعك الحالي / نقطة الانطلاق",
         "loc_placeholder": "أدخل موقعك الحالي (بلدة / مدينة):",
         "active_deliveries": "لديك حالياً",
@@ -76,7 +80,7 @@ TRANSLATIONS = {
         "main_sys": "מערכת משלוחים ראשית",
         "add_courier": "הוספת שליח חדש",
         "manage_users": "ניהול ועריכת משתמשים",
-        "monthly_report": "📊 סיכום חודשי והתחשבנות שליחים",
+        "monthly_report": "📊 סיכום חודשי, חישוב שכר ותשלום לשליחים",
         "current_loc": "📍 מיקום נוכחי ונקודת מוצא",
         "loc_placeholder": "הכנס את המיקום הנוכחי שלך (עיר / כפר):",
         "active_deliveries": "יש לך כרגע",
@@ -127,7 +131,7 @@ TRANSLATIONS = {
         "main_sys": "Main Deliveries System",
         "add_courier": "Add New Courier",
         "manage_users": "Manage & Edit Users",
-        "monthly_report": "📊 Monthly Couriers Report",
+        "monthly_report": "📊 Monthly Couriers Report & Payment",
         "current_loc": "📍 Current Location & Origin",
         "loc_placeholder": "Enter your current location (City/Village):",
         "active_deliveries": "You currently have",
@@ -200,7 +204,7 @@ if "logged_in" not in st.session_state:
 # מאגר שליחים ומנהלים
 if "couriers_db" not in st.session_state:
     st.session_state.couriers_db = {
-        "Admin": {"password": "Sma.srablove2028", "role": "מנהל מערכת (Admin)", "phone": "+972500000000"},
+        "Admin": {"password": "Sma.srablove2028", "role": "מנהל מערכת (Admin)", "phone": ADMIN_PHONE},
         "mohammad": {"password": "123", "role": "שליח", "phone": "+972502616375"}
     }
 
@@ -323,22 +327,44 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
 
     elif admin_menu == t["monthly_report"]:
         st.title(t["monthly_report"])
-        couriers_list = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role") == "שליח"]
+        st.info("💡 החישוב מבוסס על 1 ₪ למשלוח שנמסר + חישוב מדויק לפני מע״מ ואחרי מע״מ (18%).")
         
-        summary_data = []
+        couriers_list = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role") == "שליח"]
+        current_month_str = get_current_date().strftime("%Y-%m")
+        st.subheader(f"📅 סיכום חודש נוכחי: {current_month_str}")
+
         for courier in couriers_list:
-            completed_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == courier and d.get("status") == "נמסר"]
+            completed_deliveries = [
+                d for d in st.session_state.deliveries 
+                if d.get("courier") == courier and d.get("status") == "נמסר" and d.get("date", "").startswith(current_month_str)
+            ]
             total_count = len(completed_deliveries)
-            summary_data.append({
-                "Courier": courier,
-                "Phone": st.session_state.couriers_db[courier].get("phone", ""),
-                "Delivered Count": total_count
-            })
             
-        if summary_data:
-            st.table(summary_data)
-        else:
-            st.info("No data yet.")
+            # חישוב שכר (1 שקל למשלוח)
+            amount_before_vat = total_count * 1.0
+            vat_amount = amount_before_vat * 0.18
+            amount_after_vat = amount_before_vat * 1.18
+            
+            courier_phone = st.session_state.couriers_db[courier].get("phone", "")
+            
+            with st.expander(f"👤 שליח: {courier} | משלוחים שבוצעו: {total_count} | סכום לפני מע"מ: ₪{amount_before_vat:.2f} | אחרי מע"מ (18%): ₪{amount_after_vat:.2f}"):
+                st.write(f"📞 טלפון השליח: {courier_phone}")
+                st.write(f"📊 פירוט חישוב:")
+                st.write(f"- סך משלוחים: {total_count}")
+                st.write(f"- סכום לפני מע״מ: ₪{amount_before_vat:.2f}")
+                st.write(f"- מע״מ (18%): ₪{vat_amount:.2f}")
+                st.write(f"- **סכום סופי לתשלום (כולל מע״מ): ₪{amount_after_vat:.2f}**")
+                
+                st.write(f"📦 רשימת המשלוחים שנמסרו החודש:")
+                for d in completed_deliveries:
+                    st.caption(f"- ברקוד: {d.get('ברקוד')} | ללקוח: {d.get('שם לקוח')} | תאריך: {d.get('date')}")
+                
+                if courier_phone:
+                    salary_msg = f"שלום {courier}, סיכום המשלוחים שלך לחודש {current_month_str}:\n- סך משלוחים: {total_count}\n- סכום לפני מע״מ: ₪{amount_before_vat:.2f}\n- סכום כולל מע״מ (18%): ₪{amount_after_vat:.2f}\n\nתודה על העבודה הקשה!"
+                    encoded_salary_msg = urllib.parse.quote(salary_msg)
+                    wa_salary_url = f"https://wa.me/{courier_phone}?text={encoded_salary_msg}"
+                    st.markdown(f"[📲 שליחת הודעת סיכום שכר מלאה (כולל מע״מ) לשליח בוואטסאפ]({wa_salary_url})", unsafe_allow_html=True)
+        
         st.stop()
 
 # --- מסך המערכת המרכזי (שליחים ומנהל) ---
@@ -356,7 +382,7 @@ if st.session_state.logged_in:
     st.title(t["title"])
 
     if st.session_state.role != "מנהל מערכת (Admin)":
-        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
+        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] != "נמסר"])
         st.info(f"📦 {t['active_deliveries']} **{my_deliveries_count}** {t['active_deliveries_end']}")
 
     current_time_il_str = get_israel_time()
