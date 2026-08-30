@@ -1,6 +1,10 @@
 import streamlit as st
 import urllib.parse
 from datetime import datetime
+import pytz
+
+# הגדרת אזור זמן ישראל
+ISRAEL_TZ = pytz.timezone('Asia/Jerusalem')
 
 # הגדרת עיצוב הדף
 st.set_page_config(page_title="מערכת ניהול משלוחים מהירה", page_icon="🚚", layout="wide")
@@ -13,7 +17,7 @@ if "username" not in st.session_state:
 if "role" not in st.session_state:
     st.session_state.role = ""
 
-# מאגר שליחים ומנהלים (עם המספר המעודכן למוחמד)
+# מאגר שליחים ומנהלים
 if "couriers_db" not in st.session_state:
     st.session_state.couriers_db = {
         "Admin": {"password": "Sma.srablove2028", "role": "מנהל מערכת (Admin)", "phone": "+972500000000"},
@@ -22,6 +26,7 @@ if "couriers_db" not in st.session_state:
 
 # מאגר משלוחים במערכת (כולל משלוחי הבדיקה)
 if "deliveries" not in st.session_state:
+    current_time_il = datetime.now(ISRAEL_TZ).strftime("%Y-%m-%d %H:%M")
     st.session_state.deliveries = [
         {
             "ברקוד": "TEST-001",
@@ -36,7 +41,7 @@ if "deliveries" not in st.session_state:
             "הערות": "משלוח בדיקה",
             "status": "ממתין",
             "courier": "mohammad",
-            "date": datetime.now().strftime("%Y-%m-%d")
+            "date": current_time_il
         },
         {
             "ברקוד": "TEST-002",
@@ -51,7 +56,7 @@ if "deliveries" not in st.session_state:
             "הערות": "משלוח בדיקה",
             "status": "ממתין",
             "courier": "mohammad",
-            "date": datetime.now().strftime("%Y-%m-%d")
+            "date": current_time_il
         }
     ]
 
@@ -150,8 +155,10 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
 
 # --- מסך המערכת המרכזי (שליחים ומנהל) ---
 if st.session_state.logged_in:
+    # תפריט צד לשליחים כולל כפתור התנתק
     if st.session_state.role != "מנהל מערכת (Admin)":
         st.sidebar.title(f"مرحباً, {st.session_state.username}")
+        st.sidebar.markdown("---")
         if st.sidebar.button("התנתק (Logout)"):
             st.session_state.logged_in = False
             st.session_state.username = ""
@@ -159,14 +166,18 @@ if st.session_state.logged_in:
             st.rerun()
 
     st.sidebar.markdown("---")
-    st.sidebar.subheader("הגדרות מערכת")
-    start_point = st.sidebar.text_input("כתובת נקודת מוצא (הקלדה חופשית)", "חיפה")
+    st.sidebar.subheader("הגדרות ניווט ויציאה")
+    start_point = st.sidebar.text_input("כתובת נקודת מוצא (מאיפה אתה יוצא)", "כסרא-סמיע")
 
     st.title("🚚 מערכת ניהול וסידור משלוחים מהירה")
 
     if st.session_state.role != "מנהל מערכת (Admin)":
-        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] != "נמסר"])
+        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
         st.info(f"📦 יש לך כרגע **{my_deliveries_count}** משלוחים פעילים לביצוע להיום.")
+
+    # הצגת השעה הנוכחית בישראל
+    current_time_il_str = datetime.now(ISRAEL_TZ).strftime("%H:%M - %d/%m/%Y")
+    st.caption(f"🕒 שעון ישראל נוכחי במערכת: **{current_time_il_str}**")
 
     # הוספת משלוח מהירה וישירה
     st.subheader("➕ הוספת משלוח חדש (מהיר לשטח)")
@@ -197,6 +208,8 @@ if st.session_state.logged_in:
                 formatted_cust_phone = f"+972{raw_cust_phone[1:]}" if raw_cust_phone.startswith("0") else raw_cust_phone
                 
                 full_address = f"{street_name} {house_num}, {city_name}" + (f" (קומה {floor_num})" if floor_num else "")
+                added_time = datetime.now(ISRAEL_TZ).strftime("%Y-%m-%d %H:%M")
+                
                 st.session_state.deliveries.append({
                     "ברקוד": barcode_num if barcode_num else "ללא ברקוד",
                     "שם לקוח": cust_name,
@@ -210,7 +223,7 @@ if st.session_state.logged_in:
                     "הערות": cust_notes,
                     "status": "ממתין",
                     "courier": st.session_state.username if st.session_state.role != "מנהל מערכת (Admin)" else "mohammad",
-                    "date": datetime.now().strftime("%Y-%m-%d")
+                    "date": added_time
                 })
                 st.success("המשלוח נוסף בהצלחה!")
             else:
@@ -222,7 +235,7 @@ if st.session_state.logged_in:
     if st.session_state.role == "מנהל מערכת (Admin)":
         current_deliveries = st.session_state.deliveries
     else:
-        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username]
+        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
 
     if len(current_deliveries) == 0:
         st.info("אין עדיין משלוחים לרשימה.")
@@ -231,22 +244,23 @@ if st.session_state.logged_in:
             with st.container():
                 col1, col2, col3 = st.columns([2, 1, 1])
                 with col1:
-                    status_emoji = "✅ נמסר" if item.get("status"] == "נמסר" else "⏳ ממתין"
+                    status_emoji = "✅ נמסר" if item.get("status") == "נמסר" else "⏳ ממתין"
                     st.markdown(f"**#{index} | {status_emoji} | ברקוד:** {item.get('ברקוד')} | **לקוח:** {item.get('שם לקוח')} | **חברה:** {item.get('שם חברה')}")
                     st.write(f"📍 **כתובת:** {item.get('כתובת מלאה')}")
+                    st.caption(זמן_הוספה := f"נוסף בתאריך ושעה: {item.get('date', 'היום')}")
                     if item.get('הערות'):
                         st.caption(f"הערות: {item.get('הערות')}")
                 with col2:
-                    encoded_address = urllib.parse.quote(item.get('כתובת מלאה', ''))
-                    waze_url = f"https://www.waze.com/ul?q={encoded_address}&navigate=yes"
-                    st.markdown(f"[🚗 נווט ב-Waze]({waze_url})", unsafe_allow_html=True)
+                    # חישוב ניווט שמתחשב בנקודת המוצא שהשליח הגדיר בצד ימין
+                    dest_address = item.get('כתובת מלאה', '')
+                    waze_url = f"https://www.waze.com/ul?from={urllib.parse.quote(start_point)}&q={urllib.parse.quote(dest_address)}&navigate=yes"
+                    st.markdown(f"[🚗 נווט מ-{start_point} ב-Waze]({waze_url})", unsafe_allow_html=True)
                 with col3:
-                    if item.get("status"] != "נמסר":
+                    if item.get("status") != "נמסר":
                         if st.button(f"סמן כנמסר #{index}", key=f"deliver_{index}"):
                             item["status"] = "נמסר"
                             st.success("המשלוח עודכן כנמסר!")
                             
-                            # יצירת הודעת וואטסאפ אוטומטית שנפתחת מיד
                             cust_tel = item.get("טלפון", "").replace("+", "")
                             comp_name = item.get("שם חברה", "החברה")
                             customer_name = item.get("שם לקוח", "לקוח")
@@ -256,7 +270,6 @@ if st.session_state.logged_in:
                                 encoded_customer_msg = urllib.parse.quote(customer_msg)
                                 wa_customer_url = f"https://wa.me/{cust_tel}?text={encoded_customer_msg}"
                                 
-                                # מציג כפתור בולט שמפנה ישירות לוואטסאפ של הלקוח
                                 st.markdown(f"""
                                     <div style="background-color: #d4edda; padding: 10px; border-radius: 5px; text-align: center; margin-top: 5px;">
                                         <a href="{wa_customer_url}" target="_blank" style="color: #155724; font-weight: bold; font-size: 16px; text-decoration: none;">
