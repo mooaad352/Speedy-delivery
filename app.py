@@ -3,7 +3,7 @@ import urllib.parse
 from datetime import datetime
 
 # הגדרת עיצוב הדף
-st.set_page_config(page_title="מערכת ניהול משלוחים", page_icon="🚚", layout="wide")
+st.set_page_config(page_title="מערכת ניהול משלוחים מהירה", page_icon="🚚", layout="wide")
 
 # ניהול מצב התחברות (Session State)
 if "logged_in" not in st.session_state:
@@ -26,7 +26,7 @@ if "deliveries" not in st.session_state:
 
 # --- מסך התחברות ---
 if not st.session_state.logged_in:
-    st.title("🚚 מערכת ניהול משלוחים חכמה")
+    st.title("🚚 מערכת ניהול משלוחים מהירה")
     st.subheader("כניסת משתמשים ושליחים")
     
     with st.form("login_form"):
@@ -83,8 +83,6 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
 
     elif admin_menu == "ניהול ועריכת משתמשים (סיסמאות וטלפונים)":
         st.title("👥 ניהול, החלפת סיסמאות ועדכון טלפונים לשליחים")
-        st.write("כאן תוכל לעדכן את הסיסמה או מספר הטלפון של כל משתמש במערכת:")
-        
         for usr, info in st.session_state.couriers_db.items():
             with st.expander(f"עריכת משתמש: {usr} ({info.get('role', '')})"):
                 with st.form(f"edit_user_{usr}"):
@@ -100,8 +98,6 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
 
     elif admin_menu == "📊 סיכום חודשי והתחשבנות שליחים":
         st.title("📊 דוח סיכום משלוחים חודשי להתחשבנות")
-        st.write("כאן תוכל לראות כמה משלוחים שבוצעו בפועל (בסטטוס 'נמסר') לכל שליח לצורך חישוב תשלום:")
-        
         couriers_list = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role") == "שליח"]
         
         summary_data = []
@@ -134,67 +130,24 @@ if st.session_state.logged_in:
     st.sidebar.subheader("הגדרות מערכת")
     start_point = st.sidebar.text_input("כתובת נקודת מוצא (הקלדה חופשית)", "חיפה")
 
-    st.title("🚚 מערכת ניהול וסידור משלוחים")
+    st.title("🚚 מערכת ניהול וסידור משלוחים מהירה")
 
     if st.session_state.role != "מנהל מערכת (Admin)":
         my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
         st.info(f"📦 יש לך כרגע **{my_deliveries_count}** משלוחים פעילים לביצוע להיום.")
 
-    # רכיב הקלדה קולית מובנה בעברית/ערבית ישירות באפליקציה
-    st.subheader("🎙️ הכתבה קולית חכמה (עברית / ערבית)")
-    st.write("לחץ על כפתור המיקרופון כדי להכתיב את מספר המעקב או הכתובת בקולך מבלי להקליד:")
-
-    voice_component = """
-    <div style="background-color: #f1f3f5; padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #ced4da;">
-        <button onclick="startListening('he-IL')" style="background-color: #007bff; color: white; padding: 8px 15px; font-size: 14px; border: none; border-radius: 5px; cursor: pointer; margin: 5px;">🎙️ הקלט בעברית</button>
-        <button onclick="startListening('ar-IL')" style="background-color: #28a745; color: white; padding: 8px 15px; font-size: 14px; border: none; border-radius: 5px; cursor: pointer; margin: 5px;">🎙️ تسجيل باللغة العربية</button>
-        <p id="voice-status" style="margin-top: 8px; font-weight: bold; color: #333; font-size: 14px;"></p>
-        <input type="text" id="voice-result" placeholder="הטקסט המוקלט יופיע כאן..." style="width: 100%; padding: 8px; margin-top: 5px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px;" readonly>
-    </div>
-
-    <script>
-        function startListening(lang) {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                alert("הדפדפן שלך אינו תומך בהקלדה קולית.");
-                return;
-            }
-            const recognition = new SpeechRecognition();
-            recognition.lang = lang;
-            recognition.interimResults = false;
-
-            document.getElementById('voice-status').innerText = "מקשיב... דבר אל המיקרופון";
-
-            recognition.onresult = function(event) {
-                const speechToText = event.results[0][0].transcript;
-                document.getElementById('voice-result').value = speechToText;
-                document.getElementById('voice-status').innerText = "זהה בהצלחה: " + speechToText;
-                navigator.clipboard.writeText(speechToText).catch(() => {});
-            };
-
-            recognition.onerror = function(event) {
-                document.getElementById('voice-status').innerText = "שגיאה בזיהוי קולי, נסה שוב.";
-            };
-
-            recognition.onend = function() {
-                if(document.getElementById('voice-status').innerText.includes("מקשיב")) {
-                    document.getElementById('voice-status').innerText = "ההקלטה הסתיימה.";
-                }
-            };
-
-            recognition.start();
-        }
-    </script>
-    """
-    st.components.v1.html(voice_component, height=170)
-
-    # הוספת משלוח חדש
-    st.subheader("➕ הוספת משלוח חדש לפי כתובת מדויקת")
+    # הוספת משלוח מהירה וישירה
+    st.subheader("➕ הוספת משלוח חדש (מהיר לשטח)")
+    
     with st.form("delivery_form", clear_on_submit=True):
-        barcode_num = st.text_input("מספר מעקב / ברקוד:")
-        cust_name = st.text_input("שם הלקוח:")
-        company_name = st.text_input("שם החברה (החנות/העסק שממנו המשלוח):")
-        cust_phone = st.text_input("מספר טלפון של הלקוח (לשליחת הודעה):")
+        col1, col2 = st.columns(2)
+        with col1:
+            barcode_num = st.text_input("מספר מעקב / ברקוד:")
+            cust_name = st.text_input("שם הלקוח:")
+            company_name = st.text_input("שם החברה (החנות/העסק):", "SHEIN")
+        with col2:
+            cust_phone = st.text_input("מספר טלפון של הלקוח:")
+            city_name = st.text_input("ישוב / עיר:", "כסרא-סמיע")
         
         col_s1, col_s2, col_s3 = st.columns(3)
         with col_s1:
@@ -204,10 +157,9 @@ if st.session_state.logged_in:
         with col_s3:
             floor_num = st.text_input("קומה (אופציונלי):")
             
-        city_name = st.text_input("ישוב / עיר:", "כסרא-סמיע")
         cust_notes = st.text_input("הערות מיוחדות למשלוח (אופציונלי):")
         
-        submit_del = st.form_submit_button("שמור משלוח")
+        submit_del = st.form_submit_button("שמור משלוח במערכת")
         if submit_del:
             if cust_name and street_name and house_num:
                 full_address = f"{street_name} {house_num}, {city_name}" + (f" (קומה {floor_num})" if floor_num else "")
@@ -231,7 +183,7 @@ if st.session_state.logged_in:
                 st.warning("נא למלא לפחות שם לקוח, שם רחוב ומספר בית.")
 
     # רשימת המשלוחים להיום ועדכון סטטוס
-    st.subheader("📋 רשימת המשלוחים להיום ועדכון סטטוס")
+    st.subheader("📋 רשימת המשלוחים להיום וניהול מהיר")
     
     if st.session_state.role == "מנהל מערכת (Admin)":
         current_deliveries = st.session_state.deliveries
