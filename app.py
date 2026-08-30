@@ -158,7 +158,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         
         summary_data = []
         for courier in couriers_list:
-            completed_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == courier and d.get("status") == "נמסר"]
+            completed_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == courier and d.get("status"] == "נמסר"]
             total_count = len(completed_deliveries)
             summary_data.append({
                 "שם השליח": courier,
@@ -187,7 +187,7 @@ if st.session_state.logged_in:
     st.title("🚚 מערכת ניהול וסידור משלוחים מהירה")
 
     if st.session_state.role != "מנהל מערכת (Admin)":
-        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
+        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] != "נמסר"])
         st.info(f"📦 יש לך כרגע **{my_deliveries_count}** משלוחים פעילים לביצוע להיום.")
 
     current_time_il_str = get_israel_time()
@@ -268,6 +268,17 @@ if st.session_state.logged_in:
                     st.caption(f"נוסף בתאריך ושעה: {item.get('date', 'היום')}")
                     if item.get('הערות'):
                         st.caption(f"הערות: {item.get('הערות')}")
+                    
+                    # כפתור וואטסאפ זמין תמיד לכל משלוח (גם לפני סימון כנמסר)
+                    cust_tel = item.get("טלפון", "").strip()
+                    comp_name = item.get("שם חברה", "החברה")
+                    customer_name = item.get("שם לקוח", "לקוח")
+                    if cust_tel:
+                        customer_msg = f"שלום {customer_name}, אני השליח. יש לך משלוח מ{comp_name}, אני בדרך אליך אגיע בקרוב מאוד! 🚚"
+                        encoded_customer_msg = urllib.parse.quote(customer_msg)
+                        wa_customer_url = f"https://wa.me/{cust_tel}?text={encoded_customer_msg}"
+                        st.markdown(f"[📲 שלח הודעת וואטסאפ ללקוח]({wa_customer_url})", unsafe_allow_html=True)
+
                 with col2:
                     dest_address = item.get('כתובת מלאה', '')
                     waze_url = f"https://www.waze.com/ul?from={urllib.parse.quote(start_point)}&q={urllib.parse.quote(dest_address)}&navigate=yes"
@@ -277,23 +288,5 @@ if st.session_state.logged_in:
                         if st.button(f"סמן כנמסר #{index}", key=f"deliver_{index}"):
                             item["status"] = "נמסר"
                             st.success("המשלוח עודכן כנמסר!")
-                            
-                            cust_tel = item.get("טלפון", "").strip()
-                            comp_name = item.get("שם חברה", "החברה")
-                            customer_name = item.get("שם לקוח", "לקוח")
-                            
-                            if cust_tel:
-                                customer_msg = f"שלום {customer_name}, אני השליח. יש לך משלוח מ{comp_name}, אני בדרך אליך אגיע בקרוב מאוד! 🚚"
-                                encoded_customer_msg = urllib.parse.quote(customer_msg)
-                                wa_customer_url = f"https://wa.me/{cust_tel}?text={encoded_customer_msg}"
-                                
-                                st.markdown(f"""
-                                    <div style="background-color: #d4edda; padding: 10px; border-radius: 5px; text-align: center; margin-top: 5px;">
-                                        <a href="{wa_customer_url}" target="_blank" style="color: #155724; font-weight: bold; font-size: 16px; text-decoration: none;">
-                                            📲 לחץ כאן לשליחת הודעת וואטסאפ ללקוח
-                                        </a>
-                                    </div>
-                                """, unsafe_allow_html=True)
-                            
                             st.rerun()
                 st.markdown("---")
