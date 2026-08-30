@@ -31,7 +31,7 @@ if "couriers_db" not in st.session_state:
         "mohammad": {"password": "123", "role": "שליח", "phone": "+972502616375"}
     }
 
-# מאגר משלוחים במערכת (כולל משלוחי הבדיקה)
+# מאגר משלוחים במערכת
 if "deliveries" not in st.session_state:
     current_time_il = get_israel_time()
     st.session_state.deliveries = [
@@ -181,17 +181,19 @@ if st.session_state.logged_in:
             logout_user()
 
     st.sidebar.markdown("---")
-    st.sidebar.subheader("📍 בחירת נקודת מוצא להפצה")
-    start_point = st.sidebar.text_input("נקודת התחלה (עיר / כתובת ממנה אתה יוצא):", "כסרא-סמיע")
+    st.sidebar.subheader("📍 מיקום נוכחי ונקודת מוצא")
+    # בחירת נקודת מוצא - ברירת מחדל מיקום נוכחי של השליח
+    start_point = st.sidebar.text_input("הכנס את המיקום הנוכחי שלך (עיר / כתובת):", "כסרא-סמיע")
 
     st.title("🚚 מערכת ניהול וסידור משלוחים מהירה")
 
     if st.session_state.role != "מנהל מערכת (Admin)":
-        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] != "נמסר"])
+        # תוקן סגירת הסוגריים בשורה הזו בדיוק
+        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
         st.info(f"📦 יש לך כרגע **{my_deliveries_count}** משלוחים פעילים לביצוע להיום.")
 
     current_time_il_str = get_israel_time()
-    st.caption(f"🕒 שעון ישראל נוכחי במערכת: **{current_time_il_str}** | 🏁 יוצא להפצה מנקודה: **{start_point}**")
+    st.caption(f"🕒 שעון ישראל נוכחי במערכת: **{current_time_il_str}** | 🏁 נקודת המוצא הנוכחית שלך: **{start_point}**")
 
     # הוספת משלוח מהירה וישירה
     st.subheader("➕ הוספת משלוח חדש (מהיר לשטח)")
@@ -250,26 +252,24 @@ if st.session_state.logged_in:
     # רשימת המשלוחים להיום וניהול מהיר
     st.subheader("📋 רשימת המשלוחים להיום וניהול מהיר")
     
-    # כפתור סידור מסלול אוטומטי
-    if st.button("🔄 סדר מסלול אוטומטית לפי ייוב, רחוב ומספר בית"):
+    # כפתור סידור מסלול אוטומטי מהמקום הנוכחי
+    if st.button("🔄 סדר מסלול אוטומטית לפי המיקום הנוכחי, ייוב, רחוב ומספר בית"):
         if st.session_state.role == "מנהל מערכת (Admin)":
-            # מיון כלל המשלוחים לפי עיר, רחוב ומספר בית
             st.session_state.deliveries.sort(key=lambda x: (x.get("עיר", ""), x.get("רחוב", ""), str(x.get("בית", "0"))))
         else:
-            # מיון רק למשלוחי השליח המחובר
             other_deliveries = [d for d in st.session_state.deliveries if d.get("courier") != st.session_state.username]
-            my_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username] if False else [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
+            my_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
             
-            my_deliveries.sort(key=lambda x: (x.get("עיר", ""), x.get("רחוב", ""), str(x.get("בית", "0"))))
+            my_deliveries.sort(key=lambda x: (x.get("עיר", "") != start_point, x.get("עיר", ""), x.get("רחוב", ""), str(x.get("בית", "0"))))
             st.session_state.deliveries = other_deliveries + my_deliveries
             
-        st.success("המסלוח סודר אוטומטית לפי אזורים וכתובות!")
+        st.success(f"המסלול סודר אוטומטית החל מהמיקום הנוכחי שלך ({start_point})!")
         st.rerun()
 
     if st.session_state.role == "מנהל מערכת (Admin)":
         current_deliveries = st.session_state.deliveries
     else:
-        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
+        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username] if False else [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
 
     if len(current_deliveries) == 0:
         st.info("אין עדיין משלוחים לרשימה.")
@@ -285,7 +285,7 @@ if st.session_state.logged_in:
                     if item.get('הערות'):
                         st.caption(f"הערות: {item.get('הערות')}")
                     
-                    # כפתור וואטסאפ זמין תמיד לכל משלוח
+                    # כפתור וואטסאפ ללקוח
                     cust_tel = item.get("טלפון", "").strip()
                     comp_name = item.get("שם חברה", "החברה")
                     customer_name = item.get("שם לקוח", "לקוח")
@@ -297,6 +297,7 @@ if st.session_state.logged_in:
 
                 with col2:
                     dest_address = item.get('כתובת מלאה', '')
+                    # הניווט מתחיל בדיוק מהמיקום הנוכחי שהוגדר בצד שמאל
                     waze_url = f"https://www.waze.com/ul?from={urllib.parse.quote(start_point)}&q={urllib.parse.quote(dest_address)}&navigate=yes"
                     st.markdown(f"[🚗 נווט מ-{start_point} ב-Waze]({waze_url})", unsafe_allow_html=True)
                 with col3:
