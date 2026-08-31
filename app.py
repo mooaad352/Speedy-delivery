@@ -29,7 +29,7 @@ def format_whatsapp_phone(phone_str):
 
 def generate_html_contract_form():
     """
-    יוצר קובץ HTML מעוצב לטופס ההתרשמות והחוזה של השליח/המשתמש
+    יוצר קובץ HTML מעוצב לטופס ההתרשמות והחוזה של השליח/המשתמש כולל הגנות משפטיות מלאות
     """
     html_content = """<!DOCTYPE html>
 <html lang="he" dir="rtl">
@@ -41,7 +41,7 @@ def generate_html_contract_form():
         body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; direction: rtl; text-align: right; color: #333; }
         .container { max-width: 750px; margin: 30px auto; background: #ffffff; padding: 35px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
         h2 { color: #1f2937; text-align: center; margin-bottom: 25px; }
-        .contract-box { background: #f9fafb; border: 1px solid #d1d5db; padding: 15px; border-radius: 6px; height: 180px; overflow-y: scroll; font-size: 14px; margin-bottom: 20px; line-height: 1.6; }
+        .contract-box { background: #f9fafb; border: 1px solid #d1d5db; padding: 15px; border-radius: 6px; height: 220px; overflow-y: scroll; font-size: 13px; margin-bottom: 20px; line-height: 1.6; }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 6px; font-weight: bold; color: #374151; }
         input[type="text"], input[type="tel"], input[type="email"] { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; font-size: 15px; background-color: #f9fafb; }
@@ -55,10 +55,12 @@ def generate_html_contract_form():
     <h2>📝 טופס התרשמות וחוזה התקשרות - Speedy Delivery</h2>
     
     <div class="contract-box">
-        <strong>תנאי שימוש ופטור מאחריות:</strong><br>
-        1. מהות השימוש: המערכת משמשת פלטפורמה טכנולוגית בלבד לניהול משלוחים.<br>
-        2. היעדר אחריות: מפעיל המערכת אינו אחראים בשום אופן על ביצוע המשלוחים בפועל, תנאי ההעסקה או נזקים.<br>
-        3. עצמאות השליח: השליח פועל כגורם עצמאי ונושא באחריות המלאה והבלעדית לפעילותו.
+        <strong>תנאי שימוש, הצהרה ופטור מלא מאחריות משפטית:</strong><br><br>
+        1. <strong>מהות הפלטפורמה:</strong> מערכת "Speedy Delivery" משמשת כפלטפורמה טכנולוגית עצמאית לקישור בין משתמשים לבין נותני שירות (שליחים), ואינה משמשת כמעסיק, חברת שליחויות מרכזית או צד לחוזה ההובלה בפועל.<br><br>
+        2. <strong>העדר יחסי עובד-מעביד:</strong> מוסכם בזאת במפורש כי בין מפעיל המערכת לבין השליח ו/או הלקוח לא מתקיימים ולא יתקיימו כל יחסי עובד-מעביד מכל מין וסוג שהוא. השליח פועל כקבלן עצמאי לחלוטין.<br><br>
+        3. <strong>אחריות בלעדית של השליח:</strong> השליח נושא באחריות המלאה, הבלעדית והאישית לכל נזק, אובדן, גניבה, קלקול או השחתה של הסחורה/המשלוח מרגע קבלתו ועד למסירתו ליעד. כמו כן, השליח אחראי בלעדית לציודו, לרכבו, ולעמידה בכל דיני התעבורה, הרישוי והביטוח כחוק.<br><br>
+        4. <strong>פטור מלא מאחריות למפעיל המערכת:</strong> מפעיל המערכת לא יישא בשום אחריות ישירה או עקיפה לכל נזק גוף, נזק רכוש, תאונת דרכים, איחור במסירה, קנסות, תביעות צד ג' או הוצאות מכל סוג שנגרמו עקב או בקשר עם ביצוע המשלוחים בפועל.<br><br>
+        5. <strong>שיפוי:</strong> השליח מתחייב לשפות ולפצות את מפעיל המערכת בגין כל דרישה, תביעה, הוצאה או נזק שיופנו כלפיו עקב פעילות השליח או הפרת תנאים אלו.
     </div>
 
     <form action="#" method="POST" onsubmit="event.preventDefault(); alert('הטופס נשמר בהצלחה!');">
@@ -71,7 +73,7 @@ def generate_html_contract_form():
         
         <div class="checkbox-group">
             <input type="checkbox" id="agree" required>
-            <label for="agree" style="display:inline; margin:0;">קראתי והבנתי את תנאי החוזה ואני מאשר אותם.</label>
+            <label for="agree" style="display:inline; margin:0;">קראתי בעיון, הבנתי ואני מאשר/ת ללא הסתייגות את תנאי החוזה, ההצהרה ופטור האחריות.</label>
         </div>
         
         <button type="submit">שמור ושלח חוזה התרשמות 🚀</button>
@@ -290,14 +292,15 @@ if not st.session_state.logged_in:
 elif st.session_state.role != "מנהל מערכת ראשי (Super Admin)" and not st.session_state.couriers_db.get(st.session_state.username, {}).get("contract_signed", False):
     st.title("📝 טופס התרשמות, רישום פרטים ותנאי שימוש במערכת")
     
-    # הצגת תוכן החוזה המלא ישירות במסך של השליח לפני האישור
+    # הצגת חוזה מורחב ומוגן משפטית במסך השליח
     st.markdown("""
-    <div style="background-color: #f9fafb; border: 1px solid #d1d5db; padding: 20px; border-radius: 8px; max-height: 220px; overflow-y: scroll; margin-bottom: 20px; line-height: 1.6;">
-        <strong>חוזה התקשרות ותנאי שימוש - Speedy Delivery:</strong><br>
-        1. <strong>מהות השימוש:</strong> פלטפורמה טכנולוגית זו נועדה לניהול, שיבוץ ומעקב אחר משלוחים.<br>
-        2. <strong>היעדר אחריות והעסקה ישירה:</strong> מפעיל המערכת אינו מעסיק את השליחים ואינו אחראים בשום אופן על אופן ביצוע המשלוחים בפועל, תנאי השכר או נזקים שעלולים להיגרם צד ג'.<br>
-        3. <strong>עצמאות השליח:</strong> השליח מצהיר כי הוא פועל כגורם עצמאי לחלוטין ונושא באחריות המלאה והבלעדית לכל פעילותו תחת פלטפורמה זו.<br>
-        4. <strong>שמירת פרטיות:</strong> המשתמש מתחייב למסור פרטים נכונים ומדויקים לצורך רישום והפעלת חשבונו במערכת.
+    <div style="background-color: #f9fafb; border: 1px solid #d1d5db; padding: 20px; border-radius: 8px; max-height: 250px; overflow-y: scroll; margin-bottom: 20px; line-height: 1.6; font-size: 14px;">
+        <strong>חוזה התקשרות, הצהרה ופטור מלא מאחריות - Speedy Delivery:</strong><br><br>
+        1. <strong>מהות הפלטפורמה:</strong> מערכת זו מהווה פלטפורמה טכנולוגית בלבד לניהול וסידור משלוחים, ואינה צד לחוזה ההובלה או מעסיקה של השליחים.<br><br>
+        2. <strong>העדר יחסי עובד-מעביד:</strong> מוסכם ומובהר בזאת במפורש כי לא מתקיימים יחסי עובד-מעביד בין מפעיל המערכת לבין השליח. השליח פועל כגורם עצמאי לחלוטין (קבלן עצמאי) הנושא באחריות לכל תשלום מס, ביטוח לאומי ותנאים סוציאליים של עצמו.<br><br>
+        3. <strong>אחריות בלעדית לסחורה ולפעילות:</strong> השליח אחראי באופן בלעדי וישיר לכל נזק, אובדן, חוסר או פגיעה במשלוח מרגע קבלתו ועד למסירתו המלאה ללקוח. מפעיל המערכת לא יישא בכל אחריות לנזקי סחורה.<br><br>
+        4. <strong>פטור גורף מאחריות לנזקי גוף ורכוש:</strong> מפעיל המערכת פטור באופן מלא ומחלט מכל אחריות בגין תאונות דרכים, נזקי גוף, נזקי רכוש, קנסות תנועה, עיכובים, או כל נזק אחר שעלול להיגרם לשליח או לצד ג' כלשהו במהלך או עקב ביצוע המשלוחים.<br><br>
+        5. <strong>שיפוי:</strong> השליח מתחייב לשפות את מפעיל המערכת מיד עם דרישה ראשונה בגין כל תביעה, דרישה, הוצאה או נזק שייגרמו למפעיל המערכת עקב פעילותו של השליח.
     </div>
     """, unsafe_allow_html=True)
 
@@ -308,7 +311,7 @@ elif st.session_state.role != "מנהל מערכת ראשי (Super Admin)" and n
         f_email = st.text_input("כתובת אימייל (חובה):")
         f_phone = st.text_input("מספר טלפון נייד (חובה):", value=st.session_state.couriers_db.get(st.session_state.username, {}).get("phone", ""))
         f_hp_or_exempt = st.text_input("מספר ח.פ / עוסק פטור (אופציונלי):")
-        agree_terms = st.checkbox("קראתי את החוזה בעיון, הבנתי ואני מאשר/ת את תנאי השימוש ופטור האחריות.")
+        agree_terms = st.checkbox("קראתי את החוזה בעיון רב, הבנתי ואני מאשר/ת ללא הסתייגות את תנאי השימוש, ההצהרה ופטור האחריות.")
         submit_contract = st.form_submit_button("אישור החוזה וסיום הרישום 🚀")
         if submit_contract:
             if agree_terms and f_full_name and f_id_num and f_address and f_email and f_phone:
@@ -463,7 +466,7 @@ elif st.session_state.role == "שליח":
         
     st.subheader("📍 עדכון המיקום הנוכחי שלך (GPS / נקודה אחרונה):")
     with st.form("update_my_location_form"):
-        my_current_location_input = st.text_input("הכנס כתובת נוכחית, יישוב או קישור מיקום:", placeholder="לדוגמה: כסרא-סמיע, ראשי / כביש ראשי")
+        my_current_location_input = st.text_input("הכנס כתובת נוכחית, יישוב או קישור מיקום:", placeholder="לדוגמה: כסרא-סמיע, כביש ראשי")
         submit_loc = st.form_submit_button("עדכן מיקום אחרון במערכת 📍")
         if submit_loc and my_current_location_input:
             save_location_data(st.session_state.username, my_current_location_input)
