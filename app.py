@@ -4,6 +4,14 @@ from datetime import datetime, timezone, timedelta
 import pandas as pd
 import os
 import json
+from io import BytesIO
+
+# נסה לייבא את ספריית python-docx ליצירת קבצי Word
+try:
+    from docx import Document
+    DOCX_AVAILABLE = True
+except ImportError:
+    DOCX_AVAILABLE = False
 
 # הגדרת שעון ישראל (UTC+2 / UTC+3)
 ISRAEL_OFFSET = timedelta(hours=2)
@@ -26,6 +34,39 @@ def format_whatsapp_phone(phone_str):
     elif not clean_phone.startswith("972") and len(clean_phone) > 0:
         clean_phone = "972" + clean_phone
     return clean_phone
+
+def generate_word_contract(full_name, id_num, address, email, phone, hp_exempt, reg_date):
+    """
+    יוצר קובץ Word רשמי עם פרטי המשתמש והחוזה
+    """
+    if not DOCX_AVAILABLE:
+        return None
+        
+    doc = Document()
+    doc.add_heading('הסכם שימוש במערכת ופטור מאחריות (Speed Delivery)', 0)
+    
+    doc.add_paragraph(f"תאריך הפקה/רישום: {reg_date}")
+    
+    doc.add_heading('פרטי נרשם:', level=2)
+    doc.add_paragraph(f"שם מלא: {full_name}")
+    doc.add_paragraph(f"תעודת זהות: {id_num}")
+    doc.add_paragraph(f"כתובת: {address}")
+    doc.add_paragraph(f"אימייל: {email}")
+    doc.add_paragraph(f"טלפון: {phone}")
+    doc.add_paragraph(f"ח.פ / עוסק פטור: {hp_exempt}")
+    
+    doc.add_heading('תנאי ההסכם:', level=2)
+    doc.add_paragraph("1. מהות השימוש: המערכת משמשת כפלטפורמה טכנולוגית בלבד לחיבור וניהול משלוחים. השליח או משתמש המערכת עושים שימוש באפליקציה על דעת עצמם בלבד.")
+    doc.add_paragraph("2. היעדר אחריות תפעולית: מפעיל המערכת ו/או בעליה אינם אחראים בשום אופן על ביצוע המשלוחים בפועל, על תנאי העסקת השליחים, או על כל נזק, עיכוב, אובדן או תקלות הקשורות למשלוחים עצמם. השליחים אינם עובדים אצל מפעיל המערכת והשליחות אינה באחריותו.")
+    doc.add_paragraph("3. מעמד השליח: השליח פועל כגורם עצמאי לחלוטין ונושא באחריות המלאה והבלעדית לביצוע המשלוחים ולעמידתו בכל דין.")
+    doc.add_paragraph("4. עמלות ותשלומים: כל התחשבנות או עמלה בגין שימוש במערכת או פעילות תפעולית מתבצעת באחריות הצדדים המבצעים בלבד.")
+    
+    doc.add_paragraph("\n\nחתימה / אישור דיגיטלי: מאושר על ידי המשתמש במערכת.")
+    
+    file_stream = BytesIO()
+    doc.save(file_stream)
+    file_stream.seek(0)
+    return file_stream
 
 # הגדרת עיצוב הדף (כיוון מימין לשמאל כברירת מחדל)
 st.set_page_config(page_title="Speedy Delivery - מערכת ניהול משלוחים", page_icon="🚚", layout="wide")
@@ -334,7 +375,7 @@ elif st.session_state.role != "מנהל מערכת ראשי (Super Admin)" and n
         st.markdown("""
         ### הסכם שימוש במערכת ופטור מאחריות (Speed Delivery)
         1. **מהות השימוש:** המערכת משמשת כפלטפורמה טכנולוגית בלבד לחיבור וניהול משלוחים. השליח או משתמש המערכת עושים שימוש באפליקציה על דעת עצמם בלבד.
-        2. **היעדר אחריות תפעולית:** מפעיל המערכת ו/או בעליה **אינם אחראים** בשום אופן על ביצוע המשלוחים בפועל, על תנאי העסקת השליחים, או על כל נזק, עיכוב, אובדן أو تקלות הקשורות למשלוחים עצמם. השליחים אינם עובדים אצל מפעיל המערכת והשליחות אינה באחריותו.
+        2. **היעדר אחריות תפעולית:** מפעיל המערכת ו/או בעליה **אינם אחראים** בשום אופן על ביצוע המשלוחים בפועל, על תנאי העסקת השליחים, או על כל נזק, עיכוב, אובדן או תקלות הקשורות למשלוחים עצמם. השליחים אינם עובדים אצל מפעיל המערכת והשליחות אינה באחריותו.
         3. **מעמד השליח:** השליח פועל כגורם עצמאי לחלוטין ונושא באחריות המלאה והבלעדית לביצוע המשלוחים ולעמידתו בכל דין.
         4. **עמלות ותשלומים:** כל התחשבנות או עמלה בגין שימוש במערכת או פעילות תפעולית מתבצעת באחריות הצדדים המבצעים בלבד.
         """)
@@ -348,7 +389,7 @@ elif st.session_state.role != "מנהל מערכת ראשי (Super Admin)" and n
         f_phone = st.text_input("מספר טלפון נייד (חובה):", value=st.session_state.couriers_db.get(st.session_state.username, {}).get("phone", ""))
         
         st.divider()
-        f_hp_or_exempt = st.text_input("מספר ח.פ למורשים / עוסק פטור (רשות - במידה وאין, ניתן להשאיר ריק):")
+        f_hp_or_exempt = st.text_input("מספר ח.פ למורשים / עוסק פטור (רשות - במידה ואין, ניתן להשאיר ריק):")
         
         agree_terms = st.checkbox("אני מאשר/ת קראתי את תנאי החוזה והפטור מאחריות, ואני מסכים/ה לכך שהשימוש הוא טכנולוגי בלבד ואינו יוצר יחסי עובד-מעביד או אחריות על הביצוע.")
         
@@ -591,6 +632,26 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                 st.write(f"**ח.פ / עוסק פטור:** {info.get('hp_exempt', 'אין')}")
                 st.write(f"**תאריך רישום:** {info.get('registration_date', 'לא זמין')}")
                 
+                # אפשרות להוריד חוזה Word עבור כל משתמש רשום
+                if DOCX_AVAILABLE and info.get('contract_signed'):
+                    docx_file = generate_word_contract(
+                        info.get('full_name', ''),
+                        info.get('id_number', ''),
+                        info.get('address', ''),
+                        info.get('email', ''),
+                        info.get('phone', ''),
+                        info.get('hp_exempt', 'אין'),
+                        info.get('registration_date', '')
+                    )
+                    if docx_file:
+                        st.download_button(
+                            label=f"📥 הורד חוזה Word עבור {usr}",
+                            data=docx_file,
+                            file_name=f"contract_{usr}.docx",
+                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                            key=f"download_word_{usr}"
+                        )
+                
                 with st.form(f"edit_user_{usr}"):
                     new_pass = st.text_input("עדכן סיסמה חדשה:", value=info.get("password", ""))
                     new_ph = st.text_input("עדכן טלפון:", value=info.get("phone", ""))
@@ -707,7 +768,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
                 
                 new_notes = st.text_area(t["notes"])
                 
-                company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role") == "שליח"]
+                company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role"] == "שליח")
                 assigned_courier = st.selectbox("שייך לשליח מהחברה:", ["טרם שויך (Admin/כללי)"] + company_couriers)
                 
                 submit_comp_del = st.form_submit_button(t["save_del"])
@@ -783,7 +844,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
 
         st.divider()
         st.subheader("רשימת שליחי החברה הפעילים:")
-        company_couriers_list = {usr: info for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role") == "שליח"}
+        company_couriers_list = {usr: info for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role"] == "שליח"}
         if not company_couriers_list:
             st.info("אין עדיין שליחים רשומים תחת החברה שלך.")
         else:
@@ -811,6 +872,27 @@ elif st.session_state.role == "שליח":
         
     st.markdown(f"### {t['current_loc']}")
     courier_start_loc = st.text_input(t["loc_placeholder"], value="כסרא-סמיע")
+    
+    # אפשרות לשליח עצמו להוריד את החוזה שלו כקובץ Word אם חתם עליו
+    user_info = st.session_state.couriers_db.get(st.session_state.username, {})
+    if DOCX_AVAILABLE and user_info.get("contract_signed"):
+        with st.expander("📄 הורדת החוזה האישי שלי כקובץ Word"):
+            docx_file = generate_word_contract(
+                user_info.get('full_name', ''),
+                user_info.get('id_number', ''),
+                user_info.get('address', ''),
+                user_info.get('email', ''),
+                user_info.get('phone', ''),
+                user_info.get('hp_exempt', 'אין'),
+                user_info.get('registration_date', '')
+            )
+            if docx_file:
+                st.download_button(
+                    label="📥 לחץ להורדת החוזה שלי (.docx)",
+                    data=docx_file,
+                    file_name=f"my_contract_{st.session_state.username}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                )
     
     courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username or d.get("company") == st.session_state.company]
     
