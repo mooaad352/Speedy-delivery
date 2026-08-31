@@ -101,7 +101,7 @@ TRANSLATIONS = {
         "username": "שם משתמש",
         "password": "סיסמה",
         "login_btn": "התחבר למערכת",
-        "login_error": "שם משתמש או סיסמה שגויים. השתמש ב- Admin / Sma.srablove2028",
+        "login_error": "שם משתמש או סיסמה שגויים.",
         "logout": "התנתק (Logout)",
         "admin_menu": "תפריט ניהול ראשי",
         "main_sys": "מערכת משלוחים ראשית",
@@ -247,7 +247,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", couriers_list if couriers_list else ["אין שליחים"])
         
-        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]] if couriers_list else []
+        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]] if couriers_list else []
         
         if not courier_deliveries:
             st.info("אין משלוחים פעילים לשליח זה.")
@@ -305,7 +305,6 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                         st.success("✅ המסלול הידני עודכן ונשמר בהצלחה!")
                         st.rerun()
 
-            # הצגת המסלול הנוכחי בפועל
             st.divider()
             st.markdown("### 📋 רשימת התחנות הסופית לשליח:")
             active_saved_route = st.session_state.saved_routes.get(selected_courier_route, courier_deliveries)
@@ -328,7 +327,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             d_floor = st.text_input("קומה:")
             d_city = st.text_input("עיר / יישוב:")
             d_notes = st.text_area("הערות:")
-            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
+            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
             assigned_courier = st.selectbox("שיוך שליח:", couriers_list if couriers_list else ["אין שליחים"])
             
             if st.form_submit_button("הוסף משלוח למערכת 🚀") and d_client and d_phone and d_city:
@@ -398,7 +397,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         
         report_data = []
         for c in all_couriers:
-            delivered_by_courier = len([d for d in st.session_state.deliveries if d.get("courier") == c and d.get("status"] == "נמסר"])
+            delivered_by_courier = len([d for d in st.session_state.deliveries if d.get("courier") == c and d.get("status") == "נמסר"])
             fee_total = delivered_by_courier * 1.00
             report_data.append({
                 "שם שליח/משתמש": c,
@@ -506,7 +505,7 @@ else:
 
         elif courier_menu == "🗺️ סידור מסלול אישי":
             st.title("🗺️ סידור מסלול משלוחים אישי לשליח")
-            active_my_deliveries = [d for d in my_deliveries if d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
+            active_my_deliveries = [d for d in my_deliveries if d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
             
             if not active_my_deliveries:
                 st.info("אין לך משלוחים פעילים לסידור מסלול.")
