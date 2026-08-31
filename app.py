@@ -8,6 +8,7 @@ import json
 # הגדרת שעון ישראל (UTC+2 / UTC+3)
 ISRAEL_OFFSET = timedelta(hours=2)
 ADMIN_PHONE = "972502616375"  # מספר הטלפון שלך כמנהל המערכת הראשי
+APP_URL = "https://speedy-delivery-app.streamlit.app/"  # כתובת האפליקציה שלך ברשת
 
 def get_israel_time():
     return datetime.now(timezone(ISRAEL_OFFSET)).strftime("%Y-%m-%d %H:%M")
@@ -45,7 +46,6 @@ def load_users_db():
                 return json.load(f)
         except Exception:
             pass
-    # ברירת מחדל ראשונית אם הקובץ לא קיים
     default_users = {
         "Admin": {"password": "Sma.srablove2028", "role": "מנהל מערכת ראשי (Super Admin)", "phone": ADMIN_PHONE, "company": "System", "contract_signed": True},
         "mohammad": {"password": "123", "role": "שליח", "phone": "972502616375", "company": "Independent", "contract_signed": True}
@@ -269,7 +269,6 @@ if "logged_in" not in st.session_state:
         st.session_state.role = ""
         st.session_state.company = ""
 
-# מאגר משלוחים במערכת
 if "deliveries" not in st.session_state:
     current_time_il = get_israel_time()
     st.session_state.deliveries = [
@@ -386,7 +385,7 @@ elif st.session_state.role != "מנהל מערכת ראשי (Super Admin)" and n
                 st.success("הפרטים נשמרו בהצלחה אצל המנהל! מעביר אותך למערכת...")
                 st.rerun()
             else:
-                st.error("נא למלא את כל שדות החובה (שם מלא, ת.ז, כתובת, אימייל וטלפון) ולוודא שסימנת וי על אישור תנאי השימוש.")
+                st.error("נא למלא את כל שדות החובה ולוודא שסימנת וי על אישור תנאי השימוש.")
 
     if st.sidebar.button(t["logout"]):
         logout_user()
@@ -506,7 +505,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                         whatsapp_link = f"https://wa.me/{phone_clean}?text={urllib.parse.quote(wa_text)}"
                         st.markdown(f"[{t['whatsapp_btn']}]({whatsapp_link})", unsafe_allow_html=True)
 
-    # 2. הוספת מנהל חברת משלוחים
+    # 2. הוספת מנהל חברת משלוחים + שליחת וואטסאפ אוטומטית
     elif admin_menu == t["add_company_admin"]:
         st.title(t["add_company_admin"])
         with st.form("add_comp_admin_form"):
@@ -517,7 +516,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             
             submit_comp = st.form_submit_button("הוסף מנהל חברה חדש")
             if submit_comp:
-                if new_comp_username and new_comp_password and new_comp_name:
+                if new_comp_username and new_comp_password and new_comp_name and new_comp_phone:
                     if new_comp_username in st.session_state.couriers_db:
                         st.error("שם המשתמש כבר קיים במערכת!")
                     else:
@@ -531,10 +530,15 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                         }
                         save_users_db(st.session_state.couriers_db)
                         st.success(f"מנהל החברה '{new_comp_username}' נוסף בהצלחה!")
+                        
+                        # יצירת קישור וואטסאפ לשליחת פרטי הכניסה למנהל החדש
+                        welcome_msg = f"שלום {new_comp_username}, נוספת כמנהל חברת משלוחים ({new_comp_name}) במערכת Speed Delivery.\n\n🔗 קישור לכניסה: {APP_URL}\n👤 שם משתמש: {new_comp_username}\n🔑 סיסמה: {new_comp_password}\n\nנא להיכנס, למלא את פרטיך ולאשר את החוזה."
+                        wa_url = f"https://wa.me/{formatted_phone}?text={urllib.parse.quote(welcome_msg)}"
+                        st.markdown(f"### 📲 [לחץ כאן לשליחת פרטי הגישה וקישור הכניסה למנהל בוואטסאפ]({wa_url})", unsafe_allow_html=True)
                 else:
                     st.warning("נא למלא את כל השדות החובה.")
 
-    # 3. הוספת שליח חדש
+    # 3. הוספת שליח חדש + שליחת וואטסאפ אוטומטית
     elif admin_menu == t["add_courier"]:
         st.title(t["add_courier"])
         with st.form("add_courier_form"):
@@ -549,7 +553,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             
             submit_courier = st.form_submit_button("הוסף שליח חדש")
             if submit_courier:
-                if c_username and c_password:
+                if c_username and c_password and c_phone:
                     if c_username in st.session_state.couriers_db:
                         st.error("שם המשתמש כבר קיים!")
                     else:
@@ -563,8 +567,13 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                         }
                         save_users_db(st.session_state.couriers_db)
                         st.success(f"השליח '{c_username}' נוסף בהצלחה!")
+                        
+                        # יצירת קישור וואטסאפ לשליחת פרטי הכניסה לשליח החדש
+                        welcome_msg = f"שלום {c_username}, נוספת כשליח במערכת Speed Delivery.\n\n🔗 קישור לכניסה: {APP_URL}\n👤 שם משתמש: {c_username}\n🔑 סיסמה: {c_password}\n\nנא להיכנס, למלא את פרטיך ולאשר את החוזה כדי להתחיל בעבודה."
+                        wa_url = f"https://wa.me/{formatted_phone}?text={urllib.parse.quote(welcome_msg)}"
+                        st.markdown(f"### 📲 [לחץ כאן לשליחת פרטי הגישה וקישור הכניסה לשליח בוואטסאפ]({wa_url})", unsafe_allow_html=True)
                 else:
-                    st.warning("נא למלא שם משתמש וסיסמה.")
+                    st.warning("נא למלא את כל השדות החובה.")
 
     # 4. ניהול ועריכת משתמשים קיימים
     elif admin_menu == t["manage_users"]:
@@ -634,7 +643,6 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             if role == "מנהל חברה (Company Admin)":
                 comp_deliveries = [d for d in st.session_state.deliveries if d.get("company") == comp_name]
             else:
-                # === שורה 828 המתוקנת כאן עם סוגריים עגולים ( ) בדרישה ל- .get() ===
                 comp_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == usr or d.get("company") == usr]
 
             count_del = len(comp_deliveries)
@@ -700,7 +708,6 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
                 
                 new_notes = st.text_area(t["notes"])
                 
-                # בחירת שליח ששייך לחברה הזו בלבד
                 company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role") == "שליח"]
                 assigned_courier = st.selectbox("שייך לשליח מהחברה:", ["טרם שויך (Admin/כללי)"] + company_couriers)
                 
@@ -754,7 +761,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
             
             submit_cc = st.form_submit_button("הוסף שליח לחברה שלי")
             if submit_cc:
-                if cc_username and cc_password:
+                if cc_username and cc_password and cc_phone:
                     if cc_username in st.session_state.couriers_db:
                         st.error("שם המשתמש כבר קיים במערכת!")
                     else:
@@ -768,8 +775,12 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
                         }
                         save_users_db(st.session_state.couriers_db)
                         st.success(f"השליח '{cc_username}' נוסף בהצלחה לחברה שלך!")
+                        
+                        welcome_msg = f"שלום {cc_username}, נוספת כשליח תחת חברת {company_name} במערכת Speed Delivery.\n\n🔗 קישור לכניסה: {APP_URL}\n👤 שם משתמש: {cc_username}\n🔑 סיסמה: {cc_password}\n\nנא להיכנס, למלא את פרטיך ולאשר את החוזה."
+                        wa_url = f"https://wa.me/{formatted_phone}?text={urllib.parse.quote(welcome_msg)}"
+                        st.markdown(f"### 📲 [לחץ כאן לשליחת פרטי הגישה וקישור הכניסה לשליח בוואטסאפ]({wa_url})", unsafe_allow_html=True)
                 else:
-                    st.warning("נא למלא שם משתמש וסיסמה.")
+                    st.warning("נא למלא את כל השדות.")
 
         st.divider()
         st.subheader("רשימת שליחי החברה הפעילים:")
