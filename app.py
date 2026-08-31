@@ -618,7 +618,7 @@ else:
     st.write(f"הנך מחובר כחלק מ-{st.session_state.company}")
     
     st.subheader(t["list_title"])
-    filtered_deliveries = [d for d in st.session_state.deliveries if st.session_state.role == "מנהל מערכת ראשי (Super Admin)" or d.get("company") == st.session_state.company or d.get("courier"] == st.session_state.username]
+    filtered_deliveries = [d for d in st.session_state.deliveries if st.session_state.role == "מנהל מערכת ראשי (Super Admin)" or d.get("company") == st.session_state.company or d.get("courier") == st.session_state.username]
     
     if not filtered_deliveries:
         st.info(t["no_deliveries"])
