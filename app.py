@@ -8,7 +8,6 @@ from io import BytesIO
 
 ISRAEL_OFFSET = timedelta(hours=2)
 ADMIN_PHONE = "972502616375"
-APP_URL = "https://speedy-delivery-app.streamlit.app/"
 VAT_RATE = 0.18  # מע"מ 18%
 
 def get_israel_time():
@@ -188,12 +187,9 @@ TRANSLATIONS = {
         "contract_menu": "📝 פנקס נרשמים וחוזים שמורים",
         "live_tracking": "📍 מעקב מיקום שליחים בזמן אמת",
         "verify_rejected": "🔍 אימות משלוחים שסורבו מול לקוחות",
-        "list_title": "📋 רשימת המשלוחים",
         "whatsapp_btn": "📲 שלח וואטסאפ ללקוח",
         "waze_btn": "🧭 נווט ב-Waze",
         "mark_delivered": "סמן כנמסר",
-        "postpone_delivery": "סמן שנדחה למחר על ידי הלקוח",
-        "mark_rejected": "סורב על ידי הלקוח ❌",
         "delivered_success": "הסטטוס עודכן בהצלחה!"
     },
     "العربية (Arabic)": {
@@ -214,12 +210,9 @@ TRANSLATIONS = {
         "contract_menu": "📝 سجل العقود والبيانات المسجلة",
         "live_tracking": "📍 متابعة مواقع الشليחים (GPS)",
         "verify_rejected": "🔍 التحقق من الشحنات المرفوضة مع العملاء",
-        "list_title": "📋 قائمة الشحنات",
         "whatsapp_btn": "📲 إرسال واتساب",
         "waze_btn": "🧭 التنقل عبر Waze",
         "mark_delivered": "تحديد كـ تم التسليم",
-        "postpone_delivery": "تأجيل ليوم غد بناءً على طلب العميل",
-        "mark_rejected": "رفض من قبل العميل ❌",
         "delivered_success": "تم تحديث الحالة بنجاح!"
     }
 }
@@ -393,7 +386,7 @@ elif str_lit.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         with str_lit.form("add_delivery_form"):
             d_barcode = str_lit.text_input("ברקוד משלוח / מספר מעקב (QR):", value=f"DEL-{int(datetime.now().timestamp())}")
             d_client = str_lit.text_input("שם הלקוח:")
-            d_company = str_lit.text_input("שם חברה / מותג ששולח (למשל: SHIN):")
+            d_company = str_lit.text_input("שם חברה / מותג ששולח (למשל: SHEIN):")
             d_phone = str_lit.text_input("טלפון הלקוח:")
             d_address = str_lit.text_input("כתובת מלאה:")
             d_city = str_lit.text_input("עיר / יישוב:")
@@ -538,7 +531,7 @@ elif str_lit.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         str_lit.title("🔍 אימות משלוחים שסורבו מול לקוחות (בקרת מנהל ראשי)")
         str_lit.write("כאן תוכל לצפות בכל המשלוחים שדווחו כ'סורב על ידי הלקוח' על ידי השליחים או מנהלי החברות, ולבדוק ישירות מול הלקוח בטלפון או בוואטסאפ.")
         
-        rejected_deliveries = [d for d in str_lit.session_state.deliveries if d.get("status") == "סורב על ידי הלקוח"]
+        rejected_deliveries = [d for d in str_lit.session_state.deliveries if d.get("status"] == "סורב על ידי הלקוח"]
         
         if not rejected_deliveries:
             str_lit.info("אין כרגע משלוחים שסומנו כסורבו על ידי הלקוחות.")
@@ -569,7 +562,7 @@ elif str_lit.session_state.role == "מנהל חברה (Company Admin)":
     str_lit.title(f"🏢 מנהל חברה: {company_name}")
     if str_lit.sidebar.button(t["logout"]):
         logout_user()
-    comp_menu = str_lit.sidebar.radio("תפריט", ["📦 משלוחי חברה", "➕ הוספת משלוח לחברה", "📍 מעקב מיקום שליחי החברה"])
+    comp_menu = str_lit.sidebar.radio("תפריט", ["📦 משלוחי חברה", "➕ הוספת משלוח לחברה", "📍 עדכון ומעקב מיקום שליחי החברה"])
     
     if comp_menu == "📦 משלוחי חברה":
         str_lit.subheader("משלוחים פעילים לחברה שלך:")
@@ -615,12 +608,24 @@ elif str_lit.session_state.role == "מנהל חברה (Company Admin)":
                 str_lit.session_state.deliveries.append(new_item)
                 str_lit.success("המשלוח נוסף בהצלחה!")
 
-    elif comp_menu == "📍 מעקב מיקום שליחי החברה":
-        str_lit.subheader("מעקב מיקום שליחים:")
+    elif comp_menu == "📍 עדכון ומעקב מיקום שליחי החברה":
+        str_lit.subheader("עדכון מיקום חדש לשליח ומעקב:")
+        with str_lit.form("comp_update_loc_form"):
+            couriers_in_comp = [u for u, i in str_lit.session_state.couriers_db.items() if i.get("company") == company_name or i.get("role") == "שליח"]
+            selected_courier_to_update = str_lit.selectbox("בחר שליח לעדכון מיקומו:", couriers_in_comp if couriers_in_comp else ["אין שליחים"])
+            new_loc_text = str_lit.text_input("הכנס מיקום נוכחי של השליח (למשל: כסרא-סמיע, רחוב ראשי):")
+            if str_lit.form_submit_button("עדכן מיקום שליח 📍") and new_loc_text and selected_courier_to_update != "אין שליחים":
+                save_location_data(selected_courier_to_update, new_loc_text)
+                str_lit.success(f"המיקום של השליח {selected_courier_to_update} עודכן בהצלחה!")
+
+        str_lit.divider()
+        str_lit.subheader("📍 המיקומים האחרונים של שליחי החברה:")
         locs = load_locations_db()
         if locs:
             for usr, data in locs.items():
-                str_lit.info(f"🛵 **שליח:** {usr} | 📍 **מיקום:** {data['location']} | ⏰ **עודכן:** {data['updated_at']}")
+                u_info = str_lit.session_state.couriers_db.get(usr, {})
+                if u_info.get("company") == company_name or company_name == "System":
+                    str_lit.info(f"🛵 **שליח:** {usr} | 📍 **מיקום:** {data['location']} | ⏰ **עודכן:** {data['updated_at']}")
         else:
             str_lit.info("אין מיקומים זמינים כרגע.")
 
@@ -629,15 +634,7 @@ else:
     str_lit.title(f"🛵 אזור אישי - שליח: {curr_user}")
     if str_lit.sidebar.button(t["logout"]):
         logout_user()
-    
-    str_lit.subheader("📍 עדכון מיקום חי (GPS)")
-    with str_lit.form("courier_loc_form"):
-        loc_input = str_lit.text_input("הכנס מיקום נוכחי (למשל: כסרא-סמיע, רחוב ראשי):")
-        if str_lit.form_submit_button("עדכן מיקום 📍") and loc_input:
-            save_location_data(curr_user, loc_input)
-            str_lit.success("המיקום עודכן בהצלחה במערכת!")
 
-    str_lit.divider()
     str_lit.subheader("📦 המשלוחים שלך לביצוע:")
     courier_deliveries = [d for d in str_lit.session_state.deliveries if d.get("courier") == curr_user or d.get("company") == str_lit.session_state.company]
     
