@@ -6,28 +6,20 @@ import os
 import json
 from io import BytesIO
 
-# נסה לייבא את ספריית python-docx ליצירת קבצי Word
 try:
     from docx import Document
     DOCX_AVAILABLE = True
 except ImportError:
     DOCX_AVAILABLE = False
 
-# הגדרת שעון ישראל (UTC+2 / UTC+3)
 ISRAEL_OFFSET = timedelta(hours=2)
-ADMIN_PHONE = "972502616375"  # מספר הטלפון שלך כמנהל המערכת הראשי
-APP_URL = "https://speedy-delivery-app.streamlit.app/"  # כתובת האפליקציה שלך ברשת
+ADMIN_PHONE = "972502616375"
+APP_URL = "https://speedy-delivery-app.streamlit.app/"
 
 def get_israel_time():
     return datetime.now(timezone(ISRAEL_OFFSET)).strftime("%Y-%m-%d %H:%M")
 
-def get_current_date():
-    return datetime.now(timezone(ISRAEL_OFFSET))
-
 def format_whatsapp_phone(phone_str):
-    """
-    מנקה את מספר הטלפון ומוודא שהוא מתחיל בקידומת הבינלאומית 972
-    """
     clean_phone = "".join(filter(str.isdigit, str(phone_str)))
     if clean_phone.startswith("0"):
         clean_phone = "972" + clean_phone[1:]
@@ -35,75 +27,54 @@ def format_whatsapp_phone(phone_str):
         clean_phone = "972" + clean_phone
     return clean_phone
 
-def generate_word_contract(full_name, id_num, address, email, phone, hp_exempt, reg_date):
+def generate_html_contract_form():
     """
-    יוצר קובץ Word רשמי ומסודר עם פרטי הנרשם והחוזה
-    """
-    if not DOCX_AVAILABLE:
-        return None
-        
-    doc = Document()
-    
-    # כותרת ראשית מעוצבת
-    p_title = doc.add_paragraph()
-    run_title = p_title.add_run('הסכם שימוש במערכת ופטור מאחריות (Speed Delivery)')
-    run_title.bold = True
-    run_title.font.size = 16
-    
-    doc.add_paragraph(f"תאריך הפקה/רישום: {reg_date}")
-    doc.add_heading('פרטי נרשם:', level=2)
-    
-    doc.add_paragraph(f"• שם מלא: {full_name}")
-    doc.add_paragraph(f"• תעודת זהות: {id_num}")
-    doc.add_paragraph(f"• כתובת: {address}")
-    doc.add_paragraph(f"• אימייל: {email}")
-    doc.add_paragraph(f"• טלפון: {phone}")
-    doc.add_paragraph(f"• ח.פ / עוסק פטור: {hp_exempt}")
-    
-    doc.add_heading('תנאי ההסכם:', level=2)
-    doc.add_paragraph("1. מהות השימוש: המערכת משמשת כפלטפורמה טכנולוגית בלבד לחיבור וניהול משלוחים. השליח או משתמש המערכת עושים שימוש באפליקציה על דעת עצמם בלבד.")
-    doc.add_paragraph("2. היעדר אחריות תפעולית: מפעיל המערכת ו/או בעליה אינם אחראים בשום אופן על ביצוע המשלוחים בפועל, על תנאי העסקת השליחים, או על כל נזק, עיכוב, אובדן או תקלות הקשורות למשלוחים עצמם.")
-    doc.add_paragraph("3. מעמד השליח: השליח פועל כגורם עצמאי לחלוטין ונושא באחריות המלאה והבלעדית לביצוע המשלוחים ולעמידתו בכל דין.")
-    
-    doc.add_paragraph("\n\nאישור דיגיטלי: מסמך זה הופק אוטומטית ואושר על ידי המשתמש במערכת.")
-    
-    file_stream = BytesIO()
-    doc.save(file_stream)
-    file_stream.seek(0)
-    return file_stream
-
-def generate_html_form_file():
-    """
-    יוצר קובץ HTML מעוצב לטופס הוספת משלוחים
+    יוצר קובץ HTML מעוצב לטופס ההתרשמות והחוזה של השליח/המשתמש
     """
     html_content = """<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Speedy Delivery - טופס ניהול והוספת משלוח</title>
+    <title>Speedy Delivery - טופס התרשמות וחוזה התקשרות</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; direction: rtl; text-align: right; }
-        .container { max-width: 700px; margin: 40px auto; background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
+        body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; direction: rtl; text-align: right; color: #333; }
+        .container { max-width: 750px; margin: 30px auto; background: #ffffff; padding: 35px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
         h2 { color: #1f2937; text-align: center; margin-bottom: 25px; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: bold; color: #374151; }
-        input[type="text"], input[type="tel"], textarea, select { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; font-size: 16px; background-color: #f9fafb; }
-        button { background-color: #2563eb; color: white; padding: 14px 20px; border: none; border-radius: 6px; cursor: pointer; width: 100%; font-size: 18px; font-weight: bold; }
+        .contract-box { background: #f9fafb; border: 1px solid #d1d5db; padding: 15px; border-radius: 6px; height: 180px; overflow-y: scroll; font-size: 14px; margin-bottom: 20px; line-height: 1.6; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 6px; font-weight: bold; color: #374151; }
+        input[type="text"], input[type="tel"], input[type="email"] { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; font-size: 15px; background-color: #f9fafb; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 20px 0; font-weight: bold; }
+        button { background-color: #2563eb; color: white; padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
         button:hover { background-color: #1d4ed8; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h2>🚚 Speedy Delivery - טופס הוספת משלוח</h2>
-    <form action="#" method="POST" onsubmit="event.preventDefault(); alert('הנתונים נקלטו בטופס בהצלחה!');">
-        <div class="form-group"><label>מספר מעקב / ברקוד:</label><input type="text" value="DEL-102" required></div>
-        <div class="form-group"><label>שם החברה:</label><input type="text" placeholder="לדוגמה: SHEIN" required></div>
-        <div class="form-group"><label>שם הלקוח:</label><input type="text" required></div>
-        <div class="form-group"><label>טלפון הלקוח:</label><input type="tel" required></div>
-        <div class="form-group"><label>ישוב / כפר:</label><input type="text" required></div>
-        <div class="form-group"><label>הערות:</label><textarea></textarea></div>
-        <button type="submit">שמור משלוח במערכת 🚀</button>
+    <h2>📝 טופס התרשמות וחוזה התקשרות - Speedy Delivery</h2>
+    
+    <div class="contract-box">
+        <strong>תנאי שימוש ופטור מאחריות:</strong><br>
+        1. מהות השימוש: המערכת משמשת פלטפורמה טכנולוגית בלבד לניהול משלוחים.<br>
+        2. היעדר אחריות: מפעיל המערכת אינו אחראים בשום אופן על ביצוע המשלוחים בפועל, תנאי ההעסקה או נזקים.<br>
+        3. עצמאות השליח: השליח פועל כגורם עצמאי ונושא באחריות המלאה והבלעדית לפעילותו.
+    </div>
+
+    <form action="#" method="POST" onsubmit="event.preventDefault(); alert('הטופס נשמר בהצלחה!');">
+        <div class="form-group"><label>שם מלא:</label><input type="text" required></div>
+        <div class="form-group"><label>תעודת זהות:</label><input type="text" required></div>
+        <div class="form-group"><label>כתובת מלאה:</label><input type="text" required></div>
+        <div class="form-group"><label>כתובת אימייל:</label><input type="email" required></div>
+        <div class="form-group"><label>מספר טלפון נייד:</label><input type="tel" required></div>
+        <div class="form-group"><label>ח.פ / עוסק פטור (אופציונלי):</label><input type="text"></div>
+        
+        <div class="checkbox-group">
+            <input type="checkbox" id="agree" required>
+            <label for="agree" style="display:inline; margin:0;">קראתי והבנתי את תנאי החוזה ואני מאשר אותם.</label>
+        </div>
+        
+        <button type="submit">שמור ושלח חוזה התרשמות 🚀</button>
     </form>
 </div>
 </body>
@@ -112,7 +83,6 @@ def generate_html_form_file():
     file_stream.seek(0)
     return file_stream
 
-# הגדרת עיצוב הדף
 st.set_page_config(page_title="Speedy Delivery - מערכת ניהול משלוחים", page_icon="🚚", layout="wide")
 
 CONTRACTS_FILE = "delivery_drivers_contracts.csv"
@@ -172,7 +142,6 @@ def delete_contract_by_index(idx):
         df = df.drop(idx).reset_index(drop=True)
         df.to_csv(CONTRACTS_FILE, index=False, encoding="utf-8-sig")
 
-# --- תרגומים למערכת ---
 TRANSLATIONS = {
     "العربية (Arabic)": {
         "title": "🚚 نظام إدارة وتوصيل الشحنات السريع",
@@ -192,13 +161,10 @@ TRANSLATIONS = {
         "live_tracking": "📍 متابعة مواقع الشליחים (GPS)",
         "current_loc": "📍 موقعك الحالي / نقطة الانطلاق",
         "loc_placeholder": "أدخل موقعك الحالي (بلدة / مدينة):",
-        "active_deliveries": "لديك حالياً",
-        "active_deliveries_end": "شحنات نشطة.",
         "list_title": "📋 قائمة الشحنات",
         "whatsapp_btn": "📲 إرسال واتساب",
         "mark_delivered": "تحديد كـ تم التسليم",
-        "delivered_success": "تم تحديث الشحنة!",
-        "language": "🌐 اللغة"
+        "delivered_success": "تم تحديث الشحنة!"
     },
     "עברית (Hebrew)": {
         "title": "🚚 מערכת ניהול וסידור משלוחים מהירה",
@@ -218,13 +184,10 @@ TRANSLATIONS = {
         "live_tracking": "📍 מעקב מיקום שליחים בזמן אמת",
         "current_loc": "📍 מיקום נוכחי ונקודת מוצא",
         "loc_placeholder": "הכנס את המיקום הנוכחי שלך (עיר / כפר):",
-        "active_deliveries": "יש לך כרגע",
-        "active_deliveries_end": "משלוחים פעילים להיום.",
         "list_title": "📋 רשימת המשלוחים להיום",
         "whatsapp_btn": "📲 שלח וואטסאפ ללקוח",
         "mark_delivered": "סמן כנמסר",
-        "delivered_success": "המשלוח עודכן כנמסר!",
-        "language": "🌐 שפת אפליקציה"
+        "delivered_success": "המשלוח עודכן כנמסר!"
     },
     "English": {
         "title": "🚚 Fast Delivery Management System",
@@ -244,33 +207,28 @@ TRANSLATIONS = {
         "live_tracking": "📍 Live Courier Tracking",
         "current_loc": "📍 Current Location",
         "loc_placeholder": "Enter current location:",
-        "active_deliveries": "You have",
-        "active_deliveries_end": "active deliveries.",
         "list_title": "📋 Deliveries List",
         "whatsapp_btn": "📲 WhatsApp Customer",
         "mark_delivered": "Mark Delivered",
-        "delivered_success": "Updated successfully!",
-        "language": "🌐 App Language"
+        "delivered_success": "Updated successfully!"
     }
 }
 
 st.sidebar.markdown("---")
 lang_choice = st.sidebar.selectbox("🌐 Language / لغة / שפה", ["العربية (Arabic)", "עברית (Hebrew)", "English"], index=1)
 t = TRANSLATIONS[lang_choice]
-
 is_rtl = lang_choice in ["العربية (Arabic)", "עברית (Hebrew)"]
 dir_style = "rtl" if is_rtl else "ltr"
-
 st.markdown(f"""<style>div.block-container {{ direction: {dir_style}; }}</style>""", unsafe_allow_html=True)
 
-# כפתור הורדת טופס HTML בסיידבר
+# כפתור הורדת טופס ההתרשמות והחוזה ב-HTML בסיידבר
 st.sidebar.markdown("---")
-st.sidebar.subheader("📄 טופס HTML להורדה")
-html_form_file = generate_html_form_file()
+st.sidebar.subheader("📄 טופס התרשמות וחוזה")
+html_contract_file = generate_html_contract_form()
 st.sidebar.download_button(
-    label="📥 הורד טופס הוספת משלוח (.html)",
-    data=html_form_file,
-    file_name="delivery_form.html",
+    label="📥 הורד טופס התרשמות וחוזה (.html)",
+    data=html_contract_file,
+    file_name="delivery_contract_form.html",
     mime="text/html"
 )
 
@@ -307,7 +265,6 @@ def logout_user():
     st.query_params.clear()
     st.rerun()
 
-# מסך התחברות
 if not st.session_state.logged_in:
     st.title(t["title"])
     st.subheader(t["login_title"])
@@ -330,9 +287,8 @@ if not st.session_state.logged_in:
             else:
                 st.error(t["login_error"])
 
-# בדיקת חוזה ראשוני לשליחים/מנהלי חברה
 elif st.session_state.role != "מנהל מערכת ראשי (Super Admin)" and not st.session_state.couriers_db.get(st.session_state.username, {}).get("contract_signed", False):
-    st.title("📝 טופס רישום פרטים אישיים ותנאי שימוש במערכת")
+    st.title("📝 טופס התרשמות, רישום פרטים ותנאי שימוש במערכת")
     with st.form("first_login_contract_form"):
         f_full_name = st.text_input("שם מלא (חובה):")
         f_id_num = st.text_input("תעודת זהות (חובה):")
@@ -367,7 +323,6 @@ elif st.session_state.role != "מנהל מערכת ראשי (Super Admin)" and n
     if st.sidebar.button(t["logout"]):
         logout_user()
 
-# --- מנהל מערכת ראשי (Super Admin) ---
 elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
     st.sidebar.title("מנהל ראשי")
     admin_menu = st.sidebar.radio(
@@ -387,14 +342,11 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     if admin_menu == t["main_sys"]:
         st.title(t["main_sys"])
-        start_location = st.text_input(t["loc_placeholder"], value="כסרא-סמיע")
         admin_deliveries = st.session_state.deliveries
-        
         col1, col2, col3 = st.columns(3)
         col1.metric("סך הכל משלוחים", len(admin_deliveries))
         col2.metric("ממתינים", len([d for d in admin_deliveries if d["status"] == "ממתין"]))
         col3.metric("נמסרו", len([d for d in admin_deliveries if d["status"] == "נמסר"]))
-        
         st.divider()
         for idx, item in enumerate(admin_deliveries):
             status_color = "🟢" if item["status"] == "נמסר" else "🟠"
@@ -462,7 +414,6 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["live_tracking"]:
         st.title(t["live_tracking"])
-        st.write("📍 מעקב אחרי המיקום האחרון של כל השליחים והגורמים במערכת:")
         locs = load_locations_db()
         if locs:
             for usr, data in locs.items():
@@ -470,13 +421,11 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         else:
             st.info("עדיין לא דווחו מיקומים חיים על ידי השליחים.")
 
-# --- מנהל חברת משלוחים ---
 elif st.session_state.role == "מנהל חברה (Company Admin)":
     company_name = st.session_state.company
     st.title(f"🏢 מנהל חברה: {company_name}")
     if st.sidebar.button(t["logout"]):
         logout_user()
-    
     comp_menu = st.sidebar.radio("תפריט", ["📦 משלוחי חברה", "📍 מעקב מיקום שליחי החברה"])
     if comp_menu == "📦 משלוחי חברה":
         st.subheader("משלוחים פעילים לחברה שלך:")
@@ -495,7 +444,6 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
         if not found:
             st.info("אין עדיין נתוני מיקום משליחי החברה.")
 
-# --- שליח רגיל ---
 elif st.session_state.role == "שליח":
     st.title(f"🛵 שלום שליח: {st.session_state.username}")
     if st.sidebar.button(t["logout"]):
