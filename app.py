@@ -360,6 +360,12 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                     base_url = "https://speedy-delivery-app.streamlit.app/"
                     login_link = f"{base_url}?username={urllib.parse.quote(c_username)}"
                     st.info(f"🔗 קישור התחברות ישיר למנהל החברה:\n`{login_link}`")
+                    
+                    if clean_phone:
+                        wa_msg = f"مرحباً {c_username}, تم إضافتك كمدير لشركة التوصيل ({c_name}) في النظام. يمكنك الدخول عبر الرابط التالي:\n{login_link}\nكلمة المرور هي: {c_pass}"
+                        encoded_wa = urllib.parse.quote(wa_msg)
+                        wa_url = f"https://wa.me/{clean_phone}?text={encoded_wa}"
+                        st.markdown(f"[📲 إرسال تفاصيل الدخول لمנהل החברה عبر الواتساب]({wa_url})", unsafe_allow_html=True)
 
     elif admin_menu == t["add_courier"]:
         st.title(t["add_courier"])
@@ -472,7 +478,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["monthly_report"]:
         st.title(t["monthly_report"])
-        st.info("💡 החיוב וההתחשבנות מתבצעים ישירות מול מנהלי החברות או השליחים העצמאיים עבור כל משלוח שנקלט.")
+        st.info("💡 החיוב וההתחשבנות מתבצעים ישירות מול מנהלי החברות או השליחים העצמאיים עבור كل משלוח שנקלט.")
         
         current_month_str = get_current_date().strftime("%Y-%m")
         st.subheader(f"📅 סיכום חודש נוכחי: {current_month_str}")
@@ -484,7 +490,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             c_name = c_info.get("company", c_usr)
             c_phone = c_info.get("phone", "")
             
-            company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == c_name]
+            company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company"] == c_name]
             
             company_deliveries = [
                 d for d in st.session_state.deliveries 
@@ -563,7 +569,10 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
             comp_phone = st.text_input("טלפון נייד ליצירת קשר")
             comp_address = st.text_input("כתובת העסק / החברה")
 
-        st.subheader("2. תנאי התחייבות והתחשבנות מול המערכת הראשית")
+        st.subheader("2. העלאת מסמך ח.פ או תעודת עוסק")
+        comp_uploaded_file = st.file_uploader("העלה צילום / מסמך (PDF או תמונה של ח.פ / עוסק)", type=["pdf", "png", "jpg", "jpeg"], key="comp_file_up")
+
+        st.subheader("3. תנאי התחייבות והתחשבנות מול המערכת הראשית")
         company_contract_text = """
 תנאי ההתקשרות למנהל חברת משלוחים:
 1. אחריות כוללת על השליחים: מנהל החברה מצהיר ומתחייב שהוא האחראי הישיר והבלעדי על כל השליחים הרשומים תחת חברתו במערכת.
@@ -579,13 +588,19 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
             if not comp_first_name or not comp_id or not comp_sig or not comp_agree:
                 st.error("אנא מלא את כל שדות החובה וסמן את תיבת האישור.")
             else:
+                comp_file_path_saved = "ללא קובץ"
+                if comp_uploaded_file is not None:
+                    comp_file_path_saved = os.path.join(UPLOAD_DIR, f"comp_{comp_id}_{comp_uploaded_file.name}")
+                    with open(comp_file_path_saved, "wb") as f:
+                        f.write(comp_uploaded_file.getbuffer())
+
                 comp_record = {
                     "שם פרטי": comp_first_name,
                     "שם משפחה": comp_last_name,
                     "תז": comp_id,
                     "חפ_או_עוסק": "מנהל חברה",
                     "מספר_חפ": comp_id,
-                    "קובץ_חפ": "חוזה מנהל חברה",
+                    "קובץ_חפ": comp_file_path_saved,
                     "טלפון": comp_phone,
                     "כתובת": comp_address,
                     "סוג עוסק": "חברה / מנהל ראשי תחתיו",
@@ -636,6 +651,12 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
                     base_url = "https://speedy-delivery-app.streamlit.app/"
                     login_link = f"{base_url}?username={urllib.parse.quote(new_user)}"
                     st.info(f"🔗 קישור התחברות ישיר לשליח:\n`{login_link}`")
+                    
+                    if clean_phone:
+                        wa_msg = f"مرحباً {new_user}, تم إضافتك كمندوب تحت شركة ({my_company_name}) في نظام التوصيل. يمكنك الدخول عبر الرابط التالي:\n{login_link}\nكلمة المرور هي: {new_pass}"
+                        encoded_wa = urllib.parse.quote(wa_msg)
+                        wa_url = f"https://wa.me/{clean_phone}?text={encoded_wa}"
+                        st.markdown(f"[📲 إرسال تفاصيل الدخول للشليح عبر الواتساب]({wa_url})", unsafe_allow_html=True)
 
     elif company_menu == t["monthly_report"]:
         st.title(t["monthly_report"])
@@ -865,7 +886,7 @@ if st.session_state.logged_in:
                 if c_phone_clean.startswith("0"):
                     c_phone_clean = "972" + c_phone_clean[1:]
                 
-                wa_text = f"مرحباً {d.get('שם לקוח')}, مندوب التوصيل في طريقه إليك بخصوص شحنة من {d.get('שם حברה')}. يرجى الجاهزية."
+                wa_text = f"مرحباً {d.get('שם לקוח')}, مندوب التوصيل في طريقه إليك بخصوص شحنة من {d.get('שם חברה')}. يرجى الجاهزية."
                 encoded_wa = urllib.parse.quote(wa_text)
                 wa_link = f"https://wa.me/{c_phone_clean}?text={encoded_wa}"
 
