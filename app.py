@@ -40,7 +40,6 @@ def load_users_db():
         except Exception:
             pass
     
-    # איסוף הכרחי: תמיד נוודא שלמנהל הראשי יש את הסיסמה והתפקיד הנכונים
     users["Admin"] = {
         "password": "Sma.srablove2028", 
         "role": "מנהל מערכת ראשי (Super Admin)", 
@@ -73,11 +72,9 @@ def save_contracts_data(df):
     except Exception:
         pass
 
-# אתחול ה-Session State
 if "couriers_db" not in st.session_state:
     st.session_state.couriers_db = load_users_db()
 else:
-    # וידוא שגם בזיכרון הסיסמה מעודכנת
     st.session_state.couriers_db["Admin"]["password"] = "Sma.srablove2028"
     st.session_state.couriers_db["Admin"]["role"] = "מנהל מערכת ראשי (Super Admin)"
 
@@ -157,7 +154,6 @@ def logout_user():
     st.session_state.company = ""
     st.rerun()
 
-# אם המשתמש לא מחובר
 if not st.session_state.logged_in:
     st.title(t["title"])
     st.markdown("---")
@@ -172,7 +168,6 @@ if not st.session_state.logged_in:
             
             if submit_btn:
                 db = st.session_state.couriers_db
-                # בדיקה מותאמת רישיות (Case-insensitive) עבור שם המשתמש
                 matched_user = None
                 for u_key in db.keys():
                     if u_key.lower() == username_input.strip().lower():
@@ -188,7 +183,6 @@ if not st.session_state.logged_in:
                 else:
                     st.error(t["login_error"])
 
-# אם המשתמש מחובר כמנהל ראשי
 elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
     st.sidebar.title("מנהל ראשי (הפלטפורמה)")
     admin_menu = st.sidebar.radio(
@@ -434,7 +428,6 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                 save_users_db(st.session_state.couriers_db)
                 st.success("הסיסמה עודכנה בהצלחה!")
 
-# אם המשתמש מחובר כשליח או מנהל חברה
 else:
     my_username = st.session_state.username
     my_role = st.session_state.role
@@ -446,7 +439,8 @@ else:
         if st.sidebar.button(t["logout"]):
             logout_user()
 
-        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == my_username]
+        # השורה המתוקנת:
+        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == my_username]
 
         if courier_menu == "📦 המשלוחים שלי":
             st.title("📦 המשלוחים המוקצים אליך")
