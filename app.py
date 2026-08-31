@@ -514,7 +514,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["monthly_report"]:
         st.title(t["monthly_report"])
-        company_admins = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "מנהל חברה (Company Admin)"]
+        company_admins = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "מנהל חברה (Company Admin)"]
         selected_admin_rep = st.selectbox("בחר מנהל חברה להפקת דוח כספי מרוכז:", company_admins if company_admins else ["אין מנהלי חברות"])
         
         if selected_admin_rep and selected_admin_rep != "אין מנהלי חברות":
@@ -622,7 +622,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
     elif comp_admin_menu == t["smart_route"]:
         st.title(t["smart_route"])
         my_company_name = st.session_state.company
-        company_deliveries = [d for d in st.session_state.deliveries if (d.get("company") == my_company_name or d.get("courier") == st.session_state.username) and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
+        company_deliveries = [d for d in st.session_state.deliveries if (d.get("company") == my_company_name or d.get("courier") == st.session_state.username) and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
         if not company_deliveries:
             st.info("אין משלוחים פעילים לסידור.")
         else:
@@ -767,7 +767,7 @@ elif st.session_state.role == "שליח":
 
     elif courier_menu == t["smart_route"]:
         st.title(t["smart_route"])
-        my_active = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
+        my_active = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
         if not my_active:
             st.info("אין משלוחים פעילים.")
         else:
