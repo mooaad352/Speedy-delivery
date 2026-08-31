@@ -33,6 +33,8 @@ def load_users_db():
         try:
             with open(USERS_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
+                if not isinstance(data, dict):
+                    return default_users
                 if "Admin" not in data:
                     data["Admin"] = default_users["Admin"]
                 return data
@@ -50,7 +52,9 @@ def save_users_db(users_dict):
 def load_contracts_data():
     if os.path.exists(CONTRACTS_FILE):
         try:
-            return pd.read_csv(CONTRACTS_FILE)
+            df = pd.read_csv(CONTRACTS_FILE)
+            if df is not None and not df.empty:
+                return df
         except Exception:
             pass
     return pd.DataFrame(columns=["שם משתמש", "תפקיד", "חברה", "שם מלא", "ת.ז", "כתובת", "אימייל", "טלפון", "ח.פ / עוסק פטור", "תאריך רישום"])
@@ -151,16 +155,16 @@ if not st.session_state.logged_in:
         submit_btn = st.form_submit_button(t["login_btn"])
         if submit_btn:
             db = st.session_state.couriers_db
-            if username_input in db and db[username_input]["password"] == password_input:
+            if username_input in db and db[username_input].get("password") == password_input:
                 st.session_state.logged_in = True
                 st.session_state.username = username_input
-                st.session_state.role = db[username_input]["role"]
+                st.session_state.role = db[username_input].get("role", "שליח")
                 st.session_state.company = db[username_input].get("company", "Independent")
                 st.rerun()
             else:
                 st.error(t["login_error"])
 
-# מנהל מערכת ראשי (Super Admin - אתה)
+# מנהל מערכת ראשי (Super Admin)
 elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
     st.sidebar.title("מנהל ראשי (הפלטפורמה)")
     admin_menu = st.sidebar.radio(
@@ -342,7 +346,6 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         
         report_data = []
         for c in all_couriers:
-            # תיקון מלא של שורה 346: סגירת סוגריים מרובעים ועגולים כראוי
             delivered_by_courier = len([d for d in st.session_state.deliveries if d.get("courier") == c and d.get("status") == "נמסר"])
             fee_total = delivered_by_courier * 1.00
             report_data.append({
@@ -355,7 +358,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             df_report = pd.DataFrame(report_data)
             st.table(df_report)
             
-            total_all_delivered = sum([d.get("משלוחים שנמסרו") for d in report_data])
+            total_all_delivered = sum([int(str(d.get("משלוחים שנמסרו", 0))) for d in report_data])
             total_all_revenue = total_all_delivered * 1.00
             st.metric("סך הכל הכנסות עמלות לך מכל השליחים (לפני מע״מ)", f"{total_all_revenue:,.2f} ₪")
             
@@ -449,7 +452,7 @@ else:
             with st.form("c_pwd"):
                 old_p = st.text_input("סיסמה נוכחית", type="password")
                 new_p = st.text_input("סיסמה חדשה", type="password")
-                if st.form_submit_button("עדכן") and old_p == st.session_state.couriers_db[my_username]["password"]:
+                if st.form_submit_button("עדכן") and old_p == st.session_state.couriers_db.get(my_username, {}).get("password", ""):
                     st.session_state.couriers_db[my_username]["password"] = new_p
                     save_users_db(st.session_state.couriers_db)
                     st.success("עודכן בהצלחה!")
