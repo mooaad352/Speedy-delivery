@@ -467,7 +467,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                         st.success(f"מנהל החברה '{new_comp_username}' נוסף בהצלחה!")
                         
                         if formatted_phone:
-                            app_url = "https://share.streamlit.io/"
+                            app_url = "https://speedy-delivery-app.streamlit.app/"
                             msg = (f"שלום {new_comp_name},\n\nנוצר לך חשבון מנהל חברה במערכת ניהול המשלוחים Speed Delivery.\n"
                                    f"שם משתמש: {new_comp_username}\nסיסמה: {new_comp_password}\n\n"
                                    f"קישור לכניסה למערכת:\n{app_url}\n\n"
@@ -507,7 +507,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                         st.success(f"השליח '{c_username}' נוסף בהצלחה!")
                         
                         if formatted_phone:
-                            app_url = "https://share.streamlit.io/"
+                            app_url = "https://speedy-delivery-app.streamlit.app/"
                             msg = (f"שלום {c_username},\n\nנוצר לך חשבון שליח במערכת ניהול המשלוחים Speed Delivery.\n"
                                    f"שם משתמש: {c_username}\nסיסמה: {c_password}\n"
                                    f"שיוך: {c_company}\n\n"
@@ -618,7 +618,7 @@ else:
     st.write(f"הנך מחובר כחלק מ-{st.session_state.company}")
     
     st.subheader(t["list_title"])
-    filtered_deliveries = [d for d in st.session_state.deliveries if st.session_state.role == "מנהל מערכת ראשי (Super Admin)" or d.get("company") == st.session_state.company or d.get("courier") == st.session_state.username]
+    filtered_deliveries = [d for d in st.session_state.deliveries if st.session_state.role == "מנהל מערכת ראשי (Super Admin)" or d.get("company") == st.session_state.company or d.get("courier"] == st.session_state.username]
     
     if not filtered_deliveries:
         st.info(t["no_deliveries"])
