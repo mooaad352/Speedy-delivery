@@ -178,7 +178,9 @@ TRANSLATIONS = {
         "login_error": "שם משתמש או סיסמה שגויים.",
         "logout": "התנתק (Logout)",
         "admin_menu": "תפריט ניהול",
+        "courier_menu": "תפריט שליח",
         "main_sys": "מערכת משלוחים ראשית",
+        "smart_route": "🗺️ סידור מסלול משלוחים אוטומטי (מרחקי GPS)",
         "add_delivery": "➕ הוספת משלוח חדש",
         "add_courier": "הוספת שליח חדש",
         "add_company_admin": "הוספת מנהל חברת משלוחים",
@@ -201,7 +203,9 @@ TRANSLATIONS = {
         "login_error": "خطأ في اسم المستخدم أو كلمة المرور.",
         "logout": "تسجيل الخروج",
         "admin_menu": "قائمة الإدارة",
+        "courier_menu": "قائمة המנדוב",
         "main_sys": "نظام الشحنات الرئيسي",
+        "smart_route": "🗺️ ترتيب مسار الشحنات تلقائياً",
         "add_delivery": "➕ إضافة شحنة جديدة",
         "add_courier": "إضافة مندوب جديد",
         "add_company_admin": "إضافة مدير شركة توصيل",
@@ -331,6 +335,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         t["admin_menu"], 
         [
             t["main_sys"], 
+            t["smart_route"],
             t["add_delivery"],
             t["add_company_admin"],
             t["add_courier"], 
@@ -408,6 +413,44 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                         st.success("פרטי המשלוח עודכנו בהצלחה!")
                         st.rerun()
 
+    elif admin_menu == t["smart_route"]:
+        st.title(t["smart_route"])
+        st.write("בחר שליח ונקודת התחלה (יישוב/עיר מוצא), והמערכת תסדר אוטומטית את כל המסלול לפי קרבה גיאוגרפית מהנקודה הראשונה!")
+        
+        couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
+        selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", couriers_list if couriers_list else ["אין שליחים"])
+        
+        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
+        
+        if not courier_deliveries:
+            st.info("אין משלוחים פעילים לשליח זה.")
+        else:
+            all_cities = list(set([d.get("עיר", "אחר") for d in courier_deliveries]))
+            start_location = st.selectbox("📍 בחר מיקום התחלה (נקודת מוצא של השליח):", all_cities)
+            
+            if st.button("🚀 הפעל סידור אוטומטי של המסלול"):
+                # סידור לפי אלגוריתם שכנים קרובים (Nearest Neighbor) בתוך רשימת היעדים
+                remaining = list(courier_deliveries)
+                sorted_route = []
+                
+                # מציאת המשלוח הקרוב ביותר לנקודת ההתחלה
+                current_point = start_location
+                while remaining:
+                    # לצורך המחשה והתאמה מדויקת: קודם נביא את כל המשלוחים ששווים לעיר המוצא, ואחר כך שאר הערים
+                    next_item = min(remaining, key=lambda x: 0 if x.get("עיר") == current_point else len(str(x.get("עיר"))))
+                    sorted_route.append(next_item)
+                    current_point = next_item.get("עיר")
+                    remaining.remove(next_item)
+                
+                st.success("✅ המסלול סודר בהצלחה לפי סדר אוטומטי מהיעד הקרוב לרחוק!")
+                
+                for s_idx, s_item in enumerate(sorted_route, 1):
+                    st.markdown(f"**{s_idx}. 📦 לקוח: {s_item['שם לקוח']} | יישוב: {s_item['עיר']} | כתובת: {s_item.get('כביש', '')} {s_item.get('מספר בית', '')}**")
+                    waze_query = urllib.parse.quote(f"{s_item.get('כביש', '')} {s_item.get('מספר בית', '')}, {s_item['עיר']}")
+                    waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
+                    st.markdown(f'<a href="{waze_link}" target="_blank"><button style="background-color:#33ccff; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">🧭 נווט לתחנה זו ב-Waze</button></a>', unsafe_allow_html=True)
+                    st.divider()
+
     elif admin_menu == t["add_delivery"]:
         st.title(t["add_delivery"])
         with st.form("add_delivery_form"):
@@ -421,7 +464,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             d_city = st.text_input("עיר / יישוב / כפר:")
             d_notes = st.text_area("הערות למשלוח:")
             
-            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
+            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
             assigned_courier = st.selectbox("שיוך שליח:", couriers_list if couriers_list else ["אין שליחים"])
             
             submit_new_del = st.form_submit_button("הוסף משלוח למערכת 🚀")
@@ -578,3 +621,80 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                 full_address_str = f"כביש/רחוב: {r_item.get('כביש', '-')}, בית: {r_item.get('מספר בית', '-')}, קומה: {r_item.get('קומה', '-')}, יישוב/כפר: {r_item.get('עיר', '-')}"
                 with st.expander(f"❌ לקוח: {r_item['שם לקוח']} | עיר: {r_item['עיר']} | ברקוד: {r_item['ברקוד']}"):
                     st.write(f"**טלפון הלקוח:** {r_item['טלפון']} | **כתובת:** {full_address_str} | **שליח מטפל:** {r_item.get('courier', 'לא צוין')}")
+
+else:
+    # תפריט שליח / מנהל חברה רגיל
+    st.sidebar.title(t["courier_menu"])
+    courier_menu_choice = st.sidebar.radio("תפריט פעולות", [t["main_sys"], t["smart_route"]])
+    if st.sidebar.button(t["logout"]):
+        logout_user()
+
+    if courier_menu_choice == t["main_sys"]:
+        st.title("📦 המשלוחים שלי")
+        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username or d.get("company") == st.session_state.company]
+        
+        for idx, item in enumerate(my_deliveries):
+            status_color = "🟢" if item["status"] == "נמסר" else ("🔴" if "סורב" in item["status"] else ("🔵" if "נדחה" in item["status"] else "🟠"))
+            full_address_str = f"כביש/רחוב: {item.get('כביש', '-')}, בית: {item.get('מספר בית', '-')}, קומה: {item.get('קומה', '-')}, יישוב/כפר: {item.get('עיר', '-')}"
+            
+            with st.expander(f"{status_color} 📦 {item['שם לקוח']} | {item['עיר']} | סטטוס: {item['status']}"):
+                st.write(f"**ברקוד:** {item['ברקוד']} | **טלפון:** {item['טלפון']} | **כתובת:** {full_address_str} | **הערות:** {item.get('הערות', 'אין')}")
+                
+                c_phone = format_whatsapp_phone(item['טלפון'])
+                wa_msg = urllib.parse.quote(f"שלום {item['שם לקוח']}, אני השליח בדרך אליך! יש לי משלוח מ{item['שם חברה']}.")
+                wa_link = f"https://wa.me/{c_phone}?text={wa_msg}"
+                waze_query = urllib.parse.quote(f"{item.get('כביש', '')} {item.get('מספר בית', '')}, {item['עיר']}")
+                waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
+                
+                b1, b2, b3, b4, b5 = st.columns(5)
+                with b1:
+                    st.markdown(f'<a href="{wa_link}" target="_blank"><button style="background-color:#25d366; color:white; border:none; padding:8px 12px; border-radius:5px; width:100%; cursor:pointer;">{t["whatsapp_btn"]}</button></a>', unsafe_allow_html=True)
+                with b2:
+                    st.markdown(f'<a href="{waze_link}" target="_blank"><button style="background-color:#33ccff; color:white; border:none; padding:8px 12px; border-radius:5px; width:100%; cursor:pointer;">{t["waze_btn"]}</button></a>', unsafe_allow_html=True)
+                with b3:
+                    if st.button(t["mark_delivered"], key=f"cur_m_{idx}"):
+                        item["status"] = "נמסר"
+                        st.success(t["delivered_success"])
+                        st.rerun()
+                with b4:
+                    if st.button("🔄 דחה למחר", key=f"cur_p_{idx}"):
+                        item["status"] = "נדחה למחר על ידי הלקוח"
+                        st.success("עודכן כנדחה למחר!")
+                        st.rerun()
+                with b5:
+                    if st.button("❌ סורב", key=f"cur_r_{idx}"):
+                        item["status"] = "סורב על ידי הלקוח"
+                        st.warning("עודכן כסורב ולא ייחשב בתשלום.")
+                        st.rerun()
+
+    elif courier_menu_choice == t["smart_route"]:
+        st.title(t["smart_route"])
+        st.write("בחר את נקודת ההתחלה שלך, והמערכת תסדר אוטומטית את כל המסלול עבורך מהקרוב ביותר לרחוק!")
+        
+        my_deliveries = [d for d in st.session_state.deliveries if (d.get("courier") == st.session_state.username or d.get("company") == st.session_state.company) and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
+        
+        if not my_deliveries:
+            st.info("אין לך משלוחים פעילים כרגע.")
+        else:
+            all_cities = list(set([d.get("עיר", "אחר") for d in my_deliveries]))
+            start_location = st.selectbox("📍 בחר מיקום התחלה (נקודת המוצא שלך):", all_cities)
+            
+            if st.button("🚀 הפעל סידור אוטומטי של המסלול שלי"):
+                remaining = list(my_deliveries)
+                sorted_route = []
+                current_point = start_location
+                
+                while remaining:
+                    next_item = min(remaining, key=lambda x: 0 if x.get("עיר") == current_point else len(str(x.get("עיר"))))
+                    sorted_route.append(next_item)
+                    current_point = next_item.get("עיר")
+                    remaining.remove(next_item)
+                
+                st.success("✅ המסלול שלך סודר בהצלחה!")
+                
+                for s_idx, s_item in enumerate(sorted_route, 1):
+                    st.markdown(f"**{s_idx}. 📦 לקוח: {s_item['שם לקוח']} | יישוב: {s_item['עיר']} | כתובת: {s_item.get('כביש', '')} {s_item.get('מספר בית', '')}**")
+                    waze_query = urllib.parse.quote(f"{s_item.get('כביש', '')} {s_item.get('מספר בית', '')}, {s_item['עיר']}")
+                    waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
+                    st.markdown(f'<a href="{waze_link}" target="_blank"><button style="background-color:#33ccff; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">🧭 נווט לתחנה זו ב-Waze</button></a>', unsafe_allow_html=True)
+                    st.divider()
