@@ -459,7 +459,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             user_company = info.get("company", "Independent")
             valid_user_items = [
                 d for d in st.session_state.deliveries 
-                if (d.get("courier") == usr or d.get("company") == user_company) and d.get("status"] != "סורב על ידי הלקוח"
+                if (d.get("courier") == usr or d.get("company") == user_company) and d.get("status") != "סורב על ידי הלקוח"
             ]
             
             count_valid_deliveries = len(valid_user_items)
@@ -598,120 +598,5 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
                 if st.button("שמור הערה וסמן נדחה למחר", key=f"comp_postpone_{idx}"):
                     item["הערות"] = new_note
                     item["status"] = "נדחה למחר על ידי הלקוח"
-                    st.success("עודכן בהצלחה!")
+                    st.success("ההערה נשמרה והסטטוס עודכן בהצלחה!")
                     st.rerun()
-
-    elif comp_menu == "➕ הוספת משלוח לחברה":
-        st.subheader("הוספת משלוח חדש עבור החברה שלך:")
-        with st.form("comp_add_del"):
-            d_barcode = st.text_input("ברקוד משלוח:", value=f"COMP-{int(datetime.now().timestamp())}")
-            d_client = st.text_input("שם הלקוח:")
-            d_phone = st.text_input("טלפון הלקוח:")
-            d_address = st.text_input("כתובת מלאה:")
-            d_city = st.text_input("עיר / יישוב:")
-            d_notes = st.text_area("הערות:")
-            
-            comp_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("company") == company_name and i.get("role") == "שליח"]
-            assigned_c = st.selectbox("שיוך שליח מהחברה:", comp_couriers if comp_couriers else [st.session_state.username])
-            
-            if st.form_submit_button("הוסף משלוח לחברה 🚀") and d_client and d_phone and d_city:
-                new_item = {
-                    "ברקוד": d_barcode, "שם לקוח": d_client, "שם חברה": company_name,
-                    "טלפון": format_whatsapp_phone(d_phone), "כתובת מלאה": d_address, "עיר": d_city,
-                    "הערות": d_notes, "status": "ממתין", "courier": assigned_c, "company": company_name,
-                    "date": get_israel_time()
-                }
-                st.session_state.deliveries.append(new_item)
-                st.success("המשלוח נוסף בהצלחה!")
-
-    elif comp_menu == "📍 מעקב מיקום שליחי החברה":
-        st.subheader("📍 המיקום האחרון של שליחי החברה שלך:")
-        locs = load_locations_db()
-        comp_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("company") == company_name]
-        found = False
-        for usr in comp_couriers:
-            if usr in locs:
-                found = True
-                st.success(f"🛵 **שליח:** {usr} | 📍 **מיקום:** {locs[usr]['location']} | ⏰ **עודכן:** {locs[usr]['updated_at']}")
-        if not found:
-            st.info("אין עדיין נתוני מיקום משליחי החברה.")
-
-elif st.session_state.role == "שליח":
-    st.title(f"🛵 שלום שליח: {st.session_state.username}")
-    if st.sidebar.button(t["logout"]):
-        logout_user()
-        
-    courier_menu = st.sidebar.radio("תפריט שליח", ["📋 רשימת המשלוחים שלי", "➕ הוספת משלוח חדש", "📍 עדכון מיקום GPS"])
-    
-    if courier_menu == "📍 עדכון מיקום GPS":
-        st.subheader("📍 עדכון המיקום הנוכחי שלך:")
-        with st.form("update_my_location_form"):
-            my_current_location_input = st.text_input("הכנס כתובת נוכחית, יישוב או קישור מיקום:", placeholder="לדוגמה: כסרא-סמיע, כביש ראשי")
-            submit_loc = st.form_submit_button("עדכן מיקום אחרון במערכת 📍")
-            if submit_loc and my_current_location_input:
-                save_location_data(st.session_state.username, my_current_location_input)
-                st.success("המיקום שלך עודכן בהצלחה!")
-
-    elif courier_menu == "➕ הוספת משלוח חדש":
-        st.subheader("➕ הוספת משלוח חדש (שליח):")
-        with st.form("courier_add_delivery_form"):
-            d_barcode = st.text_input("ברקוד משלוח / מספר מעקב:", value=f"COUR-{int(datetime.now().timestamp())}")
-            d_client = st.text_input("שם הלקוח:")
-            d_company = st.text_input("שם חברה / מותג (או השאר ריק אם פרטי):", value=st.session_state.company if st.session_state.company != "Independent" else "Independent")
-            d_phone = st.text_input("טלפון הלקוח:")
-            d_address = st.text_input("כתובת מלאה:")
-            d_city = st.text_input("עיר / יישוב:")
-            d_notes = st.text_area("הערות למשלוח:")
-            
-            submit_cour_del = st.form_submit_button("הוסף משלוח לרשימה שלי 🚀")
-            if submit_cour_del and d_client and d_phone and d_city:
-                new_item = {
-                    "ברקוד": d_barcode, "שם לקוח": d_client, "שם חברה": d_company if d_company else "Independent",
-                    "טלפון": format_whatsapp_phone(d_phone), "כתובת מלאה": d_address, "עיר": d_city,
-                    "הערות": d_notes, "status": "ממתין", "courier": st.session_state.username, "company": st.session_state.company,
-                    "date": get_israel_time()
-                }
-                st.session_state.deliveries.append(new_item)
-                st.success("המשלוח נוסף בהצלחה לרשימת המשלוחים שלך!")
-
-    elif courier_menu == "📋 רשימת המשלוחים שלי":
-        st.subheader(t["list_title"])
-        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username or d.get("company") == st.session_state.company]
-        if not courier_deliveries:
-            st.info("אין משלוחים ברשימה.")
-        else:
-            for idx, item in enumerate(courier_deliveries):
-                status_color = "🟢" if item["status"] == "נמסר" else ("🔴" if "סורב" in item["status"] else ("🔵" if "נדחה" in item["status"] else "🟠"))
-                with st.expander(f"{status_color} 📦 {item['שם לקוח']} | {item['עיר']} | סטטוס: {item['status']}"):
-                    st.write(f"**ברקוד:** {item['ברקוד']} | **טלפון:** {item['טלפון']} | **כתובת:** {item['כתובת מלאה']} | **הערות:** {item.get('הערות', 'אין')}")
-                    
-                    c_phone = format_whatsapp_phone(item['טלפון'])
-                    wa_msg = urllib.parse.quote(f"שלום {item['שם לקוח']}, השליח בדרך אליך עם המשלוח.")
-                    wa_link = f"https://wa.me/{c_phone}?text={wa_msg}"
-                    waze_query = urllib.parse.quote(f"{item['כתובת מלאה']}, {item['עיר']}")
-                    waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
-                    
-                    b1, b2, b3, b4 = st.columns(4)
-                    with b1:
-                        st.markdown(f'<a href="{wa_link}" target="_blank"><button style="background-color:#25d366; color:white; border:none; padding:8px 12px; border-radius:5px; width:100%; cursor:pointer;">{t["whatsapp_btn"]}</button></a>', unsafe_allow_html=True)
-                    with b2:
-                        st.markdown(f'<a href="{waze_link}" target="_blank"><button style="background-color:#33ccff; color:white; border:none; padding:8px 12px; border-radius:5px; width:100%; cursor:pointer;">{t["waze_btn"]}</button></a>', unsafe_allow_html=True)
-                    with b3:
-                        if st.button(t["mark_delivered"], key=f"c_m_{idx}"):
-                            item["status"] = "נמסר"
-                            st.success(t["delivered_success"])
-                            st.rerun()
-                    with b4:
-                        if st.button(t["mark_rejected"], key=f"c_r_{idx}"):
-                            item["status"] = "סורב על ידי הלקוח"
-                            st.warning("המשלוח סומן כסורב ולא יצורף לחישוב התשלום.")
-                            st.rerun()
-
-                    with st.form(f"postpone_form_{idx}"):
-                        new_note_input = st.text_area("עדכן הערת משלוח (למשל: הלקוח ביקש לדחות למחר):", value=item.get("הערות", ""))
-                        submit_postpone = st.form_submit_button("סמן שנדחה למחר על ידי הלקוח ושמור הערה 🔄")
-                        if submit_postpone:
-                            item["הערות"] = new_note_input
-                            item["status"] = "נדחה למחר על ידי הלקוח"
-                            st.success("הסטטוס עודכן ל'נדחה למחר' וההערה נשמרה בהצלחה!")
-                            st.rerun()
