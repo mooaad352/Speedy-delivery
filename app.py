@@ -146,7 +146,6 @@ st.set_page_config(page_title="Speedy Delivery - מערכת ניהול משלו�
 
 CONTRACTS_FILE = "delivery_drivers_contracts.csv"
 USERS_FILE = "couriers_db.json"
-LOCATIONS_FILE = "couriers_live_locations.json"
 
 def load_users_db():
     default_users = {
@@ -371,7 +370,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         col1, col2, col3 = st.columns(3)
         col1.metric("סך הכל משלוחים במערכת", len(admin_deliveries))
         col2.metric("פעילים / ממתינים", len([d for d in admin_deliveries if d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]))
-        col3.metric("נמסרו בהצלחה", len([d for d in admin_deliveries if d.get("status"] == "נמסר"]))
+        col3.metric("נמסרו בהצלחה", len([d for d in admin_deliveries if d.get("status") == "נמסר"]))
         st.divider()
         for idx, item in enumerate(admin_deliveries):
             status_color = "🟢" if item.get("status") == "נמסר" else ("🔴" if "סורב" in item.get("status", "") else "🟠")
@@ -399,9 +398,9 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["smart_route"]:
         st.title(t["smart_route"])
-        couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
+        couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", couriers_list if couriers_list else ["אין שליחים"])
-        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
+        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
         
         if not courier_deliveries:
             st.info("אין משלוחים פעילים לשליח זה.")
@@ -438,7 +437,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             d_floor = st.text_input("קומה:")
             d_city = st.text_input("עיר / יישוב:")
             d_notes = st.text_area("הערות:")
-            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
+            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
             assigned_courier = st.selectbox("שיוך שליח:", couriers_list if couriers_list else ["אין שליחים"])
             
             if st.form_submit_button("הוסף משלוח למערכת 🚀") and d_client and d_phone and d_city:
@@ -468,7 +467,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             cu = st.text_input("שם משתמש שליח:")
             cp = st.text_input("סיסמה:", type="password")
             cph = st.text_input("טלפון:")
-            comp_list = ["Independent"] + list(set([i.get("company") for u, i in st.session_state.couriers_db.items() if i.get("company"] not in ["Independent", "System"]]))
+            comp_list = ["Independent"] + list(set([i.get("company") for u, i in st.session_state.couriers_db.items() if i.get("company") not in ["Independent", "System"]]))
             ccomp = st.selectbox("שיוך חברה:", comp_list)
             if st.form_submit_button("הוסף שליח") and cu and cp and cph:
                 st.session_state.couriers_db[cu] = {"password": cp, "role": "שליח", "phone": format_whatsapp_phone(cph), "company": ccomp, "contract_signed": False}
@@ -495,8 +494,8 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["monthly_report"]:
         st.title(t["monthly_report"])
-        st.write("הפקת דו" + '"' + "ח חודשי וחישוב עמלות:")
-        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
+        st.write("הפקת דוח חודשי וחישוב עמלות:")
+        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         selected_c_rep = st.selectbox("בחר שליח לדוח:", all_couriers if all_couriers else ["אין שליחים"])
         if selected_c_rep:
             delivered_count = len([d for d in st.session_state.deliveries if d.get("courier") == selected_c_rep and d.get("status") == "נמסר"])
@@ -542,11 +541,11 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
         logout_user()
 
     current_company = st.session_state.company
-    company_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("company"] == current_company and i.get("role"] == "שליח"]
+    company_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("company") == current_company and i.get("role") == "שליח"]
 
     if comp_menu == t["main_sys"]:
         st.title(f"📦 ניהול משלוחי חברה: {current_company}")
-        comp_deliveries = [d for d in st.session_state.deliveries if d.get("company"] == current_company or d.get("courier") in company_couriers]
+        comp_deliveries = [d for d in st.session_state.deliveries if d.get("company") == current_company or d.get("courier") in company_couriers]
         
         col1, col2, col3 = st.columns(3)
         col1.metric("סך משלוחי חברה", len(comp_deliveries))
@@ -584,7 +583,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
             st.warning("אין עדיין שליחים הרשומים תחת החברה שלך. הוסף שליחים דרך תפריט 'הוספת שליח חדש'.")
         else:
             selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", company_couriers)
-            courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
+            courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
             
             if not courier_deliveries:
                 st.info("אין משלוחים פעילים לשליח זה כרגע.")
