@@ -447,7 +447,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
     elif comp_menu == "📍 מעקב מיקום שליחי החברה":
         st.subheader("📍 המיקום האחרון של שליחי החברה שלך:")
         locs = load_locations_db()
-        comp_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("company"] == company_name]
+        comp_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("company") == company_name]
         found = False
         for usr in comp_couriers:
             if usr in locs:
