@@ -622,7 +622,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
     elif comp_admin_menu == t["smart_route"]:
         st.title(t["smart_route"])
         my_company_name = st.session_state.company
-        company_deliveries = [d for d in st.session_state.deliveries if (d.get("company") == my_company_name or d.get("courier") == st.session_state.username) and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
+        company_deliveries = [d for d in st.session_state.deliveries if (d.get("company") == my_company_name or d.get("courier") == st.session_state.username) and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
         if not company_deliveries:
             st.info("אין משלוחים פעילים לסידור.")
         else:
@@ -680,7 +680,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
         st.write("📊 סיכום פיננסי חודשי מרוכז: החישוב והתשלום מרוכזים באופן בלעדי אצלך כמנהל החברה עבור כל כמות המשלוחים שבוצעה במערכת תחתך ותחת שליחיך.")
         
         my_company_name = st.session_state.company
-        company_deliveries = [d for d in st.session_state.deliveries if d.get("company") == my_company_name or d.get("courier") == st.session_state.username]
+        company_deliveries = [d for d in st.session_state.deliveries if d.get("company") == my_company_name or d.get("courier"] == st.session_state.username]
         delivered_count = len([d for d in company_deliveries if d.get("status") == "נמסר"])
         
         user_info = st.session_state.couriers_db.get(st.session_state.username, {})
@@ -767,7 +767,7 @@ elif st.session_state.role == "שליח":
 
     elif courier_menu == t["smart_route"]:
         st.title(t["smart_route"])
-        my_active = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
+        my_active = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
         if not my_active:
             st.info("אין משלוחים פעילים.")
         else:
