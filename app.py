@@ -591,129 +591,87 @@ elif str_lit.session_state.role == "מנהל חברה (Company Admin)":
                 with b2:
                     str_lit.markdown(f'<a href="{waze_link}" target="_blank"><button style="background-color:#33ccff; color:white; border:none; padding:8px 12px; border-radius:5px; width:100%; cursor:pointer;">{t["waze_btn"]}</button></a>', unsafe_allow_html=True)
                 with b3:
-                    if str_lit.button("❌ סורב על ידי הלקוח", key=f"comp_reject_{idx}"):
-                        item["status"] = "סורב על ידי הלקוח"
-                        str_lit.warning("המשלוח סומן כסורב.")
+                    if str_lit.button(t["mark_delivered"], key=f"comp_m_{idx}"):
+                        item["status"] = "נמסר"
+                        str_lit.success(t["delivered_success"])
                         str_lit.rerun()
 
-                new_note = str_lit.text_input("הוסף/שנה הערה למשלוח:", value=item.get("הערות", ""), key=f"comp_note_{idx}")
-                if str_lit.button("שמור הערה וסמן נדחה למחר", key=f"comp_postpone_{idx}"):
-                    item["הערות"] = new_note
-                    item["status"] = "נדחה למחר על ידי הלקוח"
-                    str_lit.success("עודכן בהצלחה!")
-                    str_lit.rerun()
-
     elif comp_menu == "➕ הוספת משלוח לחברה":
-        str_lit.subheader("הוספת משלוח חדש עבור החברה שלך:")
+        str_lit.subheader("הוספת משלוח חדש לחברה שלך:")
         with str_lit.form("comp_add_del"):
-            d_barcode = str_lit.text_input("ברקוד משלוח / QR:", value=f"COMP-{int(datetime.now().timestamp())}")
-            d_client = str_lit.text_input("שם הלקוח:")
-            d_phone = str_lit.text_input("טלפון הלקוח:")
+            d_barcode = str_lit.text_input("ברקוד משלוח:", value=f"DEL-{int(datetime.now().timestamp())}")
+            d_client = str_lit.text_input("שם לקוח:")
+            d_phone = str_lit.text_input("טלפון לקוח:")
             d_address = str_lit.text_input("כתובת מלאה:")
-            d_city = str_lit.text_input("עיר / יישוב:")
+            d_city = str_lit.text_input("עיר:")
             d_notes = str_lit.text_area("הערות:")
-            
-            comp_couriers = [u for u, i in str_lit.session_state.couriers_db.items() if i.get("company") == company_name and i.get("role") == "שליח"]
-            assigned_c = str_lit.selectbox("שיוך שליח מהחברה:", comp_couriers if comp_couriers else [str_lit.session_state.username])
-            
-            if str_lit.form_submit_button("הוסף משלוח לחברה 🚀") and d_client and d_phone and d_city:
+            if str_lit.form_submit_button("הוסף משלוח") and d_client and d_phone:
                 new_item = {
                     "ברקוד": d_barcode, "שם לקוח": d_client, "שם חברה": company_name,
                     "טלפון": format_whatsapp_phone(d_phone), "כתובת מלאה": d_address, "עיר": d_city,
-                    "הערות": d_notes, "status": "ממתין", "courier": assigned_c, "company": company_name,
+                    "הערות": d_notes, "status": "ממתין", "courier": "Company Staff", "company": company_name,
                     "date": get_israel_time()
                 }
                 str_lit.session_state.deliveries.append(new_item)
                 str_lit.success("המשלוח נוסף בהצלחה!")
 
     elif comp_menu == "📍 מעקב מיקום שליחי החברה":
-        str_lit.subheader("📍 המיקום האחרון של שליחי החברה שלך:")
+        str_lit.subheader("מעקב מיקום שליחים:")
         locs = load_locations_db()
-        comp_couriers = [u for u, i in str_lit.session_state.couriers_db.items() if i.get("company") == company_name]
-        found = False
-        for usr in comp_couriers:
-            if usr in locs:
-                found = True
-                str_lit.success(f"🛵 **שליח:** {usr} | 📍 **מיקום:** {locs[usr]['location']} | ⏰ **עודכן:** {locs[usr]['updated_at']}")
-        if not found:
-            str_lit.info("אין עדיין נתוני מיקום משליחי החברה.")
+        if locs:
+            for usr, data in locs.items():
+                str_lit.info(f"🛵 **שליח:** {usr} | 📍 **מיקום:** {data['location']} | ⏰ **עודכן:** {data['updated_at']}")
+        else:
+            str_lit.info("אין מיקומים זמינים כרגע.")
 
-elif str_lit.session_state.role == "שליח":
-    str_lit.title(f"🛵 שלום שליח: {str_lit.session_state.username}")
+else:
+    curr_user = str_lit.session_state.username
+    str_lit.title(f"🛵 אזור אישי - שליח: {curr_user}")
     if str_lit.sidebar.button(t["logout"]):
         logout_user()
-        
-    courier_menu = str_lit.sidebar.radio("תפריט שליח", ["📋 רשימת המשלוחים שלי", "➕ הוספת משלוח חדש", "📍 עדכון מיקום GPS"])
     
-    if courier_menu == "📍 עדכון מיקום GPS":
-        str_lit.subheader("📍 עדכון המיקום הנוכחי שלך:")
-        with str_lit.form("update_my_location_form"):
-            my_current_location_input = str_lit.text_input("הכנס כתובת נוכחית, יישוב או קישור מיקום:", placeholder="לדוגמה: כסרא-סמיע, כביש ראשי")
-            submit_loc = str_lit.form_submit_button("עדכן מיקום אחרון במערכת 📍")
-            if submit_loc and my_current_location_input:
-                save_location_data(str_lit.session_state.username, my_current_location_input)
-                str_lit.success("המיקום שלך עודכן בהצלחה!")
+    str_lit.subheader("📍 עדכון מיקום חי (GPS)")
+    with str_lit.form("courier_loc_form"):
+        loc_input = str_lit.text_input("הכנס מיקום נוכחי (למשל: כסרא-סמיע, רחוב ראשי):")
+        if str_lit.form_submit_button("עדכן מיקום 📍") and loc_input:
+            save_location_data(curr_user, loc_input)
+            str_lit.success("המיקום עודכן בהצלחה במערכת!")
 
-    elif courier_menu == "➕ הוספת משלוח חדש":
-        str_lit.subheader("➕ הוספת משלוח חדש (שליח):")
-        with str_lit.form("courier_add_delivery_form"):
-            d_barcode = str_lit.text_input("ברקוד משלוח / QR:", value=f"COUR-{int(datetime.now().timestamp())}")
-            d_client = str_lit.text_input("שם הלקוח:")
-            d_company = str_lit.text_input("שם חברה / מותג (או השאר ריק אם פרטי):", value=str_lit.session_state.company if str_lit.session_state.company != "Independent" else "Independent")
-            d_phone = str_lit.text_input("טלפון הלקוח:")
-            d_address = str_lit.text_input("כתובת מלאה:")
-            d_city = str_lit.text_input("עיר / יישוב:")
-            d_notes = str_lit.text_area("הערות למשלוח:")
-            
-            submit_cour_del = str_lit.form_submit_button("הוסף משלוח לרשימה שלי 🚀")
-            if submit_cour_del and d_client and d_phone and d_city:
-                new_item = {
-                    "ברקוד": d_barcode, "שם לקוח": d_client, "שם חברה": d_company if d_company else "Independent",
-                    "טלפון": format_whatsapp_phone(d_phone), "כתובת מלאה": d_address, "עיר": d_city,
-                    "הערות": d_notes, "status": "ממתין", "courier": str_lit.session_state.username, "company": str_lit.session_state.company,
-                    "date": get_israel_time()
-                }
-                str_lit.session_state.deliveries.append(new_item)
-                str_lit.success("המשלוח נוסף בהצלחה לרשימת המשלוחים שלך!")
-
-    elif courier_menu == "📋 רשימת המשלוחים שלי":
-        str_lit.subheader(t["list_title"])
-        courier_deliveries = [d for d in str_lit.session_state.deliveries if d.get("courier") == str_lit.session_state.username or d.get("company") == str_lit.session_state.company]
-        if not courier_deliveries:
-            str_lit.info("אין משלוחים ברשימה.")
-        else:
-            for idx, item in enumerate(courier_deliveries):
-                status_color = "🟢" if item["status"] == "נמסר" else ("🔴" if "סורב" in item["status"] else ("🔵" if "נדחה" in item["status"] else "🟠"))
-                with str_lit.expander(f"{status_color} 📦 {item['שם לקוח']} | {item['עיר']} | סטטוס: {item['status']}"):
-                    str_lit.write(f"**ברקוד:** {item['ברקוד']} | **טלפון:** {item['טלפון']} | **כתובת:** {item['כתובת מלאה']} | **הערות:** {item.get('הערות', 'אין')}")
-                    
-                    c_phone = format_whatsapp_phone(item['טלפון'])
-                    wa_msg = urllib.parse.quote(f"שלום {item['שם לקוח']}, אני השליח בדרך אליך! יש לי משלוח מ{item['שם חברה']}.")
-                    wa_link = f"https://wa.me/{c_phone}?text={wa_msg}"
-                    waze_query = urllib.parse.quote(f"{item['כתובת מלאה']}, {item['עיר']}")
-                    waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
-                    
-                    b1, b2, b3, b4 = str_lit.columns(4)
-                    with b1:
-                        str_lit.markdown(f'<a href="{wa_link}" target="_blank"><button style="background-color:#25d366; color:white; border:none; padding:8px 12px; border-radius:5px; width:100%; cursor:pointer;">{t["whatsapp_btn"]}</button></a>', unsafe_allow_html=True)
-                    with b2:
-                        str_lit.markdown(f'<a href="{waze_link}" target="_blank"><button style="background-color:#33ccff; color:white; border:none; padding:8px 12px; border-radius:5px; width:100%; cursor:pointer;">{t["waze_btn"]}</button></a>', unsafe_allow_html=True)
-                    with b3:
-                        if str_lit.button(t["mark_delivered"], key=f"c_m_{idx}"):
-                            item["status"] = "נמסר"
-                            str_lit.success(t["delivered_success"])
-                            str_lit.rerun()
-                    with b4:
-                        if str_lit.button(t["mark_rejected"], key=f"c_r_{idx}"):
-                            item["status"] = "סורב על ידי הלקוח"
-                            str_lit.warning("המשלוח סומן כסורב ולא יצורף לחישוב התשלום.")
-                            str_lit.rerun()
-
-                    with str_lit.form(f"postpone_form_{idx}"):
-                        new_note_input = str_lit.text_area("עדכן הערת משלוח (למשל: הלקוח ביקש לדחות למחר):", value=item.get("הערות", ""))
-                        submit_postpone = str_lit.form_submit_button("סמן שנדחה למחר על ידי הלקוח ושמור הערה 🔄")
-                        if submit_postpone:
-                            item["הערות"] = new_note_input
-                            item["status"] = "נדחה למחר על ידי הלקוח"
-                            str_lit.success("הסטטוס עודכן ל'נדחה למחר' וההערה נשמרה בהצלחה!")
-                            str_lit.rerun()
+    str_lit.divider()
+    str_lit.subheader("📦 המשלוחים שלך לביצוע:")
+    courier_deliveries = [d for d in str_lit.session_state.deliveries if d.get("courier") == curr_user or d.get("company") == str_lit.session_state.company]
+    
+    if not courier_deliveries:
+        str_lit.info("אין כרגע משלוחים המשוייכים אליך.")
+    else:
+        for idx, item in enumerate(courier_deliveries):
+            status_color = "🟢" if item["status"] == "נמסר" else ("🔴" if "סורב" in item["status"] else ("🔵" if "נדחה" in item["status"] else "🟠"))
+            with str_lit.expander(f"{status_color} 📦 לקוח: {item['שם לקוח']} | עיר: {item['עיר']} | סטטוס: {item['status']}"):
+                str_lit.write(f"**ברקוד:** {item['ברקוד']} | **טלפון:** {item['טלפון']} | **כתובת:** {item['כתובת מלאה']} | **הערות:** {item.get('הערות', 'אין')}")
+                
+                c_phone = format_whatsapp_phone(item['טלפון'])
+                wa_msg = urllib.parse.quote(f"שלום {item['שם לקוח']}, אני השליח בדרך אליך! יש לי משלוח מ-{item['שם חברה']}.")
+                wa_link = f"https://wa.me/{c_phone}?text={wa_msg}"
+                waze_query = urllib.parse.quote(f"{item['כתובת מלאה']}, {item['עיר']}")
+                waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
+                
+                cb1, cb2, cb3, cb4, cb5 = str_lit.columns(5)
+                with cb1:
+                    str_lit.markdown(f'<a href="{wa_link}" target="_blank"><button style="background-color:#25d366; color:white; border:none; padding:8px 12px; border-radius:5px; width:100%; cursor:pointer;">{t["whatsapp_btn"]}</button></a>', unsafe_allow_html=True)
+                with cb2:
+                    str_lit.markdown(f'<a href="{waze_link}" target="_blank"><button style="background-color:#33ccff; color:white; border:none; padding:8px 12px; border-radius:5px; width:100%; cursor:pointer;">{t["waze_btn"]}</button></a>', unsafe_allow_html=True)
+                with cb3:
+                    if str_lit.button(t["mark_delivered"], key=f"cour_m_{idx}"):
+                        item["status"] = "נמסר"
+                        str_lit.success(t["delivered_success"])
+                        str_lit.rerun()
+                with cb4:
+                    if str_lit.button("🔄 דחה למחר", key=f"cour_p_{idx}"):
+                        item["status"] = "נדחה למחר על ידי הלקוח"
+                        str_lit.success("עודכן בהצלחה!")
+                        str_lit.rerun()
+                with cb5:
+                    if str_lit.button("❌ סורב", key=f"cour_r_{idx}"):
+                        item["status"] = "סורב על ידי הלקוח"
+                        str_lit.warning("המשלוח עודכן כסורב.")
+                        str_lit.rerun()
