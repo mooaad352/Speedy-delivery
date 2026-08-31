@@ -3,7 +3,7 @@ import urllib.parse
 from datetime import datetime, timezone, timedelta
 import pandas as pd
 import os
-json
+import json
 from io import BytesIO
 
 ISRAEL_OFFSET = timedelta(hours=2)
@@ -543,7 +543,7 @@ elif str_lit.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         str_lit.title("🔍 אימות משלוחים שסורבו מול לקוחות (בקרת מנהל ראשי)")
         str_lit.write("כאן תוכל לצפות בכל המשלוחים שדווחו כ'סורב על ידי הלקוח' על ידי השליחים או מנהלי החברות, ולבדוק ישירות מול הלקוח בטלפון או בוואטסאפ.")
         
-        rejected_deliveries = [d for d in str_lit.session_state.deliveries if d.get("status") == "סורב על ידי הלקוח"]
+        rejected_deliveries = [d for d in str_lit.session_state.deliveries if d.get("status"] == "סורב על ידי הלקוח"]
         
         if not rejected_deliveries:
             str_lit.info("אין כרגע משלוחים שסומנו כסורבו על ידי הלקוחות.")
@@ -623,7 +623,7 @@ elif str_lit.session_state.role == "מנהל חברה (Company Admin)":
     elif comp_menu == "📍 עדכון ומעקב מיקום שליחי החברה":
         str_lit.subheader("עדכון מיקום חדש לשליח ומעקב:")
         with str_lit.form("comp_update_loc_form"):
-            couriers_in_comp = [u for u, i in str_lit.session_state.couriers_db.items() if i.get("company") == company_name or i.get("role"] == "שליח"]
+            couriers_in_comp = [u for u, i in str_lit.session_state.couriers_db.items() if i.get("company") == company_name or i.get("role") == "שליח"]
             selected_courier_to_update = str_lit.selectbox("בחר שליח לעדכון מיקומו:", couriers_in_comp if couriers_in_comp else ["אין שליחים"])
             new_loc_text = str_lit.text_input("הכנס מיקום נוכחי של השליח (למשל: כסרא-סמיע, רחוב ראשי):")
             if str_lit.form_submit_button("עדכן מיקום שליח 📍") and new_loc_text and selected_courier_to_update != "אין שליחים":
@@ -648,7 +648,7 @@ else:
         logout_user()
 
     str_lit.subheader("📦 המשלוחים שלך לביצוע:")
-    courier_deliveries = [d for d in str_lit.session_state.deliveries if d.get("courier") == curr_user or d.get("company"] == str_lit.session_state.company]
+    courier_deliveries = [d for d in str_lit.session_state.deliveries if d.get("courier") == curr_user or d.get("company") == str_lit.session_state.company]
     
     if not courier_deliveries:
         str_lit.info("אין כרגע משלוחים המשוייכים אליך.")
