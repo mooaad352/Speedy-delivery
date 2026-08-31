@@ -477,7 +477,6 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         current_month_str = get_current_date().strftime("%Y-%m")
         st.subheader(f"📅 סיכום חודש נוכחי: {current_month_str}")
 
-        # התיקון המרכזי של השגיאה (SyntaxError) בשורה 482 (סגירת הסוגריים המרובעים ב-role)
         company_admins = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role") == "מנהל חברה (Company Admin)"]
         
         for c_usr in company_admins:
@@ -802,7 +801,7 @@ if st.session_state.logged_in:
                 if c_phone_clean.startswith("0"):
                     c_phone_clean = "972" + c_phone_clean[1:]
                 
-                wa_text = f"مرحباً {d.يجري if 'שם לקוח' in d else d.get('שם לקוח')}, مندوب التوصيل في طريقه إليك بخصوص شحنة من {d.get('שם חברה')}. يرجى الجاهزية."
+                wa_text = f"مرحباً {d.get('שם לקוח')}, مندوب التوصيل في طريقه إليك بخصوص شحنة من {d.get('שם حברה')}. يرجى الجاهزية."
                 encoded_wa = urllib.parse.quote(wa_text)
                 wa_link = f"https://wa.me/{c_phone_clean}?text={encoded_wa}"
 
