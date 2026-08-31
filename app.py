@@ -41,11 +41,11 @@ def generate_html_contract_form():
         body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; direction: rtl; text-align: right; color: #333; }
         .container { max-width: 750px; margin: 30px auto; background: #ffffff; padding: 35px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
         h2 { color: #1f2937; text-align: center; margin-bottom: 25px; }
-        .contract-box { background: #f9fafb; border: 1px solid #d1d5db; padding: 15px; border-radius: 6px; height: 220px; overflow-y: scroll; font-size: 13px; margin-bottom: 20px; line-height: 1.6; }
+        .contract-box { background: #f9fafb; border: 1px solid #d1d5db; padding: 15px; border-radius: 6px; height: 220px; overflow-y: scroll; font-size: 13px; margin-bottom: 20px; line-height: 1.6; color: #111827; }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 6px; font-weight: bold; color: #374151; }
-        input[type="text"], input[type="tel"], input[type="email"] { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; font-size: 15px; background-color: #f9fafb; }
-        .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 20px 0; font-weight: bold; }
+        input[type="text"], input[type="tel"], input[type="email"] { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; font-size: 15px; background-color: #f9fafb; color: #111827; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 20px 0; font-weight: bold; color: #111827; }
         button { background-color: #2563eb; color: white; padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
         button:hover { background-color: #1d4ed8; }
     </style>
@@ -221,7 +221,17 @@ lang_choice = st.sidebar.selectbox("🌐 Language / لغة / שפה", ["العر
 t = TRANSLATIONS[lang_choice]
 is_rtl = lang_choice in ["العربية (Arabic)", "עברית (Hebrew)"]
 dir_style = "rtl" if is_rtl else "ltr"
-st.markdown(f"""<style>div.block-container {{ direction: {dir_style}; }}</style>""", unsafe_allow_html=True)
+st.markdown(f"""
+<style>
+div.block-container {{ direction: {dir_style}; }}
+/* תיקון תצוגת טקסט החוזה כך שיראה מעולה גם במצב כהה (Dark Mode) */
+.stMarkdown div[style*="overflow-y"] {{
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+    border: 1px solid #475569 !important;
+}}
+</style>
+""", unsafe_allow_html=True)
 
 # כפתור הורדת טופס ההתרשמות והחוזה ב-HTML בסיידבר
 st.sidebar.markdown("---")
@@ -292,9 +302,9 @@ if not st.session_state.logged_in:
 elif st.session_state.role != "מנהל מערכת ראשי (Super Admin)" and not st.session_state.couriers_db.get(st.session_state.username, {}).get("contract_signed", False):
     st.title("📝 טופס התרשמות, רישום פרטים ותנאי שימוש במערכת")
     
-    # הצגת חוזה מורחב ומוגן משפטית במסך השליח
+    # הצגת חוזה מורחב ומוגן משפטית במסך השליח (עם התאמה אוטומטית למצב כהה/בהיר)
     st.markdown("""
-    <div style="background-color: #f9fafb; border: 1px solid #d1d5db; padding: 20px; border-radius: 8px; max-height: 250px; overflow-y: scroll; margin-bottom: 20px; line-height: 1.6; font-size: 14px;">
+    <div style="background-color: #1e293b; color: #f8fafc; border: 1px solid #475569; padding: 20px; border-radius: 8px; max-height: 250px; overflow-y: scroll; margin-bottom: 20px; line-height: 1.6; font-size: 14px;">
         <strong>חוזה התקשרות, הצהרה ופטור מלא מאחריות - Speedy Delivery:</strong><br><br>
         1. <strong>מהות הפלטפורמה:</strong> מערכת זו מהווה פלטפורמה טכנולוגית בלבד לניהול וסידור משלוחים, ואינה צד לחוזה ההובלה או מעסיקה של השליחים.<br><br>
         2. <strong>העדר יחסי עובד-מעביד:</strong> מוסכם ומובהר בזאת במפורש כי לא מתקיימים יחסי עובד-מעביד בין מפעיל המערכת לבין השליח. השליח פועל כגורם עצמאי לחלוטין (קבלן עצמאי) הנושא באחריות לכל תשלום מס, ביטוח לאומי ותנאים סוציאליים של עצמו.<br><br>
@@ -483,6 +493,6 @@ elif st.session_state.role == "שליח":
             with st.expander(f"{status_color} 📦 {item['שם לקוח']} | {item['עיר']} | סטטוס: {item['status']}"):
                 st.write(f"**ברקוד:** {item['ברקוד']} | **טלפון:** {item['טלפון']}")
                 if item["status"] == "ממתין" and st.button(t["mark_delivered"], key=f"c_m_{idx}"):
-                    item["status"] = "נמסר"
+                    item["status"] == "נמסר"
                     st.success(t["delivered_success"])
                     st.rerun()
