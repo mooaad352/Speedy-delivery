@@ -252,9 +252,8 @@ if "deliveries" not in str_lit.session_state:
     current_time_il = get_israel_time()
     str_lit.session_state.deliveries = [{
         "ברקוד": "TEST-001", "שם לקוח": "סמר שומרי", "שם חברה": "SHEIN", "טלפון": "972502616375",
-        "כתובת מלאה": "כסרא-סמיע", "עיר": "כסרא-סמיע", "הערות": "משלוח בדיקה", "status": "ממתין",
-        "courier": "mohammad", "company": "Independent", "date": current_time_il,
-        "rating": 0, "feedback": ""
+        "כביש": "רחוב ראשי", "מספר בית": "10", "קומה": "2", "עיר": "כסרא-סמיע", "הערות": "משלוח בדיקה", "status": "ממתין",
+        "courier": "mohammad", "company": "Independent", "date": current_time_il
     }]
 
 def logout_user():
@@ -292,7 +291,7 @@ elif str_lit.session_state.role != "מנהל מערכת ראשי (Super Admin)" 
     with str_lit.form("first_login_contract_form"):
         f_full_name = str_lit.text_input("שם מלא (חובה):")
         f_id_num = str_lit.text_input("תעודת זהות (חובה):")
-        f_address = str_lit.text_input("כתובת מלאה (חובה):")
+        f_address = str_lit.text_input("כתובת מגורים מלאה (חובה):")
         f_email = str_lit.text_input("כתובת אימייל (חובה):")
         f_phone = str_lit.text_input("מספר טלפון נייד (חובה):", value=str_lit.session_state.couriers_db.get(str_lit.session_state.username, {}).get("phone", ""))
         f_hp_or_exempt = str_lit.text_input("מספר ח.פ / עוסק פטור (אם עוסק פטור - כתוב 'פטור' או מספר עוסק פטור):")
@@ -355,16 +354,15 @@ elif str_lit.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         str_lit.divider()
         for idx, item in enumerate(admin_deliveries):
             status_color = "🟢" if item["status"] == "נמסר" else ("🔴" if "סורב" in item["status"] else ("🔵" if "נדחה" in item["status"] else "🟠"))
-            rating_stars = "⭐️" * int(item.get("rating", 0)) if item.get("rating", 0) > 0 else "טרם דורג"
-            with str_lit.expander(f"{status_color} 📦 {item['שם לקוח']} | {item['עיר']} | סטטוס: {item['status']} | דירוג: {rating_stars}"):
-                str_lit.write(f"**ברקוד:** {item['ברקוד']} | **טלפון:** {item['טלפון']} | **כתובת:** {item['כתובת מלאה']} | **הערות:** {item.get('הערות', 'אין')}")
-                if item.get("rating", 0) > 0:
-                    str_lit.info(f"⭐️ **דירוג הלקוח:** {item['rating']} מתוך 5 כוכבים | **משוב:** {item.get('feedback', 'אין הערות')}")
+            full_address_str = f"כביש/רחוב: {item.get('כביש', '-')}, בית: {item.get('מספר בית', '-')}, קומה: {item.get('קומה', '-')}, יישוב/כפר: {item.get('עיר', '-')}"
+            
+            with str_lit.expander(f"{status_color} 📦 {item['שם לקוח']} | {item['עיר']} | סטטוס: {item['status']}"):
+                str_lit.write(f"**ברקוד:** {item['ברקוד']} | **טלפון:** {item['טלפון']} | **כתובת:** {full_address_str} | **הערות:** {item.get('הערות', 'אין')}")
                 
                 c_phone = format_whatsapp_phone(item['טלפון'])
                 wa_msg = urllib.parse.quote(f"שלום {item['שם לקוח']}, אני השליח בדרך אליך! יש לי משלוח מ{item['שם חברה']}.")
                 wa_link = f"https://wa.me/{c_phone}?text={wa_msg}"
-                waze_query = urllib.parse.quote(f"{item['כתובת מלאה']}, {item['עיר']}")
+                waze_query = urllib.parse.quote(f"{item.get('כביש', '')} {item.get('מספר בית', '')}, {item['עיר']}")
                 waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
                 
                 b1, b2, b3, b4, b5 = str_lit.columns(5)
@@ -388,6 +386,28 @@ elif str_lit.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                         str_lit.warning("עודכן כסורב ולא ייחשב בתשלום.")
                         str_lit.rerun()
 
+                str_lit.markdown("---")
+                with str_lit.form(f"edit_del_form_{idx}"):
+                    str_lit.subheader("✏️ עריכת פרטי משלוח")
+                    e_client = str_lit.text_input("שם לקוח:", value=item.get("שם לקוח", ""), key=f"ec_{idx}")
+                    e_phone = str_lit.text_input("טלפון לקוח:", value=item.get("טלפון", ""), key=f"ep_{idx}")
+                    e_street = str_lit.text_input("שם כביש / רחוב (או שם הכפר בלבד אם אין רחוב):", value=item.get("כביש", ""), key=f"est_{idx}")
+                    e_house = str_lit.text_input("מספר בית (אם יש):", value=item.get("מספר בית", ""), key=f"eh_{idx}")
+                    e_floor = str_lit.text_input("קומה (אם יש):", value=item.get("קומה", ""), key=f"ef_{idx}")
+                    e_city = str_lit.text_input("עיר / יישוב / כפר:", value=item.get("עיר", ""), key=f"eci_{idx}")
+                    e_notes = str_lit.text_area("הערות:", value=item.get("הערות", ""), key=f"en_{idx}")
+                    
+                    if str_lit.form_submit_button("שמור שינויים במשלוח 💾"):
+                        item["שם לקוח"] = e_client
+                        item["טלפון"] = format_whatsapp_phone(e_phone)
+                        item["כביש"] = e_street
+                        item["מספר בית"] = e_house
+                        item["קומה"] = e_floor
+                        item["עיר"] = e_city
+                        item["הערות"] = e_notes
+                        str_lit.success("פרטי המשלוח עודכנו בהצלחה!")
+                        str_lit.rerun()
+
     elif admin_menu == t["add_delivery"]:
         str_lit.title(t["add_delivery"])
         with str_lit.form("add_delivery_form"):
@@ -395,8 +415,10 @@ elif str_lit.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             d_client = str_lit.text_input("שם הלקוח:")
             d_company = str_lit.text_input("שם חברה / מותג ששולח (למשל: SHEIN):")
             d_phone = str_lit.text_input("טלפון הלקוח:")
-            d_address = str_lit.text_input("כתובת מלאה:")
-            d_city = str_lit.text_input("עיר / יישוב:")
+            d_street = str_lit.text_input("שם כביש / רחוב (לפי QR או כפר בלבד):")
+            d_house = str_lit.text_input("מספר בית (השאר ריק בכפרים שאין בהם מספר בית):")
+            d_floor = str_lit.text_input("קומה (השאר ריק אם אין):")
+            d_city = str_lit.text_input("עיר / יישוב / כפר:")
             d_notes = str_lit.text_area("הערות למשלוח:")
             
             couriers_list = [u for u, i in str_lit.session_state.couriers_db.items() if i.get("role") == "שליח"]
@@ -406,9 +428,9 @@ elif str_lit.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             if submit_new_del and d_client and d_phone and d_city:
                 new_item = {
                     "ברקוד": d_barcode, "שם לקוח": d_client, "שם חברה": d_company if d_company else "General",
-                    "טלפון": format_whatsapp_phone(d_phone), "כתובת מלאה": d_address, "עיר": d_city,
+                    "טלפון": format_whatsapp_phone(d_phone), "כביש": d_street, "מספר בית": d_house, "קומה": d_floor, "עיר": d_city,
                     "הערות": d_notes, "status": "ממתין", "courier": assigned_courier, "company": "System",
-                    "date": get_israel_time(), "rating": 0, "feedback": ""
+                    "date": get_israel_time()
                 }
                 str_lit.session_state.deliveries.append(new_item)
                 str_lit.success("המשלוח נוסף בהצלחה למערכת!")
@@ -553,8 +575,9 @@ elif str_lit.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             str_lit.info("אין כרגע משלוחים שסומנו כסורבו על ידי הלקוחות.")
         else:
             for r_idx, r_item in enumerate(rejected_deliveries):
+                full_address_str = f"כביש/רחוב: {r_item.get('כביש', '-')}, בית: {r_item.get('מספר בית', '-')}, קומה: {r_item.get('קומה', '-')}, יישוב/כפר: {r_item.get('עיר', '-')}"
                 with str_lit.expander(f"❌ לקוח: {r_item['שם לקוח']} | עיר: {r_item['עיר']} | ברקוד: {r_item['ברקוד']}"):
-                    str_lit.write(f"**טלפון הלקוח:** {r_item['טלפון']} | **כתובת:** {r_item['כתובת מלאה']} | **שליח מטפל:** {r_item.get('courier', 'לא צוין')}")
+                    str_lit.write(f"**טלפון הלקוח:** {r_item['טלפון']} | **כתובת:** {full_address_str} | **שליח מטפל:** {r_item.get('courier', 'לא צוין')}")
                     str_lit.write(f"**הערות משלוח:** {r_item.get('הערות', 'אין')}")
                     
                     c_phone = format_whatsapp_phone(r_item['טלפון'])
@@ -591,25 +614,23 @@ elif str_lit.session_state.role == "שליח":
 
     if courier_menu == "📦 המשלוחים שלי":
         str_lit.title("📦 המשלוחים שלי לביצוע")
-        my_deliveries = [d for d in str_lit.session_state.deliveries if d.get("courier") == courier_username]
+        my_deliveries = [d for d in str_lit.session_state.deliveries if d.get("courier"] == courier_username]
         
         if not my_deliveries:
             str_lit.info("אין לך כרגע משלוחים משויכים. באפשרותך להוסיף משלוח חדש דרך התפריט בצד.")
         else:
             for idx, item in enumerate(my_deliveries):
                 status_color = "🟢" if item["status"] == "נמסר" else ("🔴" if "סורב" in item["status"] else ("🔵" if "נדחה" in item["status"] else "🟠"))
-                rating_stars = "⭐️" * int(item.get("rating", 0)) if item.get("rating", 0) > 0 else "טרם דורג"
-                with str_lit.expander(f"{status_color} 📦 {item['שם לקוח']} | {item['עיר']} | סטטוס: {item['status']} | דירוג: {rating_stars}"):
-                    str_lit.write(f"**ברקוד:** {item['ברקוד']} | **טלפון:** {item['טלפון']} | **כתובת:** {item['כתובת מלאה']} | **חברה שולחת:** {item['שם חברה']} | **הערות:** {item.get('הערות', 'אין')}")
+                full_address_str = f"כביש/רחוב: {item.get('כביש', '-')}, בית: {item.get('מספר בית', '-')}, קומה: {item.get('קומה', '-')}, יישוב/כפר: {item.get('עיר', '-')}"
+                
+                with str_lit.expander(f"{status_color} 📦 {item['שם לקוח']} | {item['עיר']} | סטטוס: {item['status']}"):
+                    str_lit.write(f"**ברקוד:** {item['ברקוד']} | **טלפון:** {item['טלפון']} | **כתובת:** {full_address_str} | **חברה שולחת:** {item['שם חברה']} | **הערות:** {item.get('הערות', 'אין')}")
                     
                     c_phone = format_whatsapp_phone(item['טלפון'])
                     wa_msg = urllib.parse.quote(f"שלום {item['שם לקוח']}, אני השליח בדרך אליך! יש לי משלוח מ-{item['שם חברה']}. נא להיות זמין.")
                     wa_link = f"https://wa.me/{c_phone}?text={wa_msg}"
                     
-                    wa_rating_msg = urllib.parse.quote(f"תודה רבה שבחרת בנו! נשמח מאוד אם תוכל/י לדרג את שירות המשלוח מ-{item['שם חברה']} מ-1 עד 5 כוכבים, ולשלוח לנו את דעתך. (Speedy Delivery)")
-                    wa_rating_link = f"https://wa.me/{c_phone}?text={wa_rating_msg}"
-                    
-                    waze_query = urllib.parse.quote(f"{item['כתובת מלאה']}, {item['עיר']}")
+                    waze_query = urllib.parse.quote(f"{item.get('כביש', '')} {item.get('מספר בית', '')}, {item['עיר']}")
                     waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
                     
                     b1, b2, b3, b4, b5 = str_lit.columns(5)
@@ -634,24 +655,25 @@ elif str_lit.session_state.role == "שליח":
                             str_lit.rerun()
                     
                     str_lit.markdown("---")
-                    str_lit.subheader("⭐ הערכת משלוח ומשוב לקוח")
-                    with str_lit.form(f"rating_form_{idx}"):
-                        current_r = int(item.get("rating", 5))
-                        if current_r < 1 or current_r > 5:
-                            current_r = 5
-                        assigned_rating = str_lit.slider("בחר דירוג כוכבים (1 עד 5):", 1, 5, value=current_r, key=f"slider_rat_{idx}")
-                        assigned_feedback = str_lit.text_input("הערת לקוח / משוב על המשלוח:", value=item.get("feedback", ""), key=f"feed_txt_{idx}")
+                    with str_lit.form(f"courier_edit_form_{idx}"):
+                        str_lit.subheader("✏️ עריכת פרטי משלוח")
+                        ce_client = str_lit.text_input("שם לקוח:", value=item.get("שם לקוח", ""), key=f"cec_{idx}")
+                        ce_phone = str_lit.text_input("טלפון לקוח:", value=item.get("טלפון", ""), key=f"cep_{idx}")
+                        ce_street = str_lit.text_input("שם כביש / רחוב (או שם הכפר בלבד אם אין רחוב):", value=item.get("כביש", ""), key=f"cest_{idx}")
+                        ce_house = str_lit.text_input("מספר בית (אם יש):", value=item.get("מספר בית", ""), key=f"ceh_{idx}")
+                        ce_floor = str_lit.text_input("קומה (אם יש):", value=item.get("קומה", ""), key=f"cef_{idx}")
+                        ce_city = str_lit.text_input("עיר / יישוב / כפר:", value=item.get("עיר", ""), key=f"ceci_{idx}")
+                        ce_notes = str_lit.text_area("הערות:", value=item.get("הערות", ""), key=f"cen_{idx}")
                         
-                        col_r1, col_r2 = str_lit.columns(2)
-                        with col_r1:
-                            submit_rating = str_lit.form_submit_button("שמור הערכת משלוח ⭐")
-                        with col_r2:
-                            str_lit.markdown(f'<a href="{wa_rating_link}" target="_blank"><button style="background-color:#128c7e; color:white; border:none; padding:8px 12px; border-radius:5px; width:100%; cursor:pointer; margin-top:2px;">📲 שלח בקשת דירוג בוואטסאפ</button></a>', unsafe_allow_html=True)
-                        
-                        if submit_rating:
-                            item["rating"] = assigned_rating
-                            item["feedback"] = assigned_feedback
-                            str_lit.success("הערכת המשלוח והמשוב נשמרו בהצלחה!")
+                        if str_lit.form_submit_button("שמור שינויים במשלוח 💾"):
+                            item["שם לקוח"] = ce_client
+                            item["טלפון"] = format_whatsapp_phone(ce_phone)
+                            item["כביש"] = ce_street
+                            item["מספר בית"] = ce_house
+                            item["קומה"] = ce_floor
+                            item["עיר"] = ce_city
+                            item["הערות"] = ce_notes
+                            str_lit.success("פרטי המשלוח עודכנו בהצלחה!")
                             str_lit.rerun()
 
     elif courier_menu == "➕ הוספת משלוח חדש":
@@ -661,17 +683,19 @@ elif str_lit.session_state.role == "שליח":
             d_client = str_lit.text_input("שם הלקוח:")
             d_company = str_lit.text_input("שם חברה / מותג ששולח (למשל: SHEIN):")
             d_phone = str_lit.text_input("טלפון הלקוח:")
-            d_address = str_lit.text_input("כתובת מלאה:")
-            d_city = str_lit.text_input("עיר / יישוב:")
+            d_street = str_lit.text_input("שם כביש / רחוב (לפי QR או כפר בלבד):")
+            d_house = str_lit.text_input("מספר בית (השאר ריק בכפרים שאין בהם מספר בית):")
+            d_floor = str_lit.text_input("קומה (השאר ריק אם אין):")
+            d_city = str_lit.text_input("עיר / יישוב / כפר:")
             d_notes = str_lit.text_area("הערות למשלוח:")
             
             submit_courier_del = str_lit.form_submit_button("הוסף משלוח אל הרשימה שלי 🚀")
             if submit_courier_del and d_client and d_phone and d_city:
                 new_item = {
                     "ברקוד": d_barcode, "שם לקוח": d_client, "שם חברה": d_company if d_company else "General",
-                    "טלפון": format_whatsapp_phone(d_phone), "כתובת מלאה": d_address, "עיר": d_city,
+                    "טלפון": format_whatsapp_phone(d_phone), "כביש": d_street, "מספר בית": d_house, "קומה": d_floor, "עיר": d_city,
                     "הערות": d_notes, "status": "ממתין", "courier": courier_username, "company": str_lit.session_state.company,
-                    "date": get_israel_time(), "rating": 0, "feedback": ""
+                    "date": get_israel_time()
                 }
                 str_lit.session_state.deliveries.append(new_item)
                 str_lit.success("המשלוח נוסף בהצלחה למערכת ושויך אליך!")
