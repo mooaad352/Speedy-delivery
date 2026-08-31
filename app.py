@@ -334,7 +334,7 @@ elif st.session_state.role != "מנהל מערכת ראשי (Super Admin)" and n
         st.markdown("""
         ### הסכם שימוש במערכת ופטור מאחריות (Speed Delivery)
         1. **מהות השימוש:** המערכת משמשת כפלטפורמה טכנולוגית בלבד לחיבור וניהול משלוחים. השליח או משתמש המערכת עושים שימוש באפליקציה על דעת עצמם בלבד.
-        2. **היעדר אחריות תפעולית:** מפעיל המערכת ו/או בעליה **אינם אחראים** בשום אופן על ביצוע המשלוחים בפועל, על תנאי העסקת השליחים, או על כל נזק, עיכוב, אובדן או תקלות הקשורות למשלוחים עצמם. השליחים אינם עובדים אצל מפעיל המערכת.
+        2. **היעדר אחריות תפעולית:** מפעיל המערכת ו/או בעליה **אינם אחראים** בשום אופן על ביצוע המשלוחים בפועל, על תנאי העסקת השליחים, או על כל נזק, עיכוב, אובדן أو تקלות הקשורות למשלוחים עצמם. השליחים אינם עובדים אצל מפעיל המערכת והשליחות אינה באחריותו.
         3. **מעמד השליח:** השליח פועל כגורם עצמאי לחלוטין ונושא באחריות המלאה והבלעדית לביצוע המשלוחים ולעמידתו בכל דין.
         4. **עמלות ותשלומים:** כל התחשבנות או עמלה בגין שימוש במערכת או פעילות תפעולית מתבצעת באחריות הצדדים המבצעים בלבד.
         """)
@@ -348,9 +348,9 @@ elif st.session_state.role != "מנהל מערכת ראשי (Super Admin)" and n
         f_phone = st.text_input("מספר טלפון נייד (חובה):", value=st.session_state.couriers_db.get(st.session_state.username, {}).get("phone", ""))
         
         st.divider()
-        f_hp_or_exempt = st.text_input("מספר ח.פ למורשים / עוסק פטור (רשות - במידה ואין, ניתן להשאיר ריק):")
+        f_hp_or_exempt = st.text_input("מספר ח.פ למורשים / עוסק פטור (רשות - במידה وאין, ניתן להשאיר ריק):")
         
-        agree_terms = st.checkbox("אני מאשר/ת קראתי את תנאי החוזה והפטור מאחריות, ואני מסכים/ה לכך שהשימוש הוא טכנולוגי בלבד ואינו יוצר יחסי עובד-מעביד.")
+        agree_terms = st.checkbox("אני מאשר/ת קראתי את תנאי החוזה והפטור מאחריות, ואני מסכים/ה לכך שהשימוש הוא טכנולוגי בלבד ואינו יוצר יחסי עובד-מעביד או אחריות על הביצוע.")
         
         submit_contract = st.form_submit_button("אישור רישום וכניסה למערכת 🚀")
         
@@ -502,7 +502,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                         phone_clean = format_whatsapp_phone(item['טלפון'])
                         cust_n = item['שם לקוח']
                         comp_n = item['שם חברה']
-                        wa_text = f"שלום {cust_n}, שליח بדרך אליך עם משלוח מ-{comp_n}."
+                        wa_text = f"שלום {cust_n}, שליח בדרך אליך עם משלוח מ-{comp_n}."
                         whatsapp_link = f"https://wa.me/{phone_clean}?text={urllib.parse.quote(wa_text)}"
                         st.markdown(f"[{t['whatsapp_btn']}]({whatsapp_link})", unsafe_allow_html=True)
 
@@ -532,7 +532,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                         save_users_db(st.session_state.couriers_db)
                         st.success(f"מנהל החברה '{new_comp_username}' נוסף בהצלחה!")
                         
-                        welcome_msg = f"שלום {new_comp_username}, נוספת כמנהל חברת משלוחים ({new_comp_name}) במערכת Speed Delivery (פלטפורמה טכנולוגית לניהול בלבד).\n\n🔗 קישור לכניסה: {APP_URL}\n👤 שם משתמש: {new_comp_username}\n🔑 סיסמה: {new_comp_password}\n\nנא להיכנס, למלא את פרטיך ולאשר את החוזה (הביצוע באחריותך בלבד)."
+                        welcome_msg = f"שלום {new_comp_username}, נוספת כמנהל חברת משלוחים ({new_comp_name}) במערכת Speed Delivery (פלטפורמה טכנולוגית לניהול בלבד, ללא אחריות על ביצוע המשלוחים).\n\n🔗 קישור לכניסה: {APP_URL}\n👤 שם משתמש: {new_comp_username}\n🔑 סיסמה: {new_comp_password}\n\nנא להיכנס, למלא את פרטיך ולאשר את החוזה."
                         wa_url = f"https://wa.me/{formatted_phone}?text={urllib.parse.quote(welcome_msg)}"
                         st.markdown(f"### 📲 [לחץ כאן לשליחת פרטי הגישה וקישור הכניסה למנהל בוואטסאפ]({wa_url})", unsafe_allow_html=True)
                 else:
@@ -568,7 +568,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                         save_users_db(st.session_state.couriers_db)
                         st.success(f"השליח '{c_username}' נוסף בהצלחה!")
                         
-                        welcome_msg = f"שלום {c_username}, נוספת כשליח המשתמש במערכת Speed Delivery.\n\n🔗 קישור לכניסה: {APP_URL}\n👤 שם משתמש: {c_username}\n🔑 סיסמה: {c_password}\n\nנא להיכנס, למלא את פרטיך ולאשר את תנאי השימוש."
+                        welcome_msg = f"שלום {c_username}, נוספת כשליח המשתמש במערכת Speed Delivery (פלטפורמה טכנולוגית בלבד).\n\n🔗 קישור לכניסה: {APP_URL}\n👤 שם משתמש: {c_username}\n🔑 סיסמה: {c_password}\n\nנא להיכנס, למלא את פרטיך ולאשר את תנאי השימוש."
                         wa_url = f"https://wa.me/{formatted_phone}?text={urllib.parse.quote(welcome_msg)}"
                         st.markdown(f"### 📲 [לחץ כאן לשליחת פרטי הגישה וקישור הכניסה לשליח בוואטסאפ]({wa_url})", unsafe_allow_html=True)
                 else:
@@ -707,7 +707,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
                 
                 new_notes = st.text_area(t["notes"])
                 
-                company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role"] == "שליח"]
+                company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role") == "שליח"]
                 assigned_courier = st.selectbox("שייך לשליח מהחברה:", ["טרם שויך (Admin/כללי)"] + company_couriers)
                 
                 submit_comp_del = st.form_submit_button(t["save_del"])
@@ -775,7 +775,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
                         save_users_db(st.session_state.couriers_db)
                         st.success(f"השליח '{cc_username}' נוסף בהצלחה לחברה שלך!")
                         
-                        welcome_msg = f"שלום {cc_username}, נוספת כשליח תחת חברת {company_name} במערכת Speed Delivery.\n\n🔗 קישור לכניסה: {APP_URL}\n👤 שם משתמש: {cc_username}\n🔑 סיסמה: {cc_password}\n\nנא להיכנס, למלא את פרטיך ולאשר את תנאי השימוש."
+                        welcome_msg = f"שלום {cc_username}, נוספת כשליח תחת חברת {company_name} במערכת Speed Delivery (פלטפורמה טכנולוגית בלבד).\n\n🔗 קישור לכניסה: {APP_URL}\n👤 שם משתמש: {cc_username}\n🔑 סיסמה: {cc_password}\n\nנא להיכנס, למלא את פרטיך ולאשר את תנאי השימוש."
                         wa_url = f"https://wa.me/{formatted_phone}?text={urllib.parse.quote(welcome_msg)}"
                         st.markdown(f"### 📲 [לחץ כאן לשליחת פרטי הגישה וקישור הכניסה לשליח בוואטסאפ]({wa_url})", unsafe_allow_html=True)
                 else:
@@ -783,7 +783,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
 
         st.divider()
         st.subheader("רשימת שליחי החברה הפעילים:")
-        company_couriers_list = {usr: info for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role"] == "שליח"}
+        company_couriers_list = {usr: info for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role") == "שליח"}
         if not company_couriers_list:
             st.info("אין עדיין שליחים רשומים תחת החברה שלך.")
         else:
@@ -812,7 +812,7 @@ elif st.session_state.role == "שליח":
     st.markdown(f"### {t['current_loc']}")
     courier_start_loc = st.text_input(t["loc_placeholder"], value="כסרא-סמיע")
     
-    courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username or d.get("company") == st.session_state.company]
+    courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username or d.get("company") == st.session_state.company]
     
     pending_courier = len([d for d in courier_deliveries if d["status"] == "ממתין"])
     st.info(f"{t['active_deliveries']} **{pending_courier}** {t['active_deliveries_end']}")
@@ -843,6 +843,6 @@ elif st.session_state.role == "שליח":
                     phone_clean = format_whatsapp_phone(item['טלפון'])
                     cust_n = item['שם לקוח']
                     comp_n = item['שם חברה']
-                    wa_text = f"שלום {cust_n}, שליח بדרך אליך עם משלוח מ-{comp_n}."
+                    wa_text = f"שלום {cust_n}, שליח בדרך אליך עם משלוח מ-{comp_n}."
                     whatsapp_link = f"https://wa.me/{phone_clean}?text={urllib.parse.quote(wa_text)}"
                     st.markdown(f"[{t['whatsapp_btn']}]({whatsapp_link})", unsafe_allow_html=True)
