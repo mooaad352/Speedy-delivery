@@ -24,23 +24,21 @@ def format_whatsapp_phone(phone_str):
         clean_phone = "972" + clean_phone
     return clean_phone
 
+DEFAULT_USERS = {
+    "Admin": {"password": "Sma.srablove2028", "role": "מנהל מערכת ראשי (Super Admin)", "phone": ADMIN_PHONE, "company": "System", "contract_signed": True},
+    "mohammad": {"password": "123", "role": "שליח", "phone": "972502616375", "company": "Independent", "contract_signed": True}
+}
+
 def load_users_db():
-    default_users = {
-        "Admin": {"password": "Sma.srablove2028", "role": "מנהל מערכת ראשי (Super Admin)", "phone": ADMIN_PHONE, "company": "System", "contract_signed": True},
-        "mohammad": {"password": "123", "role": "שליח", "phone": "972502616375", "company": "Independent", "contract_signed": True}
-    }
     if os.path.exists(USERS_FILE):
         try:
             with open(USERS_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                if not isinstance(data, dict):
-                    return default_users
-                if "Admin" not in data:
-                    data["Admin"] = default_users["Admin"]
-                return data
+                if isinstance(data, dict) and "Admin" in data:
+                    return data
         except Exception:
             pass
-    return default_users
+    return DEFAULT_USERS
 
 def save_users_db(users_dict):
     try:
@@ -91,8 +89,8 @@ TRANSLATIONS = {
         "login_title": "כניסת משתמשים ושליחים",
         "username": "שם משתמש",
         "password": "סיסמה",
-        "login_btn": "התחבר",
-        "login_error": "שם משתמש או סיסמה שגויים.",
+        "login_btn": "התחבר למערכת",
+        "login_error": "שם משתמש או סיסמה שגויים. (נסה Admin / Sma.srablove2028)",
         "logout": "התנתק (Logout)",
         "admin_menu": "תפריט ניהול ראשי",
         "main_sys": "מערכת משלוחים ראשית",
@@ -145,26 +143,31 @@ def logout_user():
     st.session_state.company = ""
     st.rerun()
 
-# מסך התחברות
+# אם המשתמש לא מחובר - הצג את מסך ההתחברות בגדול ובברור
 if not st.session_state.logged_in:
     st.title(t["title"])
-    st.subheader(t["login_title"])
-    with st.form("login_form"):
-        username_input = st.text_input(t["username"])
-        password_input = st.text_input(t["password"], type="password")
-        submit_btn = st.form_submit_button(t["login_btn"])
-        if submit_btn:
-            db = st.session_state.couriers_db
-            if username_input in db and db[username_input].get("password") == password_input:
-                st.session_state.logged_in = True
-                st.session_state.username = username_input
-                st.session_state.role = db[username_input].get("role", "שליח")
-                st.session_state.company = db[username_input].get("company", "Independent")
-                st.rerun()
-            else:
-                st.error(t["login_error"])
+    st.markdown("---")
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.subheader(t["login_title"])
+        with st.form("login_form"):
+            username_input = st.text_input(t["username"])
+            password_input = st.text_input(t["password"], type="password")
+            submit_btn = st.form_submit_button(t["login_btn"], use_container_width=True)
+            
+            if submit_btn:
+                db = st.session_state.couriers_db
+                if username_input in db and str(db[username_input].get("password", "")) == str(password_input):
+                    st.session_state.logged_in = True
+                    st.session_state.username = username_input
+                    st.session_state.role = db[username_input].get("role", "שליח")
+                    st.session_state.company = db[username_input].get("company", "Independent")
+                    st.rerun()
+                else:
+                    st.error(t["login_error"])
 
-# מנהל מערכת ראשי (Super Admin)
+# אם המשתמש מחובר כמנהל ראשי
 elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
     st.sidebar.title("מנהל ראשי (הפלטפורמה)")
     admin_menu = st.sidebar.radio(
@@ -342,7 +345,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         st.title(t["platform_profits"])
         st.markdown("### דוח רווחי פלטפורמה (חישוב עמלת שימוש: 1 ₪ לפני מע\"מ לכל משלוח שנמסר)")
         
-        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
+        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
         
         report_data = []
         for c in all_couriers:
@@ -410,7 +413,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                 save_users_db(st.session_state.couriers_db)
                 st.success("הסיסמה עודכנה בהצלחה!")
 
-# שליח או מנהל חברה
+# אם המשתמש מחובר כשליח או מנהל חברה
 else:
     my_username = st.session_state.username
     my_role = st.session_state.role
