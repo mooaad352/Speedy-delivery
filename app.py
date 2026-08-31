@@ -404,7 +404,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         st.title(t["smart_route"])
         couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", couriers_list if couriers_list else ["אין שליחים"])
-        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]] # תוקן בצורה בטוחה
+        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
         
         if not courier_deliveries:
             st.info("אין משלוחים פעילים לשליח זה.")
@@ -492,7 +492,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["manage_users"]:
         st.title("🔑 ניהול וצפייה בסיסמאות כל המשתמשים במערכת")
-        st.info("כאן תוכל לראות את כל המשתמשים הרשומים (מנהלים ושליחים), כולל הסיסמה הנוכחית של כל אחד מהם, לעדכן אותה או למחוק משתמשים לפי הצורך.")
+        st.info("כאן תוכל לראות את כל המשתמשים הרשומים (מנהלים ושליחים), כולל הסיסמה הנוכחית של كل אחד מהם, לעדכן אותה أو למחוק משתמשים לפי הצורך.")
         
         for usr, info in list(st.session_state.couriers_db.items()):
             if usr == "Admin": 
@@ -519,7 +519,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["monthly_report"]:
         st.title(t["monthly_report"])
-        st.write("הפקת דוח חודשי וחישוב עמלות:")
+        st.write("הפקת דוח חודשי وחישוב עמלות:")
         all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         selected_c_rep = st.selectbox("בחר שליח לדוח:", all_couriers if all_couriers else ["אין שליחים"])
         if selected_c_rep:
@@ -724,7 +724,7 @@ elif st.session_state.role == "שליח":
         col1, col2, col3 = st.columns(3)
         col1.metric("סך הכל משלוחים", len(my_deliveries))
         col2.metric("ממתינים לביצוע", len([d for d in my_deliveries if d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]))
-        col3.metric("נמסרו בהצלחה", len([d for d in my_deliveries if d.get("status"] == "נמסר"]))
+        col3.metric("נמסרו בהצלחה", len([d for d in my_deliveries if d.get("status") == "נמסר"]))
         st.divider()
 
         for idx, item in enumerate(my_deliveries):
@@ -756,7 +756,7 @@ elif st.session_state.role == "שליח":
                 with b4:
                     if st.button("סורב ❌", key=f"cour_r_{idx}"):
                         item["status"] = "סורב על ידי הלקוח"
-                        st.warning("המשלוח עודכן כסורב.")
+                        st.warning("המשלוח עודכן كـ סורב.")
                         st.rerun()
 
     elif courier_menu == "➕ הוספת משלוח":
