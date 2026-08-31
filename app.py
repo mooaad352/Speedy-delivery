@@ -429,7 +429,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         st.title(t["smart_route"])
         couriers_list = list(st.session_state.couriers_db.keys())
         selected_courier_route = st.selectbox("בחר שליח או מנהל לסידור מסלול:", couriers_list)
-        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
+        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
         
         if not courier_deliveries:
             st.info("אין משלוחים פעילים לשם זה.")
@@ -503,9 +503,28 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["manage_users"]:
         st.title(t["manage_users"])
+        st.write("כאן תוכל לצפות בפרטי המשתמשים, לראות סיסמאות, לערוך נתונים ולמחוק משתמשים:")
         for usr, info in list(st.session_state.couriers_db.items()):
             if usr == "Admin": continue
-            with st.expander(f"👤 משתמש: {usr} ({info.get('role')}) - חברה: {info.get('company')}"):
+            with st.expander(f"👤 משתמש: {usr} | תפקיד: {info.get('role')} | חברה: {info.get('company')}"):
+                with st.form(f"edit_user_form_{usr}"):
+                    e_pass = st.text_input("סיסמה:", value=info.get("password", ""))
+                    e_role = st.selectbox("תפקיד:", ["מנהל חברה (Company Admin)", "שליח"], index=0 if info.get("role") == "מנהל חברה (Company Admin)" else 1)
+                    e_comp = st.text_input("שם החברה:", value=info.get("company", ""))
+                    e_phone = st.text_input("טלפון:", value=info.get("phone", ""))
+                    e_full = st.text_input("שם מלא:", value=info.get("full_name", ""))
+                    
+                    submitted_edit = st.form_submit_button("שמור שינויים 💾")
+                    if submitted_edit:
+                        info["password"] = e_pass
+                        info["role"] = e_role
+                        info["company"] = e_comp
+                        info["phone"] = format_whatsapp_phone(e_phone)
+                        info["full_name"] = e_full
+                        save_users_db(st.session_state.couriers_db)
+                        st.success("הפרטים עודכנו בהצלחה!")
+                        st.rerun()
+
                 if st.button(f"🗑️ מחק משתמש {usr}", key=f"del_user_{usr}"):
                     del st.session_state.couriers_db[usr]
                     save_users_db(st.session_state.couriers_db)
@@ -576,6 +595,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
             t["main_sys"],
             t["smart_route"],
             t["add_courier"],
+            "👥 ניהול השליחים שלי",
             t["add_delivery"],
             t["monthly_report"],
             "📍 עדכן את המיקום החי שלי (GPS)",
@@ -622,7 +642,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
     elif comp_admin_menu == t["smart_route"]:
         st.title(t["smart_route"])
         my_company_name = st.session_state.company
-        company_deliveries = [d for d in st.session_state.deliveries if (d.get("company") == my_company_name or d.get("courier") == st.session_state.username) and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
+        company_deliveries = [d for d in st.session_state.deliveries if (d.get("company") == my_company_name or d.get("courier") == st.session_state.username) and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
         if not company_deliveries:
             st.info("אין משלוחים פעילים לסידור.")
         else:
@@ -651,6 +671,35 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
                 save_users_db(st.session_state.couriers_db)
                 st.success(f"השליח {cu} נוסף בהצלחה תחת ניהול חברתך ({st.session_state.company})!")
 
+    elif comp_admin_menu == "👥 ניהול השליחים שלי":
+        st.title("👥 ניהול השליחים תחת החברה שלי")
+        my_comp = st.session_state.company
+        my_couriers = {u: info for u, info in st.session_state.couriers_db.items() if info.get("company") == my_comp and info.get("role") == "שליח"}
+        
+        if not my_couriers:
+            st.info("אין עדיין שליחים הרשומים תחת החברה שלך.")
+        else:
+            for usr, info in my_couriers.items():
+                with st.expander(f"🚴 שליח: {usr} (טלפון: {info.get('phone', 'אין')})"):
+                    with st.form(f"edit_my_cour_{usr}"):
+                        c_pass = st.text_input("סיסמת השליח:", value=info.get("password", ""))
+                        c_phone = st.text_input("טלפון השליח:", value=info.get("phone", ""))
+                        c_name = st.text_input("שם מלא:", value=info.get("full_name", ""))
+                        
+                        if st.form_submit_button("עדכן פרטי שליח 💾"):
+                            info["password"] = c_pass
+                            info["phone"] = format_whatsapp_phone(c_phone)
+                            info["full_name"] = c_name
+                            save_users_db(st.session_state.couriers_db)
+                            st.success("פרטי השליח עודכנו בהצלחה!")
+                            st.rerun()
+
+                    if st.button(f"🗑️ מחק שליח {usr}", key=f"del_my_cour_{usr}"):
+                        del st.session_state.couriers_db[usr]
+                        save_users_db(st.session_state.couriers_db)
+                        st.success("השליח הוסר בהצלחה!")
+                        st.rerun()
+
     elif comp_admin_menu == t["add_delivery"]:
         st.title(t["add_delivery"])
         st.write("הוסף משלוחים ושייך אותם אליך או לשליחים שתחת ניהולך:")
@@ -662,7 +711,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
             d_city = st.text_input("עיר / יישוב:")
             d_notes = st.text_area("הערות:")
             
-            allowed_assignees = [st.session_state.username] + [u for u, i in st.session_state.couriers_db.items() if i.get("company") == st.session_state.company and i.get("role") == "שליח"]
+            allowed_assignees = [st.session_state.username] + [u for u, i in st.session_state.couriers_db.items() if i.get("company") == st.session_state.company and i.get("role"] == "שליח"]
             assigned_courier = st.selectbox("בחר למי לשייך את המשלוח (עליך או לאחד מהשליחים שלך):", allowed_assignees)
             
             if st.form_submit_button("הוסף משלוח 🚀") and d_client and d_phone and d_city:
@@ -680,7 +729,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
         st.write("📊 סיכום פיננסי חודשי מרוכז: החישוב והתשלום מרוכזים באופן בלעדי אצלך כמנהל החברה עבור כל כמות המשלוחים שבוצעה במערכת תחתך ותחת שליחיך.")
         
         my_company_name = st.session_state.company
-        company_deliveries = [d for d in st.session_state.deliveries if d.get("company") == my_company_name or d.get("courier") == st.session_state.username]
+        company_deliveries = [d for d in st.session_state.deliveries if d.get("company") == my_company_name or d.get("courier"] == st.session_state.username]
         delivered_count = len([d for d in company_deliveries if d.get("status") == "נמסר"])
         
         user_info = st.session_state.couriers_db.get(st.session_state.username, {})
@@ -741,7 +790,7 @@ elif st.session_state.role == "שליח":
 
     if courier_menu == t["main_sys"]:
         st.title(f"🚚 רשימת המשלוחים שלי ({st.session_state.username})")
-        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
+        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username]
         
         if not my_deliveries:
             st.info("אין לך משלוחים מוקצים כרגע.")
@@ -767,7 +816,7 @@ elif st.session_state.role == "שליח":
 
     elif courier_menu == t["smart_route"]:
         st.title(t["smart_route"])
-        my_active = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
+        my_active = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
         if not my_active:
             st.info("אין משלוחים פעילים.")
         else:
