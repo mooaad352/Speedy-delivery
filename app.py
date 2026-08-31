@@ -80,7 +80,7 @@ if "deliveries" not in st.session_state:
 if "couriers_db" not in st.session_state:
     # משתמשים ראשוניים לדוגמה במערכת
     st.session_state.couriers_db = {
-        "admin": {"password": "admin", "role": "מנהל ראשי", "phone": "972500000000", "company": "System"},
+        "admin": {"password": "Sma.srablove2028", "role": "מנהל ראשי", "phone": "972500000000", "company": "System"},
         "company1": {"password": "123", "role": "מנהל חברה", "phone": "972511111111", "company": "חברת שליחויות א"},
         "courier1": {"password": "123", "role": "שליח", "phone": "972522222222", "company": "חברת שליחויות א"}
     }
