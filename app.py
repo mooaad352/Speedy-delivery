@@ -9,6 +9,7 @@ from io import BytesIO
 ISRAEL_OFFSET = timedelta(hours=2)
 ADMIN_PHONE = "972502616375"
 APP_URL = "https://speedy-delivery-app.streamlit.app/"
+VAT_RATE = 0.18  # מע"מ 18%
 
 def get_israel_time():
     return datetime.now(timezone(ISRAEL_OFFSET)).strftime("%Y-%m-%d %H:%M")
@@ -292,7 +293,7 @@ elif st.session_state.role != "מנהל מערכת ראשי (Super Admin)" and n
         f_address = st.text_input("כתובת מלאה (חובה):")
         f_email = st.text_input("כתובת אימייל (חובה):")
         f_phone = st.text_input("מספר טלפון נייד (חובה):", value=st.session_state.couriers_db.get(st.session_state.username, {}).get("phone", ""))
-        f_hp_or_exempt = st.text_input("מספר ח.פ / עוסק פטור (אופציונלי):")
+        f_hp_or_exempt = st.text_input("מספר ח.פ / עוסק פטור (אם עוסק פטור - כתוב 'פטור' או מספר עוסק פטור):")
         agree_terms = st.checkbox("קראתי את החוזה בעיון רב, הבנתי ואני מאשר/ת ללא הסתייגות את תנאי השימוש, ההצהרה ופטור האחריות.")
         submit_contract = st.form_submit_button("אישור החוזה וסיום הרישום 🚀")
         if submit_contract:
@@ -423,6 +424,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         for usr, info in list(st.session_state.couriers_db.items()):
             if usr == "Admin": continue
             with st.expander(f"👤 {usr} ({info.get('role')}) - חברה: {info.get('company')}"):
+                st.write(f"**שם מלא:** {info.get('full_name', 'לא צוין')} | **ח.פ / עוסק פטור:** {info.get('hp_exempt', 'לא צוין')}")
                 if st.button("מחק משתמש ❌", key=f"del_user_{usr}"):
                     del st.session_state.couriers_db[usr]
                     save_users_db(st.session_state.couriers_db)
@@ -430,8 +432,59 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                     st.rerun()
 
     elif admin_menu == t["monthly_report"]:
-        st.title(t["monthly_report"])
-        st.dataframe(pd.DataFrame([{"משתמש": u, **i} for u, i in st.session_state.couriers_db.items() if u != "Admin"]), use_container_width=True)
+        st.title("📊 סיכום חודשי ודוחות כספיים (1 ש\"ח למשלוח + מע\"מ/פטור)")
+        st.write("החישוב מתבסס אך ורק על משלוחים **שנמסרו בפועל**, לפי סך של 1 ש\"ח למשלוח (עוסק פטור ללא מע\"מ, חברות/עוסק מורשה כולל 18% מע\"מ).")
+        
+        report_data = []
+        for usr, info in st.session_state.couriers_db.items():
+            if usr == "Admin": continue
+            
+            # איתור משלוחים שנמסרו לשליח זה או לחברה שלו
+            user_company = info.get("company", "Independent")
+            delivered_items = [
+                d for d in st.session_state.deliveries 
+                if (d.get("courier") == usr or d.get("company") == user_company) and d.get("status") == "נמסר"
+            ]
+            
+            count_delivered = len(delivered_items)
+            base_price = count_delivered * 1.0  # 1 ש"ח למשלוח
+            
+            # בדיקה האם מוגדר כעוסק פטור
+            hp_exempt_str = str(info.get("hp_exempt", "")).lower()
+            is_exempt = "פטור" in hp_exempt_str or hp_exempt_str == "אין" or hp_exempt_str == ""
+            
+            if is_exempt:
+                vat_amount = 0.0
+                total_price = base_price
+                tax_status = "עוסק פטור (ללא מע\"מ)"
+            else:
+                vat_amount = base_price * VAT_RATE
+                total_price = base_price + vat_amount
+                tax_status = "עוסק מורשה / חברה (כולל מע\"מ 18%)"
+                
+            report_data.append({
+                "שם משתמש": usr,
+                "שם מלא": info.get("full_name", "-"),
+                "תפקיד": info.get("role", "-"),
+                "חברה / שייכות": user_company,
+                "סטטוס מע\"מ": tax_status,
+                "משלוחים שנמסרו": count_delivered,
+                "סכום בסיס (ש\"ח)": f"{base_price:.2f} ₪",
+                "מע\"מ (ש\"ח)": f"{vat_amount:.2f} ₪",
+                "סכום סופי לתשלום (ש\"ח)": f"{total_price:.2f} ₪"
+            })
+            
+        if report_data:
+            df_report = pd.DataFrame(report_data)
+            st.dataframe(df_report, use_container_width=True)
+            
+            total_all_deliveries = sum([d["משלוחים שנמסרו"] for d in report_data])
+            total_all_revenue = sum([float(d["סכום סופי לתשלום (ש\"ח)"].replace(" ₪", "")) for d in report_data])
+            
+            st.metric("📦 סך הכל משלוחים שבוצעו בחודש", total_all_all_deliveries := total_all_deliveries)
+            st.metric("💰 סך כל ההכנסות מהמשלוחים (כולל/ללא מע\"מ בהתאם לפטור)", f"{total_all_revenue:.2f} ₪")
+        else:
+            st.info("אין נתונים להצגה בדוח החודשי.")
 
     elif admin_menu == t["contract_menu"]:
         st.title(t["contract_menu"])
