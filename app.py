@@ -757,9 +757,9 @@ if st.session_state.logged_in:
         current_deliveries = st.session_state.deliveries
     elif st.session_state.role == "מנהל חברה (Company Admin)":
         comp_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == st.session_state.company]
-        current_deliveries = [d for d in st.session_state.deliveries if d.get("company") == st.session_state.company or d.get("courier") in comp_couriers or d.get("courier"] == st.session_state.username]
+        current_deliveries = [d for d in st.session_state.deliveries if d.get("company") == st.session_state.company or d.get("courier") in comp_couriers or d.get("courier") == st.session_state.username]
     else:
-        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
+        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username]
 
     if len(current_deliveries) == 0:
         st.info(t["no_deliveries"])
