@@ -3,7 +3,7 @@ import urllib.parse
 from datetime import datetime, timezone, timedelta
 import pandas as pd
 import os
-import json
+json
 from io import BytesIO
 
 ISRAEL_OFFSET = timedelta(hours=2)
@@ -295,8 +295,9 @@ elif str_lit.session_state.role != "מנהל מערכת ראשי (Super Admin)" 
         f_email = str_lit.text_input("כתובת אימייל (חובה):")
         f_phone = str_lit.text_input("מספר טלפון נייד (חובה):", value=str_lit.session_state.couriers_db.get(str_lit.session_state.username, {}).get("phone", ""))
         f_hp_or_exempt = str_lit.text_input("מספר ח.פ / עוסק פטור (אם עוסק פטור - כתוב 'פטור' או מספר עוסק פטור):")
+        new_password_input = str_lit.text_input("בחר סיסמה חדשה לחשבון שלך:", type="password")
         agree_terms = str_lit.checkbox("קראתי את החוזה בעיון רב, הבנתי ואני מאשר/ת ללא הסתייגות את תנאי השימוש, ההצהרה, הרשאת הבדיקה למפעיל ופטור האחריות.")
-        submit_contract = str_lit.form_submit_button("אישור החוזה וסיום הרישום 🚀")
+        submit_contract = str_lit.form_submit_button("אישור החוזה, עדכון סיסמה וסיום הרישום 🚀")
         if submit_contract:
             if agree_terms and f_full_name and f_id_num and f_address and f_email and f_phone:
                 reg_date = get_israel_time()
@@ -308,6 +309,8 @@ elif str_lit.session_state.role != "מנהל מערכת ראשי (Super Admin)" 
                 str_lit.session_state.couriers_db[str_lit.session_state.username]["phone"] = format_whatsapp_phone(f_phone)
                 str_lit.session_state.couriers_db[str_lit.session_state.username]["hp_exempt"] = f_hp_or_exempt if f_hp_or_exempt else "אין"
                 str_lit.session_state.couriers_db[str_lit.session_state.username]["registration_date"] = reg_date
+                if new_password_input.strip():
+                    str_lit.session_state.couriers_db[str_lit.session_state.username]["password"] = new_password_input.strip()
                 save_users_db(str_lit.session_state.couriers_db)
                 
                 save_contract_data({
@@ -315,7 +318,7 @@ elif str_lit.session_state.role != "מנהל מערכת ראשי (Super Admin)" 
                     "שם מלא": f_full_name, "ת.ז": f_id_num, "כתובת": f_address, "אימייל": f_email,
                     "טלפון": format_whatsapp_phone(f_phone), "ח.פ / עוסק פטור": f_hp_or_exempt if f_hp_or_exempt else "אין", "תאריך רישום": reg_date
                 })
-                str_lit.success("הפרטים והחוזה נשמרו בהצלחה!")
+                str_lit.success("הפרטים, החוזה והסיסמה החדשה נשמרו בהצלחה!")
                 str_lit.rerun()
             else:
                 str_lit.error("נא למלא את כל שדות החובה ולסמן וי על אישור החוזה.")
@@ -410,37 +413,46 @@ elif str_lit.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         str_lit.title(t["add_company_admin"])
         with str_lit.form("add_comp_form"):
             cu = str_lit.text_input("שם משתמש מנהל:")
-            cp = str_lit.text_input("סיסמה:", type="password")
+            cp = str_lit.text_input("סיסמה ראשונית:", type="password")
             cn = str_lit.text_input("שם חברה:")
             cph = str_lit.text_input("טלפון:")
             if str_lit.form_submit_button("הוסף מנהל חברה") and cu and cp and cn and cph:
                 str_lit.session_state.couriers_db[cu] = {"password": cp, "role": "מנהל חברה (Company Admin)", "phone": format_whatsapp_phone(cph), "company": cn, "contract_signed": False}
                 save_users_db(str_lit.session_state.couriers_db)
-                str_lit.success("נוסף בהצלחה!")
+                str_lit.success("מנהל החברה נוסף בהצלחה!")
 
     elif admin_menu == t["add_courier"]:
         str_lit.title(t["add_courier"])
         with str_lit.form("add_cour_form"):
-            cu = str_lit.text_input("שם משתמש שליח:")
-            cp = str_lit.text_input("סיסמה:", type="password")
+            cu = str_lit.text_input("שם משתמש שליח / עובד:")
+            cp = str_lit.text_input("סיסמה ראשונית:", type="password")
             cph = str_lit.text_input("טלפון:")
             comp_list = ["Independent"] + list(set([i.get("company") for u, i in str_lit.session_state.couriers_db.items() if i.get("company") not in ["Independent", "System"]]))
             ccomp = str_lit.selectbox("שיוך חברה:", comp_list)
-            if str_lit.form_submit_button("הוסף שליח") and cu and cp and cph:
+            if str_lit.form_submit_button("הוסף שליח / עובד") and cu and cp and cph:
                 str_lit.session_state.couriers_db[cu] = {"password": cp, "role": "שליח", "phone": format_whatsapp_phone(cph), "company": ccomp, "contract_signed": False}
                 save_users_db(str_lit.session_state.couriers_db)
-                str_lit.success("השליח נוסף בהצלחה!")
+                str_lit.success("השליח/העובד נוסף בהצלחה!")
 
     elif admin_menu == t["manage_users"]:
         str_lit.title(t["manage_users"])
+        str_lit.write("כאן תוכל לנהל את המשתמשים, לאפס או לשנות סיסמאות ישירות, או למחוק משתמשים שלא צריכים גישה.")
         for usr, info in list(str_lit.session_state.couriers_db.items()):
             if usr == "Admin": continue
-            with str_lit.expander(f"👤 {usr} ({info.get('role')}) - חברה: {info.get('company')}"):
-                str_lit.write(f"**שם מלא:** {info.get('full_name', 'לא צוין')} | **ח.פ / עוסק פטור:** {info.get('hp_exempt', 'לא צוין')}")
+            with str_lit.expander(f"👤 משתמש: {usr} ({info.get('role')}) - חברה: {info.get('company')}"):
+                str_lit.write(f"**שם מלא:** {info.get('full_name', 'לא צוין')} | **טלפון:** {info.get('phone', '-')} | **ח.פ / עוסק פטור:** {info.get('hp_exempt', 'לא צוין')}")
+                
+                with str_lit.form(f"change_pwd_form_{usr}"):
+                    new_admin_pwd = str_lit.text_input("שנה סיסמה למשתמש זה:", type="password", key=f"npwd_{usr}")
+                    if str_lit.form_submit_button("עדכן סיסמה חדשה למשתמש") and new_admin_pwd.strip():
+                        str_lit.session_state.couriers_db[usr]["password"] = new_admin_pwd.strip()
+                        save_users_db(str_lit.session_state.couriers_db)
+                        str_lit.success(f"הסיסמה עבור {usr} עודכנה בהצלחה!")
+                
                 if str_lit.button("מחק משתמש ❌", key=f"del_user_{usr}"):
                     del str_lit.session_state.couriers_db[usr]
                     save_users_db(str_lit.session_state.couriers_db)
-                    str_lit.success("המשתמש נמחק.")
+                    str_lit.success("המשתמש נמחק בהצלחה.")
                     str_lit.rerun()
 
     elif admin_menu == t["monthly_report"]:
@@ -531,7 +543,7 @@ elif str_lit.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         str_lit.title("🔍 אימות משלוחים שסורבו מול לקוחות (בקרת מנהל ראשי)")
         str_lit.write("כאן תוכל לצפות בכל המשלוחים שדווחו כ'סורב על ידי הלקוח' על ידי השליחים או מנהלי החברות, ולבדוק ישירות מול הלקוח בטלפון או בוואטסאפ.")
         
-        rejected_deliveries = [d for d in str_lit.session_state.deliveries if d.get("status"] == "סורב על ידי הלקוח"]
+        rejected_deliveries = [d for d in str_lit.session_state.deliveries if d.get("status") == "סורב על ידי הלקוח"]
         
         if not rejected_deliveries:
             str_lit.info("אין כרגע משלוחים שסומנו כסורבו על ידי הלקוחות.")
@@ -611,7 +623,7 @@ elif str_lit.session_state.role == "מנהל חברה (Company Admin)":
     elif comp_menu == "📍 עדכון ומעקב מיקום שליחי החברה":
         str_lit.subheader("עדכון מיקום חדש לשליח ומעקב:")
         with str_lit.form("comp_update_loc_form"):
-            couriers_in_comp = [u for u, i in str_lit.session_state.couriers_db.items() if i.get("company") == company_name or i.get("role") == "שליח"]
+            couriers_in_comp = [u for u, i in str_lit.session_state.couriers_db.items() if i.get("company") == company_name or i.get("role"] == "שליח"]
             selected_courier_to_update = str_lit.selectbox("בחר שליח לעדכון מיקומו:", couriers_in_comp if couriers_in_comp else ["אין שליחים"])
             new_loc_text = str_lit.text_input("הכנס מיקום נוכחי של השליח (למשל: כסרא-סמיע, רחוב ראשי):")
             if str_lit.form_submit_button("עדכן מיקום שליח 📍") and new_loc_text and selected_courier_to_update != "אין שליחים":
@@ -636,7 +648,7 @@ else:
         logout_user()
 
     str_lit.subheader("📦 המשלוחים שלך לביצוע:")
-    courier_deliveries = [d for d in str_lit.session_state.deliveries if d.get("courier") == curr_user or d.get("company") == str_lit.session_state.company]
+    courier_deliveries = [d for d in str_lit.session_state.deliveries if d.get("courier") == curr_user or d.get("company"] == str_lit.session_state.company]
     
     if not courier_deliveries:
         str_lit.info("אין כרגע משלוחים המשוייכים אליך.")
