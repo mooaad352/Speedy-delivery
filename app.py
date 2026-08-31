@@ -437,7 +437,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                         phone_clean = format_whatsapp_phone(item['טלפון'])
                         cust_n = item['שם לקוח']
                         comp_n = item['שם חברה']
-                        wa_text = f"שלום {cust_n}, שליח בדרך אליך עם משלוח מ-{comp_n}."
+                        wa_text = f"שלום {cust_n}, שליח بדרך אליך עם משלוח מ-{comp_n}."
                         whatsapp_link = f"https://wa.me/{phone_clean}?text={urllib.parse.quote(wa_text)}"
                         st.markdown(f"[{t['whatsapp_btn']}]({whatsapp_link})", unsafe_allow_html=True)
 
@@ -788,10 +788,11 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
 
         st.divider()
 
-        # 2. סיכום לכל שליح בנפרד ולכל החברה
+        # 2. סיכום לכל שליח בנפרד ולכל החברה
         st.markdown("### 📈 סיכום כמויות לפי שליחי החברה שלך")
         
-        company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role"] == "שליח")
+        # תוקן כאן השימוש בסוגריים עגולים במקום מרובעים
+        company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role") == "שליח"]
         
         summary_rows = []
         for c_usr in company_couriers:
@@ -894,6 +895,6 @@ else:
                     phone_clean = format_whatsapp_phone(item['טלפון'])
                     cust_n = item['שם לקוח']
                     comp_n = item['שם חברה']
-                    wa_text = f"שלום {cust_n}, שליח בדרך אליך עם משלוח מ-{comp_n}."
+                    wa_text = f"שלום {cust_n}, שליח بדרך אליך עם משלוח מ-{comp_n}."
                     whatsapp_link = f"https://wa.me/{phone_clean}?text={urllib.parse.quote(wa_text)}"
                     st.markdown(f"[{t['whatsapp_btn']}]({whatsapp_link})", unsafe_allow_html=True)
