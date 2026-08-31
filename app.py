@@ -338,12 +338,12 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         st.title(t["platform_profits"])
         st.markdown("### דוח רווחי פלטפורמה (חישוב עמלת שימוש: 1 ₪ לפני מע\"מ לכל משלוח שנמסר)")
         
-        # תוקן כאן הסוגר בשורה 342: i.get("role") במקום i.get("role"]
         all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         
         report_data = []
         for c in all_couriers:
-            delivered_by_courier = len([d for d in st.session_state.deliveries if d.get("courier") == c and d.get("status"] == "נמסר"])
+            # תיקון מלא של שורה 346: סגירת סוגריים מרובעים ועגולים כראוי
+            delivered_by_courier = len([d for d in st.session_state.deliveries if d.get("courier") == c and d.get("status") == "נמסר"])
             fee_total = delivered_by_courier * 1.00
             report_data.append({
                 "שם שליח/משתמש": c,
