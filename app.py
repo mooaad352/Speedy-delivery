@@ -437,7 +437,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             new_comp_username = st.text_input("שם משתמש למנהל החברה:")
             new_comp_password = st.text_input("סיסמה:", type="password")
             new_comp_name = st.text_input("שם חברת המשלוחים / עסק:")
-            new_comp_phone = st.text_input("מספר טלפון ליצירת קשר:")
+            new_comp_phone = st.text_input("מספר טלפון ליצירת קשר (למשל: 972500000000):")
             
             submit_comp = st.form_submit_button("הוסף מנהל חברה חדש")
             if submit_comp:
@@ -453,6 +453,17 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                         }
                         save_users_db(st.session_state.couriers_db)
                         st.success(f"מנהל החברה '{new_comp_username}' נוסף בהצלחה!")
+                        
+                        # כפתור שליחת וואטסאפ אוטומטית עם פרטי התחברות וחוזה
+                        if new_comp_phone:
+                            phone_clean = new_comp_phone.strip().replace("+", "")
+                            app_url = "https://share.streamlit.io/" # החלف בכתובת האפליקציה שלך במידת הצורך
+                            msg = (f"שלום {new_comp_name},\n\nנוצר לך חשבון מנהל חברה במערכת ניהול המשלוחים Speed Delivery.\n"
+                                   f"שם משתמש: {new_comp_username}\nסיסמה: {new_comp_password}\n\n"
+                                   f"קישור לכניסה למערכת:\n{app_url}\n\n"
+                                   f"נא לאשר את תנאי השימוש והחוזים בקישור הבא או ישירות מול המנהל.")
+                            wa_link = f"https://wa.me/{phone_clean}?text={urllib.parse.quote(msg)}"
+                            st.markdown(f"### 📲 [לחץ כאן לשליחת פרטי ההתחברות והחוזה בוואטסאפ למנהל החברה]({wa_link})" , unsafe_allow_html=True)
                 else:
                     st.warning("נא למלא את כל השדות החובה.")
 
@@ -462,7 +473,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         with st.form("add_courier_form"):
             c_username = st.text_input("שם משתמש לשליח:")
             c_password = st.text_input("סיסמה:", type="password")
-            c_phone = st.text_input("מספר טלפון של השליח:")
+            c_phone = st.text_input("מספר טלפון של השליח (למשל: 972500000000):")
             
             company_list = list(set([info.get("company", "Independent") for usr, info in st.session_state.couriers_db.items()]))
             c_company = st.selectbox("שייך לחברת משלוחים:", company_list)
@@ -481,6 +492,17 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                         }
                         save_users_db(st.session_state.couriers_db)
                         st.success(f"השליח '{c_username}' נוסף בהצלחה!")
+                        
+                        # כפתור שליחת וואטסאפ אוטומטית לשליח החדש
+                        if c_phone:
+                            phone_clean = c_phone.strip().replace("+", "")
+                            app_url = "https://share.streamlit.io/"
+                            msg = (f"שלום {c_username},\n\nנוצר לך חשבון שליח במערכת ניהול המשלוחים Speed Delivery.\n"
+                                   f"שם משתמש: {c_username}\nסיסמה: {c_password}\n\n"
+                                   f"קישור לכניסה למערכת:\n{app_url}\n\n"
+                                   f"נא להיכנס, לאשר את תנאי העבודה והחוזים.")
+                            wa_link = f"https://wa.me/{phone_clean}?text={urllib.parse.quote(msg)}"
+                            st.markdown(f"### 📲 [לחץ כאן לשליחת פרטי ההתחברות והחוזה בוואטסאפ לשליח]({wa_link})" , unsafe_allow_html=True)
                 else:
                     st.warning("נא למלא שם משתמש וסיסמה.")
 
