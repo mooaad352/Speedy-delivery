@@ -24,26 +24,20 @@ def format_whatsapp_phone(phone_str):
         clean_phone = "972" + clean_phone
     return clean_phone
 
-def get_default_users():
-    return {
+def load_users_db():
+    default_users = {
         "Admin": {"password": "Sma.srablove2028", "role": "מנהל מערכת ראשי (Super Admin)", "phone": ADMIN_PHONE, "company": "System", "contract_signed": True},
         "mohammad": {"password": "123", "role": "שליח", "phone": "972502616375", "company": "Independent", "contract_signed": True}
     }
-
-def load_users_db():
-    default_users = get_default_users()
     if os.path.exists(USERS_FILE):
         try:
             with open(USERS_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                if isinstance(data, dict) and "Admin" in data:
-                    data["Admin"]["password"] = "Sma.srablove2028"
-                    data["Admin"]["role"] = "מנהל מערכת ראשי (Super Admin)"
-                    return data
+                if "Admin" not in data:
+                    data["Admin"] = default_users["Admin"]
+                return data
         except Exception:
             pass
-    # אם קובץ הנתונים פגום או לא קיים, ניצור אותו מחדש ונחזיר ברירת מחדל
-    save_users_db(default_users)
     return default_users
 
 def save_users_db(users_dict):
@@ -61,8 +55,8 @@ def load_contracts_data():
             pass
     return pd.DataFrame(columns=["שם משתמש", "תפקיד", "חברה", "שם מלא", "ת.ז", "כתובת", "אימייל", "טלפון", "ח.פ / עוסק פטור", "תאריך רישום"])
 
-# אתחול בטוח לחלוטין של ה-Session State
-if "couriers_db" not in st.session_state or not isinstance(st.session_state.couriers_db, dict):
+# אתחול ה-Session State
+if "couriers_db" not in st.session_state:
     st.session_state.couriers_db = load_users_db()
 
 if "saved_routes" not in st.session_state:
@@ -145,25 +139,16 @@ def logout_user():
 if not st.session_state.logged_in:
     st.title(t["title"])
     st.subheader(t["login_title"])
-    
-    # כפתור עזר למקרה של תקיעה
-    if st.sidebar.button("🔄 איפוס נתוני התחברות למערכת"):
-        if os.path.exists(USERS_FILE):
-            os.remove(USERS_FILE)
-        st.session_state.couriers_db = get_default_users()
-        st.success("הנתונים אופסו בהצלחה! השתמש ב- Admin / Sma.srablove2028")
-        st.rerun()
-
     with st.form("login_form"):
         username_input = st.text_input(t["username"])
         password_input = st.text_input(t["password"], type="password")
         submit_btn = st.form_submit_button(t["login_btn"])
         if submit_btn:
             db = st.session_state.couriers_db
-            if username_input in db and db[username_input].get("password") == password_input:
+            if username_input in db and db[username_input]["password"] == password_input:
                 st.session_state.logged_in = True
                 st.session_state.username = username_input
-                st.session_state.role = db[username_input].get("role", "שליח")
+                st.session_state.role = db[username_input]["role"]
                 st.session_state.company = db[username_input].get("company", "Independent")
                 st.rerun()
             else:
@@ -224,7 +209,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["smart_route"]:
         st.title(t["smart_route"])
-        couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
+        couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
         selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", couriers_list if couriers_list else ["אין שליחים"])
         courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]] if couriers_list else []
         
@@ -274,7 +259,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             d_floor = st.text_input("קומה:")
             d_city = st.text_input("עיר / יישוב:")
             d_notes = st.text_area("הערות:")
-            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
+            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
             assigned_courier = st.selectbox("שיוך שליח:", couriers_list if couriers_list else ["אין שליחים"])
             
             if st.form_submit_button("הוסף משלוח למערכת 🚀") and d_client and d_phone and d_city:
@@ -338,7 +323,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["monthly_report"]:
         st.title(t["monthly_report"])
-        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
+        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
         selected_c_rep = st.selectbox("בחר שליח לדוח:", all_couriers if all_couriers else ["אין שליחים"])
         if selected_c_rep:
             delivered_count = len([d for d in st.session_state.deliveries if d.get("courier") == selected_c_rep and d.get("status") == "נמסר"])
@@ -384,7 +369,7 @@ else:
         if st.sidebar.button(t["logout"]):
             logout_user()
 
-        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == my_username]
+        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == my_username]
 
         if courier_menu == "📦 המשלוחים שלי":
             st.title("📦 המשלוחים המוקצים אליך")
