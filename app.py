@@ -105,7 +105,7 @@ TRANSLATIONS = {
         "logout": "התנתק (Logout)",
         "admin_menu": "תפריט ניהול ראשי",
         "main_sys": "מערכת משלוחים ראשית",
-        "smart_route": "🗺️ סידור מסלול משלוחים אוטומטי",
+        "smart_route": "🗺️ סידור מסלול משלוחים (אוטומטי וידני)",
         "add_delivery": "➕ הוספת משלוח חדש",
         "add_courier": "הוספת שליח חדש",
         "add_company_admin": "הוספת מנהל חברת משלוחים",
@@ -128,7 +128,7 @@ TRANSLATIONS = {
         "logout": "تسجيل الخروج",
         "admin_menu": "قائمة الإدارة الرئيسية",
         "main_sys": "نظام الشحنات الرئيسي",
-        "smart_route": "🗺️ ترتيب مسار الشحنات تلقائياً",
+        "smart_route": "🗺️ ترتيب مسار الشحنات (تلقائي ويدوي)",
         "add_delivery": "➕ إضافة شحنة جديدة",
         "add_courier": "إضافة مندوب جديد",
         "add_company_admin": "إضافة مدير شركة توصيل",
@@ -247,41 +247,74 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", couriers_list if couriers_list else ["אין שליחים"])
         
-        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]] if couriers_list else []
+        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]] if couriers_list else []
         
         if not courier_deliveries:
             st.info("אין משלוחים פעילים לשליח זה.")
         else:
-            all_cities = list(set([d.get("עיר", "אחר") for d in courier_deliveries]))
-            col_s1, col_s2 = st.columns(2)
-            with col_s1:
-                start_location = st.selectbox("📍 בחר נקודת התחלה (מוצא):", all_cities, key="adm_start_loc")
-            with col_s2:
-                end_location = st.selectbox("🏁 בחר נקודת סיום (יעד סופי):", all_cities, key="adm_end_loc")
+            tab_auto, tab_manual = st.tabs(["🚀 סידור אוטומטי חכם", "✏️ סידור ידני לפי בחירתך (גרירה/מספור)"])
             
-            if st.button("🚀 הפעל סידור אוטומטי של המסלול"):
-                remaining = [d for d in courier_deliveries if d.get("עיר") != end_location]
-                end_items = [d for d in courier_deliveries if d.get("עיר") == end_location]
+            with tab_auto:
+                all_cities = list(set([d.get("עיר", "אחר") for d in courier_deliveries]))
+                col_s1, col_s2 = st.columns(2)
+                with col_s1:
+                    start_location = st.selectbox("📍 בחר נקודת התחלה (מוצא):", all_cities, key="adm_start_loc")
+                with col_s2:
+                    end_location = st.selectbox("🏁 בחר נקודת סיום (יעד סופי):", all_cities, key="adm_end_loc")
                 
-                sorted_route = []
-                current_point = start_location
+                if st.button("🚀 הפעל סידור אוטומטי של המסלול"):
+                    remaining = [d for d in courier_deliveries if d.get("עיר") != end_location]
+                    end_items = [d for d in courier_deliveries if d.get("עיר") == end_location]
+                    
+                    sorted_route = []
+                    current_point = start_location
+                    
+                    while remaining:
+                        next_item = min(remaining, key=lambda x: 0 if x.get("עיר") == current_point else len(str(x.get("עיר"))))
+                        sorted_route.append(next_item)
+                        current_point = next_item.get("עיר")
+                        remaining.remove(next_item)
+                    
+                    sorted_route.extend(end_items)
+                    st.session_state.saved_routes[selected_courier_route] = sorted_route
+                    st.success("✅ המסלול סודר ונשמר בהצלחה!")
+
+            with tab_manual:
+                st.markdown("### ✏️ קביעת מספר סידורי ידני לכל משלוח (מיקום בתור):")
+                st.info("הזן לכל משלוח את מספר התחנה הרצוי (למשל: 1 לתחנה ראשונה, 2 לשנייה וכו').")
                 
-                while remaining:
-                    next_item = min(remaining, key=lambda x: 0 if x.get("עיר") == current_point else len(str(x.get("עיר"))))
-                    sorted_route.append(next_item)
-                    current_point = next_item.get("עיר")
-                    remaining.remove(next_item)
+                if selected_courier_route not in st.session_state.saved_routes or len(st.session_state.saved_routes[selected_courier_route]) != len(courier_deliveries):
+                    st.session_state.saved_routes[selected_courier_route] = list(courier_deliveries)
+
+                current_route_items = st.session_state.saved_routes[selected_courier_route]
                 
-                sorted_route.extend(end_items)
-                st.session_state.saved_routes[selected_courier_route] = sorted_route
-                st.success("✅ המסלול סודר ונשמר בהצלחה!")
-                
-                for s_idx, s_item in enumerate(sorted_route, 1):
-                    st.markdown(f"**{s_idx}. 📦 לקוח: {s_item.get('שם לקוח', '')} | מותג: {s_item.get('שם חברה', '')} | יישוב: {s_item.get('עיר', '')}**")
-                    waze_query = urllib.parse.quote(f"{s_item.get('כביש', '')} {s_item.get('מספר בית', '')}, {s_item.get('עיר', '')}")
-                    waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
-                    st.markdown(f'<a href="{waze_link}" target="_blank"><button style="background-color:#33ccff; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">🧭 נווט לתחנה ב-Waze</button></a>', unsafe_allow_html=True)
-                    st.divider()
+                with st.form("manual_route_form"):
+                    updated_orders = []
+                    for idx, item in enumerate(current_route_items):
+                        c1, c2 = st.columns([3, 1])
+                        with c1:
+                            st.markdown(f"📦 **לקוח:** {item.get('שם לקוח', '')} | **כתובת:** {item.get('כביש', '')} {item.get('מספר בית', '')}, {item.get('עיר', '')} | **מותג:** {item.get('שם חברה', '')}")
+                        with c2:
+                            new_pos = st.number_input("מספר תחנה", min_value=1, max_value=len(current_route_items), value=idx+1, key=f"pos_{selected_courier_route}_{item.get('ברקוד', idx)}")
+                        updated_orders.append((new_pos, item))
+                        st.divider()
+                    
+                    if st.form_submit_button("💾 שמור סדר ידני מעודכן"):
+                        updated_orders.sort(key=lambda x: x[0])
+                        st.session_state.saved_routes[selected_courier_route] = [item[1] for item in updated_orders]
+                        st.success("✅ המסלול הידני עודכן ונשמר בהצלחה!")
+                        st.rerun()
+
+            # הצגת המסלול הנוכחי בפועל
+            st.divider()
+            st.markdown("### 📋 רשימת התחנות הסופית לשליח:")
+            active_saved_route = st.session_state.saved_routes.get(selected_courier_route, courier_deliveries)
+            for s_idx, s_item in enumerate(active_saved_route, 1):
+                st.markdown(f"**תחנה {s_idx}. 📦 לקוח: {s_item.get('שם לקוח', '')} | מותג: {s_item.get('שם חברה', '')} | יישוב: {s_item.get('עיר', '')}**")
+                waze_query = urllib.parse.quote(f"{s_item.get('כביש', '')} {s_item.get('מספר בית', '')}, {s_item.get('עיר', '')}")
+                waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
+                st.markdown(f'<a href="{waze_link}" target="_blank"><button style="background-color:#33ccff; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">🧭 נווט לתחנה ב-Waze</button></a>', unsafe_allow_html=True)
+                st.divider()
 
     elif admin_menu == t["add_delivery"]:
         st.title(t["add_delivery"])
@@ -295,7 +328,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             d_floor = st.text_input("קומה:")
             d_city = st.text_input("עיר / יישוב:")
             d_notes = st.text_area("הערות:")
-            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
+            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
             assigned_courier = st.selectbox("שיוך שליח:", couriers_list if couriers_list else ["אין שליחים"])
             
             if st.form_submit_button("הוסף משלוח למערכת 🚀") and d_client and d_phone and d_city:
@@ -365,7 +398,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         
         report_data = []
         for c in all_couriers:
-            delivered_by_courier = len([d for d in st.session_state.deliveries if d.get("courier") == c and d.get("status") == "נמסר"])
+            delivered_by_courier = len([d for d in st.session_state.deliveries if d.get("courier") == c and d.get("status"] == "נמסר"])
             fee_total = delivered_by_courier * 1.00
             report_data.append({
                 "שם שליח/משתמש": c,
@@ -473,37 +506,65 @@ else:
 
         elif courier_menu == "🗺️ סידור מסלול אישי":
             st.title("🗺️ סידור מסלול משלוחים אישי לשליח")
-            active_my_deliveries = [d for d in my_deliveries if d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
+            active_my_deliveries = [d for d in my_deliveries if d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
             
             if not active_my_deliveries:
                 st.info("אין לך משלוחים פעילים לסידור מסלול.")
             else:
-                all_cities = list(set([d.get("עיר", "אחר") for d in active_my_deliveries]))
-                col_s1, col_s2 = st.columns(2)
-                with col_s1:
-                    start_location = st.selectbox("📍 נקודת התחלה (מוצא):", all_cities, key="cour_start_loc")
-                with col_s2:
-                    end_location = st.selectbox("🏁 נקודת סיום (יעד סופי):", all_cities, key="cour_end_loc")
+                tab_auto, tab_manual = st.tabs(["🚀 סידור אוטומטי", "✏️ סידור ידני לפי בחירתך"])
                 
-                if st.button("🚀 סדר לי את המסלול בדיוק לפי הרצון שלי"):
-                    remaining = [d for d in active_my_deliveries if d.get("עיר") != end_location]
-                    end_items = [d for d in active_my_deliveries if d.get("עיר") == end_location]
+                with tab_auto:
+                    all_cities = list(set([d.get("עיר", "אחר") for d in active_my_deliveries]))
+                    col_s1, col_s2 = st.columns(2)
+                    with col_s1:
+                        start_location = st.selectbox("📍 נקודת התחלה (מוצא):", all_cities, key="cour_start_loc")
+                    with col_s2:
+                        end_location = st.selectbox("🏁 נקודת סיום (יעד סופי):", all_cities, key="cour_end_loc")
                     
-                    sorted_route = []
-                    current_point = start_location
-                    
-                    while remaining:
-                        next_item = min(remaining, key=lambda x: 0 if x.get("עיר") == current_point else len(str(x.get("עיר"))))
-                        sorted_route.append(next_item)
-                        current_point = next_item.get("עיר")
-                        remaining.remove(next_item)
-                    
-                    sorted_route.extend(end_items)
-                    st.session_state.saved_routes[my_username] = sorted_route
-                    st.success("✅ המסלול סודר בהצלחה לפי בחירתך!")
-                
-                current_saved_route = st.session_state.saved_routes.get(my_username, active_my_deliveries)
+                    if st.button("🚀 סדר לי את המסלול באופן אוטומטי"):
+                        remaining = [d for d in active_my_deliveries if d.get("עיר") != end_location]
+                        end_items = [d for d in active_my_deliveries if d.get("עיר") == end_location]
+                        
+                        sorted_route = []
+                        current_point = start_location
+                        
+                        while remaining:
+                            next_item = min(remaining, key=lambda x: 0 if x.get("עיר") == current_point else len(str(x.get("עיר"))))
+                            sorted_route.append(next_item)
+                            current_point = next_item.get("עיר")
+                            remaining.remove(next_item)
+                        
+                        sorted_route.extend(end_items)
+                        st.session_state.saved_routes[my_username] = sorted_route
+                        st.success("✅ המסלול סודר אוטומטית בהצלחה!")
+
+                with tab_manual:
+                    st.markdown("### ✏️ סידור ידני של התחנות:")
+                    if my_username not in st.session_state.saved_routes or len(st.session_state.saved_routes[my_username]) != len(active_my_deliveries):
+                        st.session_state.saved_routes[my_username] = list(active_my_deliveries)
+
+                    current_my_route = st.session_state.saved_routes[my_username]
+
+                    with st.form("courier_manual_route_form"):
+                        updated_my_orders = []
+                        for idx, item in enumerate(current_my_route):
+                            c1, c2 = st.columns([3, 1])
+                            with c1:
+                                st.markdown(f"📦 **לקוח:** {item.get('שם לקוח', '')} | **כתובת:** {item.get('כביש', '')} {item.get('מספר בית', '')}, {item.get('עיר', '')}")
+                            with c2:
+                                new_pos = st.number_input("מספר תחנה", min_value=1, max_value=len(current_my_route), value=idx+1, key=f"c_pos_{item.get('ברקוד', idx)}")
+                            updated_my_orders.append((new_pos, item))
+                            st.divider()
+
+                        if st.form_submit_button("💾 שמור את הסידור הידני"):
+                            updated_my_orders.sort(key=lambda x: x[0])
+                            st.session_state.saved_routes[my_username] = [item[1] for item in updated_my_orders]
+                            st.success("✅ המסלול הידני שלך עודכן בהצלחה!")
+                            st.rerun()
+
+                st.divider()
                 st.markdown("### המסלול שלך לפי סדר תחנות:")
+                current_saved_route = st.session_state.saved_routes.get(my_username, active_my_deliveries)
                 for s_idx, s_item in enumerate(current_saved_route, 1):
                     st.markdown(f"**תחנה {s_idx}. 📦 לקוח: {s_item.get('שם לקוח', '')} | מותג: {s_item.get('שם חברה', '')} | יישוב: {s_item.get('עיר', '')}**")
                     waze_query = urllib.parse.quote(f"{s_item.get('כביש', '')} {s_item.get('מספר בית', '')}, {s_item.get('עיר', '')}")
