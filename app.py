@@ -37,23 +37,29 @@ def format_whatsapp_phone(phone_str):
 
 def generate_word_contract(full_name, id_num, address, email, phone, hp_exempt, reg_date):
     """
-    יוצר קובץ Word רשמי עם פרטי המשתמש והחוזה
+    יוצר קובץ Word רשמי ומסודר עם פרטי הנרשם והחוזה
     """
     if not DOCX_AVAILABLE:
         return None
         
     doc = Document()
-    doc.add_heading('הסכם שימוש במערכת ופטור מאחריות (Speed Delivery)', 0)
+    
+    # כותרת ראשית מעוצבת
+    p_title = doc.add_paragraph()
+    run_title = p_title.add_run('הסכם שימוש במערכת ופטור מאחריות (Speed Delivery)')
+    run_title.bold = True
+    run_title.font.size = 16
     
     doc.add_paragraph(f"תאריך הפקה/רישום: {reg_date}")
-    
     doc.add_heading('פרטי נרשם:', level=2)
-    doc.add_paragraph(f"שם מלא: {full_name}")
-    doc.add_paragraph(f"תעודת זהות: {id_num}")
-    doc.add_paragraph(f"כתובת: {address}")
-    doc.add_paragraph(f"אימייל: {email}")
-    doc.add_paragraph(f"טלפון: {phone}")
-    doc.add_paragraph(f"ח.פ / עוסק פטור: {hp_exempt}")
+    
+    # הוספת פרטים בצורה מסודרת
+    doc.add_paragraph(f"• שם מלא: {full_name}")
+    doc.add_paragraph(f"• תעודת זהות: {id_num}")
+    doc.add_paragraph(f"• כתובת: {address}")
+    doc.add_paragraph(f"• אימייל: {email}")
+    doc.add_paragraph(f"• טלפון: {phone}")
+    doc.add_paragraph(f"• ח.פ / עוסק פטור: {hp_exempt}")
     
     doc.add_heading('תנאי ההסכם:', level=2)
     doc.add_paragraph("1. מהות השימוש: המערכת משמשת כפלטפורמה טכנולוגית בלבד לחיבור וניהול משלוחים. השליח או משתמש המערכת עושים שימוש באפליקציה על דעת עצמם בלבד.")
@@ -61,7 +67,7 @@ def generate_word_contract(full_name, id_num, address, email, phone, hp_exempt, 
     doc.add_paragraph("3. מעמד השליח: השליח פועל כגורם עצמאי לחלוטין ונושא באחריות המלאה והבלעדית לביצוע המשלוחים ולעמידתו בכל דין.")
     doc.add_paragraph("4. עמלות ותשלומים: כל התחשבנות או עמלה בגין שימוש במערכת או פעילות תפעולית מתבצעת באחריות הצדדים המבצעים בלבד.")
     
-    doc.add_paragraph("\n\nחתימה / אישור דיגיטלי: מאושר על ידי המשתמש במערכת.")
+    doc.add_paragraph("\n\nאישור דיגיטלי: מסמך זה הופק אוטומטית ואושר על ידי המשתמש במערכת.")
     
     file_stream = BytesIO()
     doc.save(file_stream)
@@ -107,7 +113,7 @@ def save_contract_data(new_data):
     df = load_contracts_data()
     new_row = pd.DataFrame([new_data])
     df = pd.concat([df, new_row], ignore_index=True)
-    df.to_csv(CONTRACTS_FILE, index=False)
+    df.to_csv(CONTRACTS_FILE, index=False, encoding="utf-8-sig")
 
 # --- מילון תרגומים מלא למערכת (ערבית, עברית, אנגלית) ---
 TRANSLATIONS = {
@@ -768,7 +774,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
                 
                 new_notes = st.text_area(t["notes"])
                 
-                company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role") == "שליח"]
+                company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role"] == "שליח"]
                 assigned_courier = st.selectbox("שייך לשליח מהחברה:", ["טרם שויך (Admin/כללי)"] + company_couriers)
                 
                 submit_comp_del = st.form_submit_button(t["save_del"])
@@ -844,7 +850,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
 
         st.divider()
         st.subheader("רשימת שליחי החברה הפעילים:")
-        company_couriers_list = {usr: info for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role") == "שליח"}
+        company_couriers_list = {usr: info for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role"] == "שליח"}
         if not company_couriers_list:
             st.info("אין עדיין שליחים רשומים תחת החברה שלך.")
         else:
