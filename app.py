@@ -349,7 +349,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         st.title(t["monthly_report"])
         st.info("💡 החישוב מבוסס על 1 ₪ למשלוח שנמסר + חישוב מדויק לפני מע״מ ואחרי מע״מ (18%).")
         
-        couriers_list = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role"] == "שליח"]
+        couriers_list = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role") == "שליח"]
         current_month_str = get_current_date().strftime("%Y-%m")
         st.subheader(f"📅 סיכום חודש נוכחי: {current_month_str}")
 
@@ -576,7 +576,7 @@ if st.session_state.logged_in:
     if st.session_state.role == "מנהל מערכת (Admin)":
         current_deliveries = st.session_state.deliveries
     else:
-        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username]
+        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
 
     if len(current_deliveries) == 0:
         st.info(t["no_deliveries"])
