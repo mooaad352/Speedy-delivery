@@ -203,7 +203,7 @@ TRANSLATIONS = {
         "login_error": "خطأ في اسم المستخدم أو كلمة المرور.",
         "logout": "تسجيل الخروج",
         "admin_menu": "قائمة الإدارة",
-        "courier_menu": "قائمة המנדוב",
+        "courier_menu": "قائمة المندוב",
         "main_sys": "نظام الشحنات الرئيسي",
         "smart_route": "🗺️ ترتيب مسار الشحنات تلقائياً",
         "add_delivery": "➕ إضافة شحنة جديدة",
@@ -429,14 +429,11 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             start_location = st.selectbox("📍 בחר מיקום התחלה (נקודת מוצא של השליח):", all_cities)
             
             if st.button("🚀 הפעל סידור אוטומטי של המסלול"):
-                # סידור לפי אלגוריתם שכנים קרובים (Nearest Neighbor) בתוך רשימת היעדים
                 remaining = list(courier_deliveries)
                 sorted_route = []
-                
-                # מציאת המשלוח הקרוב ביותר לנקודת ההתחלה
                 current_point = start_location
+                
                 while remaining:
-                    # לצורך המחשה והתאמה מדויקת: קודם נביא את כל המשלוחים ששווים לעיר המוצא, ואחר כך שאר הערים
                     next_item = min(remaining, key=lambda x: 0 if x.get("עיר") == current_point else len(str(x.get("עיר"))))
                     sorted_route.append(next_item)
                     current_point = next_item.get("עיר")
@@ -464,7 +461,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             d_city = st.text_input("עיר / יישוב / כפר:")
             d_notes = st.text_area("הערות למשלוח:")
             
-            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
+            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
             assigned_courier = st.selectbox("שיוך שליח:", couriers_list if couriers_list else ["אין שליחים"])
             
             submit_new_del = st.form_submit_button("הוסף משלוח למערכת 🚀")
@@ -612,7 +609,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         st.title("🔍 אימות משלוחים שסורבו מול לקוחות (בקרת מנהל ראשי)")
         st.write("כאן תוכל לצפות בכל המשלוחים שדווחו כ'סורב על ידי הלקוח' על ידי השליחים או מנהלי החברות, ולבדוק ישירות מול הלקוח בטלפון או בוואטסאפ.")
         
-        rejected_deliveries = [d for d in st.session_state.deliveries if d.get("status") == "סורב על ידי הלקוח"]
+        rejected_deliveries = [d for d in st.session_state.deliveries if d.get("status"] == "סורב על ידי הלקוח"]
         
         if not rejected_deliveries:
             st.info("אין כרגע משלוחים שסומנו כסורבו על ידי הלקוחות.")
@@ -623,7 +620,6 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                     st.write(f"**טלפון הלקוח:** {r_item['טלפון']} | **כתובת:** {full_address_str} | **שליח מטפל:** {r_item.get('courier', 'לא צוין')}")
 
 else:
-    # תפריט שליח / מנהל חברה רגיל
     st.sidebar.title(t["courier_menu"])
     courier_menu_choice = st.sidebar.radio("תפריט פעולות", [t["main_sys"], t["smart_route"]])
     if st.sidebar.button(t["logout"]):
@@ -671,7 +667,7 @@ else:
         st.title(t["smart_route"])
         st.write("בחר את נקודת ההתחלה שלך, והמערכת תסדר אוטומטית את כל המסלול עבורך מהקרוב ביותר לרחוק!")
         
-        my_deliveries = [d for d in st.session_state.deliveries if (d.get("courier") == st.session_state.username or d.get("company") == st.session_state.company) and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
+        my_deliveries = [d for d in st.session_state.deliveries if (d.get("courier") == st.session_state.username or d.get("company") == st.session_state.company) and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
         
         if not my_deliveries:
             st.info("אין לך משלוחים פעילים כרגע.")
