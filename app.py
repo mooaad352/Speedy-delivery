@@ -429,7 +429,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         st.title(t["smart_route"])
         couriers_list = list(st.session_state.couriers_db.keys())
         selected_courier_route = st.selectbox("בחר שליח או מנהל לסידור מסלול:", couriers_list)
-        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
+        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
         
         if not courier_deliveries:
             st.info("אין משלוחים פעילים לשם זה.")
@@ -642,7 +642,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
     elif comp_admin_menu == t["smart_route"]:
         st.title(t["smart_route"])
         my_company_name = st.session_state.company
-        company_deliveries = [d for d in st.session_state.deliveries if (d.get("company") == my_company_name or d.get("courier") == st.session_state.username) and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
+        company_deliveries = [d for d in st.session_state.deliveries if (d.get("company") == my_company_name or d.get("courier") == st.session_state.username) and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
         if not company_deliveries:
             st.info("אין משלוחים פעילים לסידור.")
         else:
@@ -711,7 +711,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
             d_city = st.text_input("עיר / יישוב:")
             d_notes = st.text_area("הערות:")
             
-            allowed_assignees = [st.session_state.username] + [u for u, i in st.session_state.couriers_db.items() if i.get("company") == st.session_state.company and i.get("role"] == "שליח"]
+            allowed_assignees = [st.session_state.username] + [u for u, i in st.session_state.couriers_db.items() if i.get("company") == st.session_state.company and i.get("role") == "שליח"]
             assigned_courier = st.selectbox("בחר למי לשייך את המשלוח (עליך או לאחד מהשליחים שלך):", allowed_assignees)
             
             if st.form_submit_button("הוסף משלוח 🚀") and d_client and d_phone and d_city:
@@ -729,7 +729,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
         st.write("📊 סיכום פיננסי חודשי מרוכז: החישוב והתשלום מרוכזים באופן בלעדי אצלך כמנהל החברה עבור כל כמות המשלוחים שבוצעה במערכת תחתך ותחת שליחיך.")
         
         my_company_name = st.session_state.company
-        company_deliveries = [d for d in st.session_state.deliveries if d.get("company") == my_company_name or d.get("courier"] == st.session_state.username]
+        company_deliveries = [d for d in st.session_state.deliveries if d.get("company") == my_company_name or d.get("courier") == st.session_state.username]
         delivered_count = len([d for d in company_deliveries if d.get("status") == "נמסר"])
         
         user_info = st.session_state.couriers_db.get(st.session_state.username, {})
@@ -790,7 +790,7 @@ elif st.session_state.role == "שליח":
 
     if courier_menu == t["main_sys"]:
         st.title(f"🚚 רשימת המשלוחים שלי ({st.session_state.username})")
-        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username]
+        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
         
         if not my_deliveries:
             st.info("אין לך משלוחים מוקצים כרגע.")
@@ -816,7 +816,7 @@ elif st.session_state.role == "שליח":
 
     elif courier_menu == t["smart_route"]:
         st.title(t["smart_route"])
-        my_active = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
+        my_active = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
         if not my_active:
             st.info("אין משלוחים פעילים.")
         else:
