@@ -254,7 +254,6 @@ st.sidebar.download_button(
 if "couriers_db" not in st.session_state:
     st.session_state.couriers_db = load_users_db()
 
-# מילון לשמירת סדר המסלול המותאם אישית לכל שליח
 if "saved_routes" not in st.session_state:
     st.session_state.saved_routes = {}
 
@@ -404,7 +403,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         st.title(t["smart_route"])
         couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", couriers_list if couriers_list else ["אין שליחים"])
-        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
+        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
         
         if not courier_deliveries:
             st.info("אין משלוחים פעילים לשליח זה.")
@@ -431,7 +430,6 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                 
                 sorted_route.extend(end_items)
                 
-                # שמירת הסדר המאורגן האוטומטי כברירת מחדל לשליח
                 st.session_state.saved_routes[selected_courier_route] = sorted_route
                 st.success("✅ המסלול סודר ונשמר בהצלחה!")
                 
@@ -454,7 +452,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             d_floor = st.text_input("קומה:")
             d_city = st.text_input("עיר / יישוב:")
             d_notes = st.text_area("הערות:")
-            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
+            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
             assigned_courier = st.selectbox("שיוך שליח:", couriers_list if couriers_list else ["אין שליחים"])
             
             if st.form_submit_button("הוסף משלוח למערכת 🚀") and d_client and d_phone and d_city:
@@ -521,7 +519,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
     elif admin_menu == t["monthly_report"]:
         st.title(t["monthly_report"])
         st.write("הפקת דוח חודשי וחישוב עמלות:")
-        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
+        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         selected_c_rep = st.selectbox("בחר שליח לדוח:", all_couriers if all_couriers else ["אין שליחים"])
         if selected_c_rep:
             delivered_count = len([d for d in st.session_state.deliveries if d.get("courier") == selected_c_rep and d.get("status") == "נמסר"])
@@ -567,11 +565,11 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
         logout_user()
 
     current_company = st.session_state.company
-    company_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("company"] == current_company and i.get("role"] == "שליח"]
+    company_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("company") == current_company and i.get("role") == "שליח"]
 
     if comp_menu == t["main_sys"]:
         st.title(f"📦 ניהול משלוחי חברה: {current_company}")
-        comp_deliveries = [d for d in st.session_state.deliveries if d.get("company") == current_company or d.get("courier"] in company_couriers]
+        comp_deliveries = [d for d in st.session_state.deliveries if d.get("company") == current_company or d.get("courier") in company_couriers]
         
         col1, col2, col3 = st.columns(3)
         col1.metric("סך משלוחי חברה", len(comp_deliveries))
@@ -580,7 +578,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
         st.divider()
 
         for idx, item in enumerate(comp_deliveries):
-            status_color = "🟢" if item.get("status"] == "נמסר" else ("🔴" if "סורב" in item.get("status", "") else "🟠")
+            status_color = "🟢" if item.get("status") == "נמסר" else ("🔴" if "סורב" in item.get("status", "") else "🟠")
             full_address_str = f"כביש/רחוב: {item.get('כביש', '-')}, בית: {item.get('מספר בית', '-')}, קומה: {item.get('קומה', '-')}, יישוב: {item.get('עיר', '-')}"
             
             with st.expander(f"{status_color} 📦 לקוח: {item.get('שם לקוח', '')} | עיר: {item.get('עיר', '')} | שליח: {item.get('courier', '')}"):
@@ -609,7 +607,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
             st.warning("אין עדיין שליחים הרשומים תחת החברה שלך. הוסף שליחים דרך תפריט 'הוספת שליח חדש'.")
         else:
             selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", company_couriers)
-            courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
+            courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
             
             if not courier_deliveries:
                 st.info("אין משלוחים פעילים לשליח זה כרגע.")
@@ -742,14 +740,11 @@ elif st.session_state.role == "שליח":
     if courier_menu == t["main_sys"]:
         st.title("📦 המשלוחים שלי (לפי סדר המסלול השמור)")
         
-        # שליפת המשלוחים הפעילים של השליח
-        my_active_deliveries = [d for d in st.session_state.deliveries if (d.get("courier") == st.session_state.username or (current_courier_company != "Independent" and d.get("company"] == current_courier_company)) and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
-        delivered_items = [d for d in st.session_state.deliveries if (d.get("courier") == st.session_state.username or (current_courier_company != "Independent" and d.get("company"] == current_courier_company)) and d.get("status"] == "נמסר"]
+        my_active_deliveries = [d for d in st.session_state.deliveries if (d.get("courier") == st.session_state.username or (current_courier_company != "Independent" and d.get("company") == current_courier_company)) and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
+        delivered_items = [d for d in st.session_state.deliveries if (d.get("courier") == st.session_state.username or (current_courier_company != "Independent" and d.get("company") == current_courier_company)) and d.get("status") == "נמסר"]
 
-        # אם יש סדר שמור למשתמש זה, נסדר לפיו את הרשימה הפעילה
         if st.session_state.username in st.session_state.saved_routes:
             saved_route_barcodes = [d.get("ברקוד") for d in st.session_state.saved_routes[st.session_state.username]]
-            # נבנה את הרשימה מחדש לפי הסדר השמור, ונצרף משלוחים חדשים שלא היו במסלול השמור בהתחלה
             ordered_active = sorted(my_active_deliveries, key=lambda x: saved_route_barcodes.index(x.get("ברקוד")) if x.get("ברקוד") in saved_route_barcodes else 999)
         else:
             ordered_active = my_active_deliveries
@@ -757,7 +752,6 @@ elif st.session_state.role == "שליח":
         final_display_list = ordered_active + delivered_items
 
         if not final_display_list:
-        ...
             st.info("אין משלוחים להצגה כרגע.")
         else:
             for idx, item in enumerate(final_display_list, 1):
@@ -795,7 +789,6 @@ elif st.session_state.role == "שליח":
             with col_sc2:
                 courier_end_loc = st.selectbox("🏁 בחר נקודת סיום (יעד סופי):", all_cities, key="cour_end")
             
-            # כפתור סידור אוטומטי
             if st.button("🚀 סדר את המסלול שלי אוטומטית לפי יישובים"):
                 remaining = [d for d in my_active_deliveries if d.get("עיר") != courier_end_loc]
                 end_items = [d for d in my_active_deliveries if d.get("עיר") == courier_end_loc]
@@ -809,11 +802,9 @@ elif st.session_state.role == "שליח":
                     remaining.remove(next_item)
                 
                 sorted_route.extend(end_items)
-                # נשמור מיד בזכרון את המסלול הזמני שהופק
                 st.session_state.temp_sorted_route = sorted_route
                 st.success("✅ המסלול סודר אוטומטית! בדוק למטה ולחץ על כפתור השמירה כדי לאשר.")
 
-            # אם יש מסלול זמני או קיים, נאפשר לשליח לשמור אותו כסדר הרשמי להתחלת משלוחים
             current_route_to_show = st.session_state.get("temp_sorted_route", st.session_state.saved_routes.get(st.session_state.username, my_active_deliveries))
 
             st.divider()
@@ -822,7 +813,6 @@ elif st.session_state.role == "שליח":
             for s_idx, s_item in enumerate(current_route_to_show, 1):
                 st.markdown(f"**{s_idx}. 📦 לקוח: {s_item.get('שם לקוח', '')} | יישוב: {s_item.get('עיר', '')} | רחוב: {s_item.get('כביש', '')}**")
 
-            # כפתור שמירה ייעודי שדורשת המשתמש
             if st.button("💾 שמור סדר זה כסדר הרשמי להתחלת המשלוחים"):
                 st.session_state.saved_routes[st.session_state.username] = current_route_to_show
                 st.success("🎉 סדר המשלוחים נשמר בהצלחה! מעכשיו המסך הראשי של המשלוחים שלך יציג אותם בדיוק בסדר הזה.")
