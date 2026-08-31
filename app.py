@@ -617,21 +617,77 @@ else:
     
     st.write(f"הנך מחובר כחלק מ-{st.session_state.company}")
     
+    # אפשרות להוספת משלוח חדש גם למנהלי חברות ושליחים
+    with st.expander(t["add_new_del"], expanded=False):
+        with st.form("courier_add_delivery_form"):
+            col_a, col_b = st.columns(2)
+            with col_a:
+                new_barcode = st.text_input(t["barcode"], value=f"DEL-{len(st.session_state.deliveries)+101}")
+                new_cust_name = st.text_input(t["cust_name"])
+                new_company_name = st.text_input(t["company_name"], value=st.session_state.company)
+                new_phone = st.text_input(t["phone"], value="050")
+            with col_b:
+                new_city = st.text_input(t["city"])
+                new_street = st.text_input(t["street"])
+                new_house = st.text_input(t["house"])
+                new_floor = st.text_input(t["floor"])
+            
+            new_notes = st.text_area(t["notes"])
+            
+            submit_courier_del = st.form_submit_button(t["save_del"])
+            if submit_courier_del:
+                if new_cust_name and new_city:
+                    current_time_il = get_israel_time()
+                    new_item = {
+                        "ברקוד": new_barcode,
+                        "שם לקוח": new_cust_name,
+                        "שם חברה": new_company_name,
+                        "טלפון": format_whatsapp_phone(new_phone),
+                        "כתובת מלאה": f"{new_city}, {new_street} {new_house}".strip(),
+                        "רחוב": new_street,
+                        "בית": new_house,
+                        "קומה": new_floor,
+                        "עיר": new_city,
+                        "הערות": new_notes,
+                        "status": "ממתין",
+                        "courier": st.session_state.username,
+                        "company": st.session_state.company,
+                        "date": current_time_il
+                    }
+                    st.session_state.deliveries.append(new_item)
+                    st.success(t["del_success"])
+                    st.rerun()
+                else:
+                    st.warning(t["fill_required"])
+
+    st.divider()
     st.subheader(t["list_title"])
+    
     filtered_deliveries = [d for d in st.session_state.deliveries if st.session_state.role == "מנהל מערכת ראשי (Super Admin)" or d.get("company") == st.session_state.company or d.get("courier") == st.session_state.username]
     
     if not filtered_deliveries:
         st.info(t["no_deliveries"])
     else:
         for idx, item in enumerate(filtered_deliveries):
-            with st.expander(f"📦 {item['שם לקוח']} | {item['עיר']} | סטטוס: {item['status']}"):
+            status_color = "🟢" if item["status"] == "נמסר" else "🟠"
+            with st.expander(f"{status_color} 📦 {item['שם לקוח']} | {item['עיר']} | סטטוס: {item['status']}"):
                 st.write(f"**{t['barcode']}** {item['ברקוד']}")
                 st.write(f"**{t['company_name']}** {item['שם חברה']}")
                 st.write(f"**{t['phone']}** {item['טלפון']}")
                 st.write(f"**{t['address']}** {item['עיר']}, {item.get('רחוב', '')} {item.get('בית', '')}")
+                st.write(f"**הערות:** {item.get('הערות', 'אין')}")
                 
-                if item["status"] == "ממתין":
-                    if st.button(t["mark_delivered"], key=f"mark_{idx}"):
-                        item["status"] = "נמסר"
-                        st.success(t["delivered_success"])
-                        st.rerun()
+                col_btn1, col_btn2 = st.columns(2)
+                with col_btn1:
+                    if item["status"] == "ממתין":
+                        if st.button(t["mark_delivered"], key=f"mark_{idx}"):
+                            item["status"] = "נמסר"
+                            st.success(t["delivered_success"])
+                            st.rerun()
+                with col_btn2:
+                    phone_clean = format_whatsapp_phone(item['טלפון'])
+                    cust_n = item['שם לקוח']
+                    comp_n = item['שם חברה']
+                    wa_text = f"שלום {cust_n}, שליח בדרך אליך עם משלוח מ-{comp_n}."
+                    whatsapp_link = f"https://wa.me/{phone_clean}?text={urllib.parse.quote(wa_text)}"
+                    st.markdown(f"[{t['whatsapp_btn']}]({whatsapp_link})", unsafe_allow_html=True)
