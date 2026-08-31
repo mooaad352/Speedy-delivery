@@ -420,7 +420,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", couriers_list if couriers_list else ["אין שליחים"])
         
-        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
+        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
         
         if not courier_deliveries:
             st.info("אין משלוחים פעילים לשליח זה.")
@@ -461,7 +461,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             d_city = st.text_input("עיר / יישוב / כפר:")
             d_notes = st.text_area("הערות למשלוח:")
             
-            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
+            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
             assigned_courier = st.selectbox("שיוך שליח:", couriers_list if couriers_list else ["אין שליחים"])
             
             submit_new_del = st.form_submit_button("הוסף משלוח למערכת 🚀")
@@ -532,7 +532,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             user_company = info.get("company", "Independent")
             valid_user_items = [
                 d for d in st.session_state.deliveries 
-                if (d.get("courier") == usr or d.get("company") == user_company) and d.get("status") != "סורב על ידי הלקוח"
+                if (d.get("courier") == usr or d.get("company") == user_company) and d.get("status"] != "סורב על ידי הלקוח"
             ]
             
             count_valid_deliveries = len(valid_user_items)
@@ -621,13 +621,13 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
 else:
     st.sidebar.title(t["courier_menu"])
-    courier_menu_choice = st.sidebar.radio("תפריט פעולות", [t["main_sys"], t["smart_route"]])
+    courier_menu_choice = st.sidebar.radio("תפריט פעולות", [t["main_sys"], t["smart_route"], t["add_delivery"]])
     if st.sidebar.button(t["logout"]):
         logout_user()
 
     if courier_menu_choice == t["main_sys"]:
         st.title("📦 המשלוחים שלי")
-        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username or d.get("company") == st.session_state.company]
+        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username or d.get("company"] == st.session_state.company]
         
         for idx, item in enumerate(my_deliveries):
             status_color = "🟢" if item["status"] == "נמסר" else ("🔴" if "סורב" in item["status"] else ("🔵" if "נדחה" in item["status"] else "🟠"))
@@ -667,7 +667,7 @@ else:
         st.title(t["smart_route"])
         st.write("בחר את נקודת ההתחלה שלך, והמערכת תסדר אוטומטית את כל המסלול עבורך מהקרוב ביותר לרחוק!")
         
-        my_deliveries = [d for d in st.session_state.deliveries if (d.get("courier") == st.session_state.username or d.get("company") == st.session_state.company) and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
+        my_deliveries = [d for d in st.session_state.deliveries if (d.get("courier") == st.session_state.username or d.get("company") == st.session_state.company) and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
         
         if not my_deliveries:
             st.info("אין לך משלוחים פעילים כרגע.")
@@ -694,3 +694,27 @@ else:
                     waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
                     st.markdown(f'<a href="{waze_link}" target="_blank"><button style="background-color:#33ccff; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">🧭 נווט לתחנה זו ב-Waze</button></a>', unsafe_allow_html=True)
                     st.divider()
+
+    elif courier_menu_choice == t["add_delivery"]:
+        st.title(t["add_delivery"])
+        with st.form("courier_add_delivery_form"):
+            d_barcode = st.text_input("ברקוד משלוח / מספר מעקב (QR):", value=f"DEL-{int(datetime.now().timestamp())}")
+            d_client = st.text_input("שם הלקוח:")
+            d_company = st.text_input("שם חברה / מותג ששולח (למשל: SHEIN):")
+            d_phone = st.text_input("טלפון הלקוח:")
+            d_street = st.text_input("שם כביש / רחוב (לפי QR או כפר בלבד):")
+            d_house = st.text_input("מספר בית (השאר ריק בכפרים שאין בהם מספר בית):")
+            d_floor = st.text_input("קומה (השאר ריק אם אין):")
+            d_city = st.text_input("עיר / יישוב / כפר:")
+            d_notes = st.text_area("הערות למשלוח:")
+            
+            submit_courier_del = st.form_submit_button("הוסף משלוח אישי למערכת 🚀")
+            if submit_courier_del and d_client and d_phone and d_city:
+                new_item = {
+                    "ברקוד": d_barcode, "שם לקוח": d_client, "שם חברה": d_company if d_company else st.session_state.company,
+                    "טלפון": format_whatsapp_phone(d_phone), "כביש": d_street, "מספר בית": d_house, "קומה": d_floor, "עיר": d_city,
+                    "הערות": d_notes, "status": "ממתין", "courier": st.session_state.username, "company": st.session_state.company,
+                    "date": get_israel_time()
+                }
+                st.session_state.deliveries.append(new_item)
+                st.success("המשלוח נוסף בהצלחה למערכת ושויך אליך!")
