@@ -55,53 +55,6 @@ def generate_html_contract_form():
     file_stream.seek(0)
     return file_stream
 
-def generate_personal_html_contract(data_dict):
-    html_content = f"""<!DOCTYPE html>
-<html lang="he" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>חוזה חתום - {data_dict.get('שם מלא', '')}</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 25px; direction: rtl; text-align: right; color: #333; }}
-        .container {{ max-width: 750px; margin: auto; background: #ffffff; padding: 35px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }}
-        h2 {{ color: #1f2937; text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }}
-        .details-table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
-        .details-table th, .details-table td {{ border: 1px solid #d1d5db; padding: 10px 14px; text-align: right; font-size: 14px; }}
-        .details-table th {{ background-color: #f3f4f6; color: #374151; }}
-        .contract-box {{ background: #f9fafb; border: 1px solid #d1d5db; padding: 15px; border-radius: 6px; font-size: 13px; margin-top: 20px; line-height: 1.6; color: #111827; }}
-        .signature {{ margin-top: 25px; font-weight: bold; color: #16a34a; text-align: center; font-size: 16px; }}
-    </style>
-</head>
-<body>
-<div class="container">
-    <h2>📄 טופס התרשמות וחוזה חתום - Speedy Delivery</h2>
-    <table class="details-table">
-        <tr><th>שם משתמש</th><td>{data_dict.get('שם משתמש', '')}</td></tr>
-        <tr><th>תפקיד</th><td>{data_dict.get('תפקיד', '')}</td></tr>
-        <tr><th>חברה משוייכת</th><td>{data_dict.get('חברה', '')}</td></tr>
-        <tr><th>שם מלא</th><td>{data_dict.get('שם מלא', '')}</td></tr>
-        <tr><th>תעודת זהות</th><td>{data_dict.get('ת.ז', '')}</td></tr>
-        <tr><th>כתובת מלאה</th><td>{data_dict.get('כתובת', '')}</td></tr>
-        <tr><th>אימייל</th><td>{data_dict.get('אימייל', '')}</td></tr>
-        <tr><th>טלפון נייד</th><td>{data_dict.get('טלפון', '')}</td></tr>
-        <tr><th>ח.פ / עוסק פטור</th><td>{data_dict.get('ח.פ / עוסק פטור', '')}</td></tr>
-        <tr><th>תאריך ושעת אישור החוזה</th><td>{data_dict.get('תאריך רישום', '')}</td></tr>
-    </table>
-    <div class="contract-box">
-        <strong>תנאי שימוש והצהרה:</strong><br><br>
-        1. מערכת "Speedy Delivery" מהווה פלטפורמה טכנולוגית עצמאית.<br>
-        2. המשתמש נושא באחריות מלאה על פעילותו העסקית והמשלוחים המנוהלים תחת חשבונו.<br>
-        3. הסדרת התשלומים והדוחות החודשיים מול המערכת מתבצעת מול מנהל החברה או החשבון הראשי.<br>
-    </div>
-    <div class="signature">✅ החוזה אושר ונחתם דיגיטלית בהצלחה</div>
-</div>
-</body>
-</html>"""
-    file_stream = BytesIO(html_content.encode("utf-8"))
-    file_stream.seek(0)
-    return file_stream
-
 def generate_monthly_invoice_html(user_name, user_hp, is_exempt, count_deliveries, price_per_unit=1.0):
     base_price = count_deliveries * price_per_unit
     vat_amount = 0.0 if is_exempt else base_price * VAT_RATE
@@ -243,12 +196,6 @@ def save_contract_data(new_data):
     new_row = pd.DataFrame([new_data])
     df = pd.concat([df, new_row], ignore_index=True)
     df.to_csv(CONTRACTS_FILE, index=False, encoding="utf-8-sig")
-
-def delete_contract_by_index(idx):
-    df = load_contracts_data()
-    if 0 <= idx < len(df):
-        df = df.drop(idx).reset_index(drop=True)
-        df.to_csv(CONTRACTS_FILE, index=False, encoding="utf-8-sig")
 
 TRANSLATIONS = {
     "עברית (Hebrew)": {
@@ -567,12 +514,11 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["monthly_report"]:
         st.title(t["monthly_report"])
-        company_admins = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "מנהל חברה (Company Admin)"]
+        company_admins = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "מנהל חברה (Company Admin)"]
         selected_admin_rep = st.selectbox("בחר מנהל חברה להפקת דוח כספי מרוכז:", company_admins if company_admins else ["אין מנהלי חברות"])
         
         if selected_admin_rep and selected_admin_rep != "אין מנהלי חברות":
             admin_company = st.session_state.couriers_db.get(selected_admin_rep, {}).get("company", "")
-            # איסוף כל המשלוחים שבוצעו תחת מנהל החברה או תחת כל השליחים ששייכים לחברה שלו
             company_deliveries = [d for d in st.session_state.deliveries if d.get("company") == admin_company or d.get("courier") == selected_admin_rep]
             delivered_count = len([d for d in company_deliveries if d.get("status") == "נמסר"])
             
@@ -581,7 +527,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             u_hp = user_info.get("hp_exempt", "אין")
             is_exempt = "פטור" in str(u_hp) or u_hp == "אין"
             
-            st.metric("סך כל המשלוחים שנמסרו (כולל כל שליחי החברה תחת שמך)", delivered_count)
+            st.metric("סך הכל משלוחים שנמסרו (כולל כל שליחי החברה תחת שמך)", delivered_count)
             price_per_del = st.number_input("תעריף לכל משלוח (₪):", value=1.0, step=0.5)
             
             invoice_stream = generate_monthly_invoice_html(u_name, u_hp, is_exempt, delivered_count, price_per_del)
@@ -643,12 +589,11 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
         st.title(f"🚚 ניהול משלוחים - {st.session_state.username} (חברת {st.session_state.company})")
         my_company_name = st.session_state.company
         
-        # מנהל חברה רואה את כל המשלוחים שלו ושל השליחים ששייכים לחברה שלו
-        company_deliveries = [d for d in st.session_state.deliveries if d.get("company") == my_company_name or d.get("courier"] == st.session_state.username]
+        company_deliveries = [d for d in st.session_state.deliveries if d.get("company") == my_company_name or d.get("courier") == st.session_state.username]
         
         col1, col2 = st.columns(2)
         col1.metric("סך משלוחי החברה והשליחים", len(company_deliveries))
-        col2.metric("נמסרו בהצלחה", len([d for d in company_deliveries if d.get("status"] == "נמסר"]))
+        col2.metric("נמסרו בהצלחה", len([d for d in company_deliveries if d.get("status") == "נמסר"]))
         st.divider()
 
         if not company_deliveries:
@@ -677,7 +622,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
     elif comp_admin_menu == t["smart_route"]:
         st.title(t["smart_route"])
         my_company_name = st.session_state.company
-        company_deliveries = [d for d in st.session_state.deliveries if (d.get("company") == my_company_name or d.get("courier") == st.session_state.username) and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
+        company_deliveries = [d for d in st.session_state.deliveries if (d.get("company") == my_company_name or d.get("courier") == st.session_state.username) and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
         if not company_deliveries:
             st.info("אין משלוחים פעילים לסידור.")
         else:
@@ -717,8 +662,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
             d_city = st.text_input("עיר / יישוב:")
             d_notes = st.text_area("הערות:")
             
-            # הצגת השליחים ששייכים לחברה זו + מנהל החברה עצמו
-            allowed_assignees = [st.session_state.username] + [u for u, i in st.session_state.couriers_db.items() if i.get("company"] == st.session_state.company and i.get("role") == "שליח"]
+            allowed_assignees = [st.session_state.username] + [u for u, i in st.session_state.couriers_db.items() if i.get("company") == st.session_state.company and i.get("role") == "שליח"]
             assigned_courier = st.selectbox("בחר למי לשייך את המשלוח (עליך או לאחד מהשליחים שלך):", allowed_assignees)
             
             if st.form_submit_button("הוסף משלוח 🚀") and d_client and d_phone and d_city:
@@ -736,9 +680,8 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
         st.write("📊 סיכום פיננסי חודשי מרוכז: החישוב והתשלום מרוכזים באופן בלעדי אצלך כמנהל החברה עבור כל כמות המשלוחים שבוצעה במערכת תחתך ותחת שליחיך.")
         
         my_company_name = st.session_state.company
-        # איסוף כל המשלוחים של החברה או של השליחים שלה
-        company_deliveries = [d for d in st.session_state.deliveries if d.get("company"] == my_company_name or d.get("courier"] == st.session_state.username]
-        delivered_count = len([d for d in company_deliveries if d.get("status"] == "נמסר"])
+        company_deliveries = [d for d in st.session_state.deliveries if d.get("company") == my_company_name or d.get("courier") == st.session_state.username]
+        delivered_count = len([d for d in company_deliveries if d.get("status") == "נמסר"])
         
         user_info = st.session_state.couriers_db.get(st.session_state.username, {})
         u_name = user_info.get("full_name", st.session_state.username)
@@ -824,7 +767,7 @@ elif st.session_state.role == "שליח":
 
     elif courier_menu == t["smart_route"]:
         st.title(t["smart_route"])
-        my_active = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
+        my_active = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
         if not my_active:
             st.info("אין משלוחים פעילים.")
         else:
