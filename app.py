@@ -279,7 +279,9 @@ elif st.session_state.role == "מנהל חברה":
         my_company_name = st.session_state.company
         company_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("company") == my_company_name or u == st.session_state.username]
         selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", company_couriers)
-        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
+        
+        # --- כאן תוקנה השגיאה (סוגריים עגולים במקום מרובעים) ---
+        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
         
         if not courier_deliveries:
             st.info("אין משלוחים פעילים לשם זה.")
@@ -338,7 +340,7 @@ elif st.session_state.role == "מנהל חברה":
         st.title(t["monthly_report"])
         my_comp_name = st.session_state.company
         company_deliveries = [d for d in st.session_state.deliveries if d.get("company") == my_comp_name or d.get("courier") == st.session_state.username]
-        delivered_count = len([d for d in company_deliveries if d.get("status"] == "נמסר"])
+        delivered_count = len([d for d in company_deliveries if d.get("status") == "נמסר"])
         
         user_info = st.session_state.couriers_db.get(st.session_state.username, {})
         u_name = user_info.get("full_name", st.session_state.username)
@@ -394,7 +396,7 @@ elif st.session_state.role == "שליח":
 
     if courier_menu == t["main_sys"]:
         st.title(f"🚚 משלוחים המשוייכים אליך - {st.session_state.username}")
-        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username]
+        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
         
         if not my_deliveries:
             st.info("אין לך משלוחים פעילים כרגע. באפשרותך להוסיף משלוח חדש מהתפריט בצד.")
