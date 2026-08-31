@@ -1,6 +1,8 @@
 import streamlit as st
 import urllib.parse
 from datetime import datetime, timezone, timedelta
+import pandas as pd
+import os
 
 # הגדרת שעון ישראל (UTC+2 / UTC+3)
 ISRAEL_OFFSET = timedelta(hours=2)
@@ -14,6 +16,20 @@ def get_current_date():
 
 # הגדרת עיצוב הדף (כיוון מימין לשמאל כברירת מחדל)
 st.set_page_config(page_title="Speedy Delivery - מערכת ניהול משלוחים", page_icon="🚚", layout="wide")
+
+# --- קובץ שמירת חוזי שליחים ---
+CONTRACTS_FILE = "delivery_drivers_contracts.csv"
+
+def load_contracts_data():
+    if os.path.exists(CONTRACTS_FILE):
+        return pd.read_csv(CONTRACTS_FILE)
+    return pd.DataFrame(columns=["שם", "תז", "טלפון", "עיר", "רכב", "רישיון", "חתימה", "תאריך ושעה"])
+
+def save_contract_data(new_data):
+    df = load_contracts_data()
+    new_row = pd.DataFrame([new_data])
+    df = pd.concat([df, new_row], ignore_index=True)
+    df.to_csv(CONTRACTS_FILE, index=False)
 
 # --- מילון תרגומים מלא למערכת (ערבית, עברית, אנגלית) ---
 TRANSLATIONS = {
@@ -30,6 +46,7 @@ TRANSLATIONS = {
         "add_courier": "إضافة مندوب جديد",
         "manage_users": "إدارة وتعديل المستخدمين",
         "monthly_report": "📊 تقرير الحسابات الشهري والرواتب",
+        "contract_menu": "📝 عقد وتوقيع المناديب",
         "current_loc": "📍 موقعك الحالي / نقطة الانطلاق",
         "loc_placeholder": "أدخل موقعك الحالي (بلدة / مدينة):",
         "active_deliveries": "لديك حالياً",
@@ -81,6 +98,7 @@ TRANSLATIONS = {
         "add_courier": "הוספת שליח חדש",
         "manage_users": "ניהול ועריכת משתמשים",
         "monthly_report": "📊 סיכום חודשי, חישוב שכר ותשלום לשליחים",
+        "contract_menu": "📝 חוזה וחתימת שליחים",
         "current_loc": "📍 מיקום נוכחי ונקודת מוצא",
         "loc_placeholder": "הכנס את המיקום הנוכחי שלך (עיר / כפר):",
         "active_deliveries": "יש לך כרגע",
@@ -132,6 +150,7 @@ TRANSLATIONS = {
         "add_courier": "Add New Courier",
         "manage_users": "Manage & Edit Users",
         "monthly_report": "📊 Monthly Couriers Report & Payment",
+        "contract_menu": "📝 Couriers Contract & Signatures",
         "current_loc": "📍 Current Location & Origin",
         "loc_placeholder": "Enter your current location (City/Village):",
         "active_deliveries": "You currently have",
@@ -270,7 +289,8 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
             t["main_sys"], 
             t["add_courier"], 
             t["manage_users"],
-            t["monthly_report"]
+            t["monthly_report"],
+            t["contract_menu"]
         ]
     )
     
@@ -329,7 +349,7 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         st.title(t["monthly_report"])
         st.info("💡 החישוב מבוסס על 1 ₪ למשלוח שנמסר + חישוב מדויק לפני מע״מ ואחרי מע״מ (18%).")
         
-        couriers_list = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role") == "שליח"]
+        couriers_list = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role"] == "שליח"]
         current_month_str = get_current_date().strftime("%Y-%m")
         st.subheader(f"📅 סיכום חודש נוכחי: {current_month_str}")
 
@@ -340,7 +360,6 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
             ]
             total_count = len(completed_deliveries)
             
-            # חישוב שכר (1 שקל למשלוח)
             amount_before_vat = total_count * 1.0
             vat_amount = amount_before_vat * 0.18
             amount_after_vat = amount_before_vat * 1.18
@@ -367,13 +386,103 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
         
         st.stop()
 
+    elif admin_menu == t["contract_menu"]:
+        st.title(t["contract_menu"])
+        st.write("צפייה בחוזים ובשליחים שחתמו על טופס ההתקשרות במערכת:")
+        
+        contracts_df = load_contracts_data()
+        if contracts_df.empty:
+            st.info("עדיין לא נרשמו שליחים שחתמו על החוזה.")
+        else:
+            st.dataframe(contracts_df, use_container_width=True)
+            csv_data = contracts_df.to_csv(index=False).encode('utf-8-sig')
+            st.download_button(
+                label="הורד רשימת חוזי שליחים (CSV)",
+                data=csv_data,
+                file_name="delivery_drivers_contracts.csv",
+                mime="text/csv",
+            )
+        st.stop()
+
 # --- מסך המערכת המרכזי (שליחים ומנהל) ---
 if st.session_state.logged_in:
     if st.session_state.role != "מנהל מערכת (Admin)":
         st.sidebar.title(f"{t['welcome_courier']}, {st.session_state.username}")
         st.sidebar.markdown("---")
+        
+        # אפשרות לשליח לחתום על החוזה מהסיידבר אם ירצה
+        if st.sidebar.button("📝 חתימה על חוזה שליחים"):
+            st.session_state.show_contract_screen = True
+        else:
+            if "show_contract_screen" not in st.session_state:
+                st.session_state.show_contract_screen = False
+
         if st.sidebar.button(t["logout"]):
             logout_user()
+
+    # בדיקה האם השליח ביקש להציג את מסך החוזה
+    if st.session_state.get("show_contract_screen", False) and st.session_state.role != "מנהל מערכת (Admin)":
+        st.title("📝 חוזה התקשרות ורישום שליחים")
+        st.write("אנא מלא את כל הפרטים הנדרשים וקרא בעיון את החוזה טרם החתימה הדיגיטלית.")
+
+        if st.button("⬅️ חזרה למערכת המשלוחים"):
+            st.session_state.show_contract_screen = False
+            st.rerun()
+
+        with st.form("driver_contract_form"):
+            st.subheader("1. פרטים אישיים")
+            col1, col2 = st.columns(2)
+
+            with col1:
+                full_name = st.text_input("שם מלא (חובה)")
+                id_number = st.text_input("מספר תעודת זהות / ח.פ (חובה)")
+                phone = st.text_input("מספר טלפון נייד (חובה)")
+
+            with col2:
+                city = st.text_input("עיר מגורים / אזור פעילות")
+                vehicle_type = st.selectbox("סוג כלי רכב", ["אופנוע", "רכב פרטי", "אופניים חשמליים", "ברגל"])
+                license_number = st.text_input("מספר רישיון נהיגה (אם רלוונטי)")
+
+            st.divider()
+
+            st.subheader("2. תנאי ההתקשרות והחוזה")
+            contract_text = """
+אני החתימה מטה מתחייב/ת בזאת לספק את שירותי המשלוחים בהתאם לכללים הבאים:
+1. שמירה מוחלטת על שלמות המשלוחים והגעתם בזמן הסביר והמוסכם ליעד.
+2. שמירה על קשר רציף ותקין עם מנהל המערכת בעת ביצוע משלוחים בפועל.
+3. ידוע לי כי התשלום יועבר בהתאם לסיכום מראש מול הנהלת האפליקציה בלבד.
+4. האחריות הבלעדית על כלי הרכב, תחזוקתו, דלק והוצאותיו חלות על השליח בלבד.
+5. כל הפרטים שאמסור במסגרת טופס זה הינם נכונים, מדויקים ומלאים.
+"""
+            st.text_area("תנאי החוזה המחייבים:", contract_text, height=160, disabled=True)
+
+            st.divider()
+
+            st.subheader("3. אישור וחתימה דיגיטלית")
+            agree = st.checkbox("אני מאשר/ת שקראתי את כל תנאי החוזה בעיון והפרטים שמסרתי נכונים ומדויקים.")
+            signature_name = st.text_input("הקלד את שמך המלא כחתימה דיגיטלית (חובה)")
+
+            submit_contract = st.form_submit_button(label="שמור חוזה והשלם רישום")
+
+            if submit_contract:
+                if not full_name or not id_number or not phone or not signature_name or not agree:
+                    st.error("אנא מלא את כל שדות החובה, הקלד חתימה דיגיטלית וסמן את תיבת האישור לחוזה.")
+                else:
+                    driver_record = {
+                        "שם": full_name,
+                        "תז": id_number,
+                        "טלפון": phone,
+                        "עיר": city,
+                        "רכב": vehicle_type,
+                        "רישיון": license_number if license_number else "אין",
+                        "חתימה": signature_name,
+                        "תאריך ושעה": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    }
+                    
+                    save_contract_data(driver_record)
+                    st.success(f"תודה רבה {full_name}! החוזה נחתם בהצלחה והועבר למערכת.")
+        
+        st.stop()
 
     st.sidebar.markdown("---")
     st.sidebar.subheader(t["current_loc"])
@@ -467,7 +576,7 @@ if st.session_state.logged_in:
     if st.session_state.role == "מנהל מערכת (Admin)":
         current_deliveries = st.session_state.deliveries
     else:
-        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
+        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username]
 
     if len(current_deliveries) == 0:
         st.info(t["no_deliveries"])
