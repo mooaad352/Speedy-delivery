@@ -198,7 +198,7 @@ TRANSLATIONS = {
         "add_delivery": "➕ הוספת משלוח חדש",
         "add_courier": "הוספת שליח חדש",
         "add_company_admin": "הוספת מנהל חברת משלוחים",
-        "manage_users": "ניהול ועריכת משתמשים",
+        "manage_users": "ניהול סיסמאות ומשתמשים",
         "monthly_report": "📊 סיכום חודשי ודוחות",
         "contract_menu": "📝 פנקס נרשמים וחוזים שמורים",
         "live_tracking": "📍 מעקב מיקום שליחים בזמן אמת",
@@ -224,7 +224,7 @@ TRANSLATIONS = {
         "add_delivery": "➕ إضافة شحنة جديدة",
         "add_courier": "إضافة مندوب جديد",
         "add_company_admin": "إضافة مدير شركة توصيل",
-        "manage_users": "إدارة وتعديل المستخدمين",
+        "manage_users": "إدارة كلمات المرور والمستخدمين",
         "monthly_report": "📊 تقرير الحسابات والعمولات",
         "contract_menu": "📝 سجل العقود والبيانات المسجلة",
         "live_tracking": "📍 متابعة مواقع الشليחים (GPS)",
@@ -400,7 +400,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         st.title(t["smart_route"])
         couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", couriers_list if couriers_list else ["אין שליחים"])
-        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
+        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
         
         if not courier_deliveries:
             st.info("אין משלוחים פעילים לשליח זה.")
@@ -475,17 +475,26 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                 st.success("השליח נוסף בהצלחה!")
 
     elif admin_menu == t["manage_users"]:
-        st.title(t["manage_users"])
+        st.title("🔑 ניהול וצפייה בסיסמאות כל המשתמשים במערכת")
+        st.info("כאן תוכל לראות את כל המשתמשים הרשומים (מנהלים ושליחים), כולל הסיסמה הנוכחית של כל אחד מהם, לעדכן אותה או למחוק משתמשים לפי הצורך.")
+        
         for usr, info in list(st.session_state.couriers_db.items()):
-            if usr == "Admin": continue
-            with st.expander(f"👤 {usr} ({info.get('role', '')}) - חברה: {info.get('company', '')}"):
+            if usr == "Admin": 
+                continue
+            with st.expander(f"👤 {usr} | תפקיד: {info.get('role', '')} | חברה: {info.get('company', '')}"):
+                st.markdown(f"**שם משתמש:** `{usr}`")
+                st.markdown(f"**סיסמה נוכחית במערכת:** `{info.get('password', '')}`")
+                st.markdown(f"**טלפון:** `{info.get('phone', '-')}`")
+                
                 with st.form(f"change_pwd_form_{usr}"):
-                    new_admin_pwd = st.text_input("שנה סיסמה:", type="password", key=f"npwd_{usr}")
+                    new_admin_pwd = st.text_input("הגדר סיסמה חדשה למשתמש:", type="password", key=f"npwd_{usr}")
                     if st.form_submit_button("עדכן סיסמה"):
-                        st.session_state.couriers_db[usr]["password"] = new_admin_pwd.strip()
-                        save_users_db(st.session_state.couriers_db)
-                        st.success("הסיסמה עודכנה בהצלחה!")
-                        st.rerun()
+                        if new_admin_pwd.strip():
+                            st.session_state.couriers_db[usr]["password"] = new_admin_pwd.strip()
+                            save_users_db(st.session_state.couriers_db)
+                            st.success(f"הסיסמה של {usr} עודכנה בהצלחה!")
+                            st.rerun()
+                
                 if st.button(f"🗑️ מחק משתמש {usr}", key=f"del_usr_{usr}"):
                     del st.session_state.couriers_db[usr]
                     save_users_db(st.session_state.couriers_db)
@@ -495,7 +504,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
     elif admin_menu == t["monthly_report"]:
         st.title(t["monthly_report"])
         st.write("הפקת דוח חודשי וחישוב עמלות:")
-        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
+        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
         selected_c_rep = st.selectbox("בחר שליח לדוח:", all_couriers if all_couriers else ["אין שליחים"])
         if selected_c_rep:
             delivered_count = len([d for d in st.session_state.deliveries if d.get("courier") == selected_c_rep and d.get("status") == "נמסר"])
@@ -541,7 +550,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
         logout_user()
 
     current_company = st.session_state.company
-    company_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("company") == current_company and i.get("role") == "שליח"]
+    company_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("company") == current_company and i.get("role"] == "שליח"]
 
     if comp_menu == t["main_sys"]:
         st.title(f"📦 ניהול משלוחי חברה: {current_company}")
@@ -550,7 +559,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
         col1, col2, col3 = st.columns(3)
         col1.metric("סך משלוחי חברה", len(comp_deliveries))
         col2.metric("פעילים / ממתינים", len([d for d in comp_deliveries if d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]))
-        col3.metric("נמסרו בהצלחה", len([d for d in comp_deliveries if d.get("status") == "נמסר"]))
+        col3.metric("נמסרו בהצלחה", len([d for d in comp_deliveries if d.get("status"] == "נמסר"]))
         st.divider()
 
         for idx, item in enumerate(comp_deliveries):
@@ -662,6 +671,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
             for c_usr in company_couriers:
                 c_info = st.session_state.couriers_db[c_usr]
                 with st.expander(f"👤 שליח: {c_usr} | טלפון: {c_info.get('phone', '-')}"):
+                    st.markdown(f"**סיסמת השליח הנוכחית:** `{c_info.get('password', '')}`")
                     with st.form(f"reset_pwd_comp_{c_usr}"):
                         new_p = st.text_input("הגדר סיסמה חדשה לשליח:", type="password", key=f"np_c_{c_usr}")
                         if st.form_submit_button("עדכן סיסמת שליח"):
