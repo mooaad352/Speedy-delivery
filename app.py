@@ -333,15 +333,13 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
     if st.sidebar.button(t["logout"]):
         logout_user()
 
-    # 1. מערכת משלוחים ראשית (כולל הוספת משלוחים, ניהול וסידור מסלול)
+    # 1. מערכת משלוחים ראשית
     if admin_menu == t["main_sys"]:
         st.title(t["main_sys"])
         
-        # בחירת נקודת מוצא / מיקום נוכחי
         st.markdown(f"### {t['current_loc']}")
         start_location = st.text_input(t["loc_placeholder"], value="כסרא-סמיע")
         
-        # חיхуת וסינון משלוחים למנהל הראשי
         admin_deliveries = st.session_state.deliveries
         
         completed_count = len([d for d in admin_deliveries if d["status"] == "נמסר"])
@@ -354,7 +352,6 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         
         st.divider()
 
-        # הוספת משלוח חדש
         with st.expander(t["add_new_del"], expanded=False):
             with st.form("admin_add_delivery_form"):
                 col_a, col_b = st.columns(2)
@@ -371,7 +368,6 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                 
                 new_notes = st.text_area(t["notes"])
                 
-                # שיוך לשליח / חברה
                 company_list = list(set([info.get("company", "Independent") for usr, info in st.session_state.couriers_db.items()]))
                 assigned_company = st.selectbox("שייך לחברת משלוחים:", company_list)
                 
@@ -419,7 +415,6 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                     st.write(f"**{t['address']}** {item['עיר']}, {item.get('רחוב', '')} {item.get('בית', '')}")
                     st.write(f"**הערות:** {item.get('הערות', 'אין')}")
                     
-                    # כפתורי פעולה מהירים
                     col_btn1, col_btn2 = st.columns(2)
                     with col_btn1:
                         if item["status"] == "ממתין":
@@ -429,7 +424,10 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                                 st.rerun()
                     with col_btn2:
                         phone_clean = item['טלפון'].strip().replace("+", "")
-                        whatsapp_link = f"https://wa.me/{phone_clean}?text={urllib.parse.quote(f'שלום {item[\"שם לקוח\"]}, שליח בדרך אליך עם משלוח מ-{item[\"שם חברה\"]}.')}"
+                        cust_n = item['שם לקוח']
+                        comp_n = item['שם חברה']
+                        wa_text = f"שלום {cust_n}, שליח בדרך אליך עם משלוח מ-{comp_n}."
+                        whatsapp_link = f"https://wa.me/{phone_clean}?text={urllib.parse.quote(wa_text)}"
                         st.markdown(f"[{t['whatsapp_btn']}]({whatsapp_link})", unsafe_allow_html=True)
 
     # 2. הוספת מנהל חברת משלוחים
@@ -466,7 +464,6 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             c_password = st.text_input("סיסמה:", type="password")
             c_phone = st.text_input("מספר טלפון של השליח:")
             
-            # בחירת חברה משוייכת
             company_list = list(set([info.get("company", "Independent") for usr, info in st.session_state.couriers_db.items()]))
             c_company = st.selectbox("שייך לחברת משלוחים:", company_list)
             
@@ -495,7 +492,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         users_db = st.session_state.couriers_db
         for usr, info in list(users_db.items()):
             if usr == "Admin":
-                continue  # לא נוגעים במנהל העל הראשי
+                continue
             with st.expander(f"👤 משתמש: {usr} | תפקיד: {info.get('role')} | חברה: {info.get('company', 'N/A')}"):
                 with st.form(f"edit_user_{usr}"):
                     new_pass = st.text_input("עדכן סיסמה חדשה:", value=info.get("password", ""))
@@ -523,12 +520,12 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
     # 5. דוח חודשי
     elif admin_menu == t["monthly_report"]:
         st.title(t["monthly_report"])
-        st.info("💡 החיוב וההתחשבנות מתבצעים ישירות מול מנהלי החברות או השליחים העצמאיים עבור כל משלוח שנקלט.")
+        st.info("💡 החיוב וההתחשבנות מתבצעים ישירות מול מנהלי החברות או השליחים העצמאיים עבור كل משלוח שנקלט.")
         
         current_month_str = get_current_date().strftime("%Y-%m")
         st.subheader(f"📅 סיכום חודש נוכחי: {current_month_str}")
 
-        company_admins = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role") == "מנהל חברה (Company Admin)"]
+        company_admins = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role"] == "מנהל חברה (Company Admin)"]
         
         report_data = []
         total_system_deliveries = 0
