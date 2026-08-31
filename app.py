@@ -543,7 +543,6 @@ elif str_lit.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         str_lit.title("🔍 אימות משלוחים שסורבו מול לקוחות (בקרת מנהל ראשי)")
         str_lit.write("כאן תוכל לצפות בכל המשלוחים שדווחו כ'סורב על ידי הלקוח' על ידי השליחים או מנהלי החברות, ולבדוק ישירות מול הלקוח בטלפון או בוואטסאפ.")
         
-        # השורה המתוקנת:
         rejected_deliveries = [d for d in str_lit.session_state.deliveries if d.get("status") == "סורב על ידי הלקוח"]
         
         if not rejected_deliveries:
@@ -569,6 +568,92 @@ elif str_lit.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                             r_item["status"] = "ממתין"
                             str_lit.success("הסטטוס שונה חזרה לממתין לצורך מסירה מחדש!")
                             str_lit.rerun()
+
+elif str_lit.session_state.role == "שליח":
+    courier_username = str_lit.session_state.username
+    str_lit.sidebar.title(f"🛵 שליח: {courier_username}")
+    
+    courier_menu = str_lit.sidebar.radio(
+        "תפריט שליח",
+        [
+            "📦 המשלוחים שלי",
+            "➕ הוספת משלוח חדש",
+            "📍 עדכון מיקום חי (GPS)"
+        ]
+    )
+    
+    if str_lit.sidebar.button(t["logout"]):
+        logout_user()
+
+    if courier_menu == "📦 המשלוחים שלי":
+        str_lit.title("📦 המשלוחים שלי לביצוע")
+        my_deliveries = [d for d in str_lit.session_state.deliveries if d.get("courier") == courier_username]
+        
+        if not my_deliveries:
+            str_lit.info("אין לך כרגע משלוחים משויכים. באפשרותך להוסיף משלוח חדש דרך התפריט בצד.")
+        else:
+            for idx, item in enumerate(my_deliveries):
+                status_color = "🟢" if item["status"] == "נמסר" else ("🔴" if "סורב" in item["status"] else ("🔵" if "נדחה" in item["status"] else "🟠"))
+                with str_lit.expander(f"{status_color} 📦 {item['שם לקוח']} | {item['עיר']} | סטטוס: {item['status']}"):
+                    str_lit.write(f"**ברקוד:** {item['ברקוד']} | **טלפון:** {item['טלפון']} | **כתובת:** {item['כתובת מלאה']} | **חברה שולחת:** {item['שם חברה']} | **הערות:** {item.get('הערות', 'אין')}")
+                    
+                    c_phone = format_whatsapp_phone(item['טלפון'])
+                    wa_msg = urllib.parse.quote(f"שלום {item['שם לקוח']}, אני השליח בדרך אליך! יש לי משלוח מ-{item['שם חברה']}. נא להיות זמין.")
+                    wa_link = f"https://wa.me/{c_phone}?text={wa_msg}"
+                    waze_query = urllib.parse.quote(f"{item['כתובת מלאה']}, {item['עיר']}")
+                    waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
+                    
+                    b1, b2, b3, b4, b5 = str_lit.columns(5)
+                    with b1:
+                        str_lit.markdown(f'<a href="{wa_link}" target="_blank"><button style="background-color:#25d366; color:white; border:none; padding:8px 12px; border-radius:5px; width:100%; cursor:pointer;">{t["whatsapp_btn"]}</button></a>', unsafe_allow_html=True)
+                    with b2:
+                        str_lit.markdown(f'<a href="{waze_link}" target="_blank"><button style="background-color:#33ccff; color:white; border:none; padding:8px 12px; border-radius:5px; width:100%; cursor:pointer;">{t["waze_btn"]}</button></a>', unsafe_allow_html=True)
+                    with b3:
+                        if str_lit.button("סמן כנמסר ✅", key=f"cour_m_{idx}"):
+                            item["status"] = "נמסר"
+                            str_lit.success("המשלוח עודכן בהצלחה כ'נמסר'!")
+                            str_lit.rerun()
+                    with b4:
+                        if str_lit.button("🔄 דחה למחר", key=f"cour_p_{idx}"):
+                            item["status"] = "נדחה למחר על ידי הלקוח"
+                            str_lit.success("עודכן כנדחה למחר!")
+                            str_lit.rerun()
+                    with b5:
+                        if str_lit.button("❌ סורב", key=f"cour_r_{idx}"):
+                            item["status"] = "סורב על ידי הלקוח"
+                            str_lit.warning("עודכן כסורב.")
+                            str_lit.rerun()
+
+    elif courier_menu == "➕ הוספת משלוח חדש":
+        str_lit.title("➕ הוספת משלוח חדש על ידי שליח")
+        with str_lit.form("courier_add_del_form"):
+            d_barcode = str_lit.text_input("ברקוד משלוח / מספר מעקב:", value=f"DEL-{int(datetime.now().timestamp())}")
+            d_client = str_lit.text_input("שם הלקוח:")
+            d_company = str_lit.text_input("שם חברה / מותג ששולח (למשל: SHEIN):")
+            d_phone = str_lit.text_input("טלפון הלקוח:")
+            d_address = str_lit.text_input("כתובת מלאה:")
+            d_city = str_lit.text_input("עיר / יישוב:")
+            d_notes = str_lit.text_area("הערות למשלוח:")
+            
+            submit_courier_del = str_lit.form_submit_button("הוסף משלוח אל הרשימה שלי 🚀")
+            if submit_courier_del and d_client and d_phone and d_city:
+                new_item = {
+                    "ברקוד": d_barcode, "שם לקוח": d_client, "שם חברה": d_company if d_company else "General",
+                    "טלפון": format_whatsapp_phone(d_phone), "כתובת מלאה": d_address, "עיר": d_city,
+                    "הערות": d_notes, "status": "ממתין", "courier": courier_username, "company": str_lit.session_state.company,
+                    "date": get_israel_time()
+                }
+                str_lit.session_state.deliveries.append(new_item)
+                str_lit.success("המשלוח נוסף בהצלחה למערכת ושויך אליך!")
+
+    elif courier_menu == "📍 עדכון מיקום חי (GPS)":
+        str_lit.title("📍 עדכון מיקום חי למנהל")
+        with str_lit.form("loc_form"):
+            loc_input = str_lit.text_input("הכנס כתובת נוכחית / עיר / אזור חלוקה:")
+            submit_loc = str_lit.form_submit_button("עדכן מיקום למערכת 📍")
+            if submit_loc and loc_input.strip():
+                save_location_data(courier_username, loc_input.strip())
+                str_lit.success("המיקום עודכן בהצלחה למנהל המערכת!")
 
 elif str_lit.session_state.role == "מנהל חברה (Company Admin)":
     company_name = str_lit.session_state.company
