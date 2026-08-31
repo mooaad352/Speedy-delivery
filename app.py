@@ -406,24 +406,68 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["manage_users"]:
         st.title(t["manage_users"])
-        for usr, info in list(st.session_state.couriers_db.items()):
-            with st.expander(f"User: {usr} | Role: {info.get('role', '')} | Company: {info.get('company', 'Independent')}"):
-                with st.form(f"edit_user_{usr}"):
-                    updated_pass = st.text_input(t["password"], value=info["password"], type="password")
-                    updated_phone = st.text_input(t["phone"], value=info.get("phone", ""))
-                    update_btn = st.form_submit_button(t["save_changes"])
+        st.write("ניהול, עריכה או מחיקה של מנהלי חברות ושליחים פרטיים במערכת:")
+
+        # סינון להצגת מנהלי חברות ושליחים פרטיים בנפרד לנוחות מקסימלית
+        company_admins_list = {k: v for k, v in st.session_state.couriers_db.items() if v.get("role") == "מנהל חברה (Company Admin)"}
+        couriers_list = {k: v for k, v in st.session_state.couriers_db.items() if v.get("role") == "שליח"}
+
+        st.subheader("🏢 מנהלי חברות משלוחים רשומים")
+        if not company_admins_list:
+            st.info("אין מנהלי חברות רשומים כרגע.")
+        else:
+            for usr, info in company_admins_list.items():
+                with st.expander(f"מנהל חברה: {usr} | חברה: {info.get('company', '')} | טלפון: {info.get('phone', '')}"):
+                    with st.form(f"edit_c_admin_{usr}"):
+                        updated_pass = st.text_input(t["password"], value=info["password"], type="password", key=f"pass_c_{usr}")
+                        updated_phone = st.text_input(t["phone"], value=info.get("phone", ""), key=f"phone_c_{usr}")
+                        updated_comp_name = st.text_input("שם החברה", value=info.get("company", ""), key=f"comp_name_{usr}")
+                        update_c_btn = st.form_submit_button(t["save_changes"])
+                        
+                        if update_c_btn:
+                            st.session_state.couriers_db[usr]["password"] = updated_pass
+                            st.session_state.couriers_db[usr]["phone"] = updated_phone
+                            st.session_state.couriers_db[usr]["company"] = updated_comp_name
+                            save_users_db(st.session_state.couriers_db)
+                            st.success(t["edit_success"])
+                            st.rerun()
                     
-                    if update_btn:
-                        st.session_state.couriers_db[usr]["password"] = updated_pass
-                        st.session_state.couriers_db[usr]["phone"] = updated_phone
-                        save_users_db(st.session_state.couriers_db)
-                        st.success(t["edit_success"])
-                
-                if usr != "Admin":
-                    if st.button(f"🗑️ מחק משתמש {usr}", key=f"del_user_{usr}"):
+                    if st.button(f"🗑️ מחק מנהל חברה {usr}", key=f"del_c_admin_{usr}"):
                         del st.session_state.couriers_db[usr]
                         save_users_db(st.session_state.couriers_db)
-                        st.success(f"המשתמש {usr} נמחק בהצלחה!")
+                        st.success(f"מנהל החברה {usr} נמחק בהצלחה!")
+                        st.rerun()
+
+        st.subheader("🛵 שליחים פרטיים רשומים במערכת")
+        if not couriers_list:
+            st.info("אין שליחים רשומים כרגע.")
+        else:
+            for usr, info in couriers_list.items():
+                with st.expander(f"שליח פרטי: {usr} | חברה שייכות: {info.get('company', 'Independent')} | טלפון: {info.get('phone', '')}"):
+                    with st.form(f"edit_courier_{usr}"):
+                        updated_pass = st.text_input(t["password"], value=info["password"], type="password", key=f"pass_courier_{usr}")
+                        updated_phone = st.text_input(t["phone"], value=info.get("phone", ""), key=f"phone_courier_{usr}")
+                        
+                        # אפשרות לשנות את השיוך החברתי של השליח הפרטי ישירות
+                        all_comps = [c_usr for c_usr, c_inf in st.session_state.couriers_db.items() if c_inf.get("role") == "מנהל חברה (Company Admin)"]
+                        all_comps.insert(0, "Independent")
+                        current_comp_idx = all_comps.index(info.get("company")) if info.get("company") in all_comps else 0
+                        updated_company = st.selectbox("שייך לחברה מחדש", all_comps, index=current_comp_idx, key=f"select_comp_{usr}")
+                        
+                        update_cour_btn = st.form_submit_button(t["save_changes"])
+                        
+                        if update_cour_btn:
+                            st.session_state.couriers_db[usr]["password"] = updated_pass
+                            st.session_state.couriers_db[usr]["phone"] = updated_phone
+                            st.session_state.couriers_db[usr]["company"] = updated_company
+                            save_users_db(st.session_state.couriers_db)
+                            st.success(t["edit_success"])
+                            st.rerun()
+                    
+                    if st.button(f"🗑️ מחק שליח פרטי {usr}", key=f"del_cour_{usr}"):
+                        del st.session_state.couriers_db[usr]
+                        save_users_db(st.session_state.couriers_db)
+                        st.success(f"השליח {usr} נמחק בהצלחה!")
                         st.rerun()
 
         st.stop()
@@ -435,7 +479,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         current_month_str = get_current_date().strftime("%Y-%m")
         st.subheader(f"📅 סיכום חודש נוכחי: {current_month_str}")
 
-        company_admins = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role") == "מנהל חברה (Company Admin)"]
+        company_admins = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role"] == "מנהל חברה (Company Admin)"]
         
         for c_usr in company_admins:
             c_info = st.session_state.couriers_db[c_usr]
@@ -659,11 +703,11 @@ if st.session_state.logged_in:
     st.title(t["title"])
 
     if st.session_state.role == "שליח":
-        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
+        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] != "נמסר"])
         st.info(f"📦 {t['active_deliveries']} **{my_deliveries_count}** {t['active_deliveries_end']}")
     elif st.session_state.role == "מנהל חברה (Company Admin)":
         comp_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == st.session_state.company]
-        comp_active = len([d for d in st.session_state.deliveries if (d.get("company") == st.session_state.company or d.get("courier") in comp_couriers) and d.get("status") != "נמסר"])
+        comp_active = len([d for d in st.session_state.deliveries if (d.get("company") == st.session_state.company or d.get("courier") in comp_couriers) and d.get("status"] != "נמסר"])
         st.info(f"🏢 חברת {st.session_state.company} | סך משלוחים פעילים של החברה: **{comp_active}**")
 
     current_time_il_str = get_israel_time()
