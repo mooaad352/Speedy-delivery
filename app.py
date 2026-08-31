@@ -29,7 +29,7 @@ def format_whatsapp_phone(phone_str):
 
 def generate_html_contract_form():
     """
-    יוצר קובץ HTML מעוצב לטופס ההתרשמות והחוזה של השליח/המשתמש כולל הגנות משפטיות מלאות וסעיף תשלומים ותביעה
+    יוצר קובץ HTML כללי לטופס ההתרשמות והחוזה
     """
     html_content = """<!DOCTYPE html>
 <html lang="he" dir="rtl">
@@ -53,33 +53,76 @@ def generate_html_contract_form():
 <body>
 <div class="container">
     <h2>📝 טופס התרשמות וחוזה התקשרות - Speedy Delivery</h2>
-    
     <div class="contract-box">
         <strong>תנאי שימוש, הצהרה ופטור מלא מאחריות משפטית:</strong><br><br>
-        1. <strong>מהות הפלטפורמה:</strong> מערכת "Speedy Delivery" משמשת כפלטפורמה טכנולוגית עצמאית לקישור בין משתמשים לבין נותני שירות (שליחים), ואינה משמשת כמעסיק, חברת שליחויות מרכזית או צד לחוזה ההובלה בפועל.<br><br>
-        2. <strong>העדר יחסי עובד-מעביד:</strong> מוסכם בזאת במפורש כי בין מפעיל המערכת לבין השליח ו/או הלקוח לא מתקיימים ולא יתקיימו כל יחסי עובד-מעביד מכל מין וסוג שהוא. השליח פועל כקבלן עצמאי לחלוטין.<br><br>
-        3. <strong>אחריות בלעדית של השליח:</strong> השליח נושא באחריות המלאה, הבלעדית והאישית לכל נזק, אובדן, גניבה, קלקול או השחתה של הסחורה/המשלוח מרגע קבלתו ועד למסירתו ליעד. כמו כן, השליח אחראי בלעדית לציודו, לרכבו, ולעמידה בכל דיני התעבורה, הרישוי והביטוח כחוק.<br><br>
-        4. <strong>פטור מלא מאחריות למפעיל המערכת:</strong> מפעיל המערכת לא יישא בשום אחריות ישירה או עקיפה לכל נזק גוף, נזק רכוש, תאונת דרכים, איחור במסירה, קנסות, תביעות צד ג' או הוצאות מכל סוג שנגרמו עקב או בקשר עם ביצוע המשלוחים בפועל.<br><br>
-        5. <strong>תשלומים והתחייבות פיננסית:</strong> השליח ו/או מנהל חברת המשלוחים מתחייבים להסדיר ולשלם את מלוא התשלומים, העמלות וההתחייבויות המגיעות למפעיל המערכת בתחילת כל חודש קלנדרי (החל מהיום הראשון ועד ה-5 לכל חודש). אי הסדרת התשלום במועדו תהווה הפרה יסודית של תנאי השימוש.<br><br>
-        6. <strong>זכות תביעה אישית נגד שליח או מנהל חברת משלוחים בגין אי-תשלום:</strong> מוסכם בזאת באופן מפורש ובלתי חוזר כי מפעיל המערכת יהיה רשאי להגיש תביעה משפטית ישירה ואישית נגד השליח ו/או נגד מנהל חברת המשלוחים בגין כל אי הסדרה של התשלום החודשי או העמלות שחובה לשלוח בתחילת כל חודש, וזאת בצירוף פיצויים, הוצאות משפט ושכר טרחת עורך דין.<br><br>
-        7. <strong>שיפוי:</strong> השליח מתחייב לשפות ולפצות את מפעיל המערכת בגין כל דרישה, תביעה, הוצאה או נזק שיופנו כלפיו עקב פעילות השליח או הפרת תנאים אלו.
+        1. <strong>מהות הפלטפורמה:</strong> מערכת "Speedy Delivery" משמשת כפלטפורמה טכנולוגית עצמאית.<br><br>
+        2. <strong>העדר יחסי עובד-מעביד:</strong> מוסכם בזאת במפורש כי לא מתקיימים יחסי עובד-מעביד.<br><br>
+        3. <strong>אחריות בלעדית של השליח:</strong> השליח נושא באחריות המלאה והבלעדית לכל נזק או אובדן במשלוח.<br><br>
+        4. <strong>פטור מלא מאחריות למפעיל המערכת:</strong> מפעיל המערכת פטור מאחריות לנזקי גוף, רכוש ותאונות.<br><br>
+        5. <strong>תשלומים והתחייבות פיננסית:</strong> השליח/מנהל מתחייב להסדיר את התשלומים בתחילת כל חודש.<br><br>
+        6. <strong>זכות תביעה אישית:</strong> מפעיל המערכת רשאי להגיש תביעה משפטית אישית בגין אי-הסדרת תשלום.<br><br>
+        7. <strong>שיפוי:</strong> השליח מתחייב לשפות את מפעיל המערכת בגין כל נזק.
     </div>
+</div>
+</body>
+</html>"""
+    file_stream = BytesIO(html_content.encode("utf-8"))
+    file_stream.seek(0)
+    return file_stream
 
-    <form action="#" method="POST" onsubmit="event.preventDefault(); alert('הטופס נשמר בהצלחה!');">
-        <div class="form-group"><label>שם מלא:</label><input type="text" required></div>
-        <div class="form-group"><label>תעודת זהות:</label><input type="text" required></div>
-        <div class="form-group"><label>כתובת מלאה:</label><input type="text" required></div>
-        <div class="form-group"><label>כתובת אימייל:</label><input type="email" required></div>
-        <div class="form-group"><label>מספר טלפון נייד:</label><input type="tel" required></div>
-        <div class="form-group"><label>ח.פ / עוסק פטור (אופציונלי):</label><input type="text"></div>
-        
-        <div class="checkbox-group">
-            <input type="checkbox" id="agree" required>
-            <label for="agree" style="display:inline; margin:0;">קראתי בעיון, הבנתי ואני מאשר/ת ללא הסתייגות את תנאי החוזה, ההצהרה ופטור האחריות.</label>
-        </div>
-        
-        <button type="submit">שמור ושלח חוזה התרשמות 🚀</button>
-    </form>
+def generate_personal_html_contract(data_dict):
+    """
+    יוצר קובץ HTML אישי המשלב את פרטי הנרשם הספציפי ואת החוזה החתום
+    """
+    html_content = f"""<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>חוזה חתום - {data_dict.get('שם מלא', '')}</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 25px; direction: rtl; text-align: right; color: #333; }}
+        .container {{ max-width: 750px; margin: auto; background: #ffffff; padding: 35px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }}
+        h2 {{ color: #1f2937; text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }}
+        .details-table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
+        .details-table th, .details-table td {{ border: 1px solid #d1d5db; padding: 10px 14px; text-align: right; font-size: 14px; }}
+        .details-table th {{ background-color: #f3f4f6; color: #374151; }}
+        .contract-box {{ background: #f9fafb; border: 1px solid #d1d5db; padding: 15px; border-radius: 6px; font-size: 13px; margin-top: 20px; line-height: 1.6; color: #111827; }}
+        .signature {{ margin-top: 25px; font-weight: bold; color: #16a34a; text-align: center; font-size: 16px; }}
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>📄 טופס התרשמות וחוזה חתום - Speedy Delivery</h2>
+    <p>להלן פרטי הנרשם ותנאי החוזה המאושרים במערכת:</p>
+    
+    <table class="details-table">
+        <tr><th>שם משתמש</th><td>{data_dict.get('שם משתמש', '')}</td></tr>
+        <tr><th>תפקיד</th><td>{data_dict.get('תפקיד', '')}</td></tr>
+        <tr><th>חברה משוייכת</th><td>{data_dict.get('חברה', '')}</td></tr>
+        <tr><th>שם מלא</th><td>{data_dict.get('שם מלא', '')}</td></tr>
+        <tr><th>תעודת זהות</th><td>{data_dict.get('ת.ז', '')}</td></tr>
+        <tr><th>כתובת מלאה</th><td>{data_dict.get('כתובת', '')}</td></tr>
+        <tr><th>אימייל</th><td>{data_dict.get('אימייל', '')}</td></tr>
+        <tr><th>טלפון נייד</th><td>{data_dict.get('טלפון', '')}</td></tr>
+        <tr><th>ח.פ / עוסק פטור</th><td>{data_dict.get('ח.פ / עוסק פטור', '')}</td></tr>
+        <tr><th>תאריך ושעת אישור החוזה</th><td>{data_dict.get('תאריך רישום', '')}</td></tr>
+    </table>
+
+    <div class="contract-box">
+        <strong>תנאי שימוש, הצהרה ופטור מלא מאחריות משפטית (אושרו בעת ההרשמה):</strong><br><br>
+        1. <strong>מהות הפלטפורמה:</strong> מערכת "Speedy Delivery" משמשת כפלטפורמה טכנולוגית עצמאית לקישור בין משתמשים לבין נותני שירות (שליחים), ואינה משמשת כמעסיק או חברת שליחויות מרכזית.<br><br>
+        2. <strong>העדר יחסי עובד-מעביד:</strong> מוסכם בזאת במפורש כי לא מתקיימים יחסי עובד-מעביד. השליח פועל כקבלן עצמאי לחלוטין.<br><br>
+        3. <strong>אחריות בלעדית של השליח:</strong> השליח נושא באחריות המלאה והבלעדית לכל נזק, אובדן או גניבה של המשלוח מרגע קבלתו ועד למסירתו.<br><br>
+        4. <strong>פטור מלא מאחריות למפעיל המערכת:</strong> מפעיל המערכת לא יישא בשום אחריות ישירה או עקיפה לנזקי גוף, רכוש, תאונות דרכים או קנסות.<br><br>
+        5. <strong>תשלומים והתחייבות פיננסית:</strong> השליח ו/או מנהל חברת המשלוחים מתחייבים להסדיר ולשלם את מלוא התשלומים והעמלות למפעיל המערכת בתחילת כל חודש קלנדרי (החל מהיום הראשון ועד ה-5 לכל חודש).<br><br>
+        6. <strong>זכות תביעה אישית בגין אי-תשלום:</strong> מפעיל המערכת יהיה רשאי להגיש תביעה משפטית ישירה ואישית נגד השליח ו/או מנהל חברת המשלוחים בגין כל אי הסדרה של התשלום החודשי או העמלות בתחילת החודש, בצירוף פיצויים והוצאות משפט.<br><br>
+        7. <strong>שיפוי:</strong> השליח מתחייב לשפות ולפצות את מפעיל המערכת בגין כל דרישה או נזק שיופנו כלפיו עקב פעילותו.
+    </div>
+    
+    <div class="signature">
+        ✅ סטטוס: החוזה אושר ונחתם דיגיטלית בהצלחה על ידי המשתמש
+    </div>
 </div>
 </body>
 </html>"""
@@ -94,7 +137,6 @@ USERS_FILE = "couriers_db.json"
 LOCATIONS_FILE = "couriers_live_locations.json"
 
 def load_users_db():
-    # איפוס וטעינה מחדש של הגדרות הבסיס כדי לוודא שהאדמין תמיד פעיל עם הסיסמה הנכונה
     default_users = {
         "Admin": {"password": "Sma.srablove2028", "role": "מנהל מערכת ראשי (Super Admin)", "phone": ADMIN_PHONE, "company": "System", "contract_signed": True},
         "mohammad": {"password": "123", "role": "שליח", "phone": "972502616375", "company": "Independent", "contract_signed": True}
@@ -103,7 +145,6 @@ def load_users_db():
         try:
             with open(USERS_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                # ווידוא שהאדמין קיים בתוך הנתונים הקיימים עם הסיסמה המעודכנת
                 if "Admin" not in data:
                     data["Admin"] = default_users["Admin"]
                 else:
@@ -246,7 +287,7 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("📄 טופס התרשמות וחוזה")
 html_contract_file = generate_html_contract_form()
 st.sidebar.download_button(
-    label="📥 הורד טופס התרשמות וחוזה (.html)",
+    label="📥 הורד טופס התרשמות וחוזה כללי (.html)",
     data=html_contract_file,
     file_name="delivery_contract_form.html",
     mime="text/html"
@@ -313,13 +354,13 @@ elif st.session_state.role != "מנהל מערכת ראשי (Super Admin)" and n
     st.markdown("""
     <div style="background-color: #1e293b; color: #f8fafc; border: 1px solid #475569; padding: 20px; border-radius: 8px; max-height: 250px; overflow-y: scroll; margin-bottom: 20px; line-height: 1.6; font-size: 14px;">
         <strong>חוזה התקשרות, הצהרה ופטור מלא מאחריות - Speedy Delivery:</strong><br><br>
-        1. <strong>מהות הפלטפורמה:</strong> מערכת זו מהווה פלטפורמה טכנולוגית בלבד לניהול וסידור משלוחים, ואינה צד לחוזה ההובלה או מעסיקה של השליחים.<br><br>
-        2. <strong>העדר יחסי עובד-מעביד:</strong> מוסכם ומובהר בזאת במפורש כי לא מתקיימים יחסי עובד-מעביד בין מפעיל המערכת לבין השליח. השליח פועל כגורם עצמאי לחלוטין (קבלן עצמאי) הנושא באחריות לכל תשלום מס, ביטוח לאומי ותנאים סוציאליים של עצמו.<br><br>
-        3. <strong>אחריות בלעדית לסחורה ולפעילות:</strong> השליח אחראי באופן בלעדי וישיר לכל נזק, אובדן, חוסר או פגיעה במשלוח מרגע קבלתו ועד למסירתו המלאה ללקוח. מפעיל המערכת לא יישא בכל אחריות לנזקי סחורה.<br><br>
-        4. <strong>פטור גורף מאחריות לנזקי גוף ורכוש:</strong> מפעיל המערכת פטור באופן מלא ומחלט מכל אחריות בגין תאונות דרכים, נזקי גוף, נזקי רכוש, קנסות תנועה, עיכובים, או כל נזק אחר שעלול להיגרם לשליח או לצד ג' כלשהו במהלך או עקב ביצוע המשלוחים.<br><br>
-        5. <strong>תשלומים והתחייבות פיננסית:</strong> השליח ו/או מנהל חברת המשלוחים מתחייבים להסדיר ולשלם את מלוא התשלומים והעמלות למפעיל המערכת בתחילת כל חודש.<br><br>
-        6. <strong>זכות תביעה אישית בגין אי-תשלום:</strong> מפעיל המערכת רשאי לנקוט בהליכים משפטיים ולהגיש תביעה משפטית ישירה נגד השליח או מנהל חברת המשלוחים בגין כל אי הסדרה של התשלום החודשי במועדו, כולל דרישה להוצאות משפט.<br><br>
-        7. <strong>שיפוי:</strong> השליח מתחייב לשפות את מפעיל המערכת מיד עם דרישה ראשונה בגין כל תביעה, דרישה, הוצאה או נזק שייגרמו למפעיל המערכת עקב פעילותו של השליח.
+        1. <strong>מהות הפלטפורמה:</strong> מערכת זו מהווה פלטפורמה טכנולוגית בלבד לניהול וסידור משלוחים.<br><br>
+        2. <strong>העדר יחסי עובד-מעביד:</strong> מוסכם ומובהר בזאת במפורש כי לא מתקיימים יחסי עובד-מעביד.<br><br>
+        3. <strong>אחריות בלעדית לסחורה ולפעילות:</strong> השליח אחראי באופן בלעדי לכל נזק או אובדן במשלוח.<br><br>
+        4. <strong>פטור גורף מאחריות לנזקי גוף ורכוש:</strong> מפעיל המערכת פטור מאחריות בגין תאונות, נזקי גוף ורכוש.<br><br>
+        5. <strong>תשלומים והתחייבות פיננסית:</strong> השליח ו/או מנהל חברת המשלוחים מתחייבים להסדיר את התשלומים בתחילת כל חודש.<br><br>
+        6. <strong>זכות תביעה אישית בגין אי-תשלום:</strong> מפעיל המערכת רשאי להגיש תביעה משפטית אישית נגד השליח או מנהל חברת המשלוחים בגין אי-הסדרת תשלום.<br><br>
+        7. <strong>שיפוי:</strong> השליח מתחייב לשפות את מפעיל המערכת בגין כל נזק.
     </div>
     """, unsafe_allow_html=True)
 
@@ -433,11 +474,22 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["contract_menu"]:
         st.title(t["contract_menu"])
-        st.write("כאן תוכל לצפות בחוזים הרשומים ואף להסירם במידת הצורך:")
+        st.write("כאן תוכל לצפות בחוזים הרשומים, להוריד את קובץ ה-HTML האישי של כל נרשם, או להסירם במידת הצורך:")
         contracts_df = load_contracts_data()
         if not contracts_df.empty:
             for c_idx, row in contracts_df.iterrows():
                 st.markdown(f"**{row['שם מלא']}** | ת.ז: {row['ת.ז']} | טלפון: {row['טלפון']} | תאריך: {row['תאריך רישום']}")
+                
+                # יצירת קובץ HTML אישי להורדה לכל נרשם ברשימה
+                personal_stream = generate_personal_html_contract(row.to_dict())
+                st.download_button(
+                    label=f"📥 הורד חוזה HTML אישי עבור {row['שם מלא']}",
+                    data=personal_stream,
+                    file_name=f"contract_{row['שם משתמש']}.html",
+                    mime="text/html",
+                    key=f"dl_html_{c_idx}"
+                )
+                
                 if st.button(f"🗑️ הסר חוזה זה מהרשימה", key=f"del_contract_{c_idx}"):
                     delete_contract_by_index(c_idx)
                     st.success("החוזה הוסר בהצלחה מהרשימה!")
