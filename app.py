@@ -368,7 +368,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             new_pass = st.text_input(t["password"], type="password")
             new_phone_input = st.text_input(t["phone"])
             
-            company_options = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role"] == "מנהל חברה (Company Admin)"]
+            company_options = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role") == "מנהל חברה (Company Admin)"]
             company_options.insert(0, "עצמאי (Independent / מנהל ראשי)")
             assigned_company = st.selectbox("שייך לחברת משלוחים / מנהל", company_options)
             
@@ -739,7 +739,7 @@ if st.session_state.logged_in:
         if st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             st.session_state.deliveries.sort(key=lambda x: (x.get("עיר", "") != start_point, x.get("עיר", ""), x.get("רחוב", ""), str(x.get("בית", "0"))))
         elif st.session_state.role == "מנהל חברה (Company Admin)":
-            comp_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company"] == st.session_state.company]
+            comp_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == st.session_state.company]
             other_d = [d for d in st.session_state.deliveries if d.get("company") != st.session_state.company and d.get("courier") not in comp_couriers]
             my_comp_d = [d for d in st.session_state.deliveries if d.get("company") == st.session_state.company or d.get("courier") in comp_couriers]
             my_comp_d.sort(key=lambda x: (x.get("עיר", "") != start_point, x.get("עיר", ""), x.get("רחוב", ""), str(x.get("בית", "0"))))
