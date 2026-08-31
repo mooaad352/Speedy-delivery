@@ -143,7 +143,7 @@ def logout_user():
     st.session_state.company = ""
     st.rerun()
 
-# אם המשתמש לא מחובר - הצג את מסך ההתחברות בגדול ובברור
+# אם המשתמש לא מחובר
 if not st.session_state.logged_in:
     st.title(t["title"])
     st.markdown("---")
@@ -345,7 +345,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         st.title(t["platform_profits"])
         st.markdown("### דוח רווחי פלטפורמה (חישוב עמלת שימוש: 1 ₪ לפני מע\"מ לכל משלוח שנמסר)")
         
-        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
+        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         
         report_data = []
         for c in all_couriers:
