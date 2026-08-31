@@ -408,7 +408,6 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         st.title(t["manage_users"])
         st.write("ניהול, עריכה או מחיקה של מנהלי חברות ושליחים פרטיים במערכת:")
 
-        # סינון להצגת מנהלי חברות ושליחים פרטיים בנפרד לנוחות מקסימלית
         company_admins_list = {k: v for k, v in st.session_state.couriers_db.items() if v.get("role") == "מנהל חברה (Company Admin)"}
         couriers_list = {k: v for k, v in st.session_state.couriers_db.items() if v.get("role") == "שליח"}
 
@@ -448,7 +447,6 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                         updated_pass = st.text_input(t["password"], value=info["password"], type="password", key=f"pass_courier_{usr}")
                         updated_phone = st.text_input(t["phone"], value=info.get("phone", ""), key=f"phone_courier_{usr}")
                         
-                        # אפשרות לשנות את השיוך החברתי של השליח הפרטי ישירות
                         all_comps = [c_usr for c_usr, c_inf in st.session_state.couriers_db.items() if c_inf.get("role") == "מנהל חברה (Company Admin)"]
                         all_comps.insert(0, "Independent")
                         current_comp_idx = all_comps.index(info.get("company")) if info.get("company") in all_comps else 0
@@ -479,7 +477,8 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         current_month_str = get_current_date().strftime("%Y-%m")
         st.subheader(f"📅 סיכום חודש נוכחי: {current_month_str}")
 
-        company_admins = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role"] == "מנהל חברה (Company Admin)"]
+        # התיקון המרכזי של השגיאה (SyntaxError) בשורה 482 (סגירת הסוגריים המרובעים ב-role)
+        company_admins = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role") == "מנהל חברה (Company Admin)"]
         
         for c_usr in company_admins:
             c_info = st.session_state.couriers_db[c_usr]
@@ -679,200 +678,181 @@ if st.session_state.logged_in:
                     "שם פרטי": first_name,
                     "שם משפחה": last_name,
                     "תז": id_number,
-                    "סוג עוסק": business_type,
-                    "מספר_חפ": business_id_number if business_id_number else "לא הוזן",
+                    "חפ_או_עוסק": business_type,
+                    "מספר_חפ": business_id_number,
                     "קובץ_חפ": file_path_saved,
                     "טלפון": phone,
                     "כתובת": address,
+                    "סוג עוסק": business_type,
                     "רכב": vehicle_type,
-                    "רישיון": license_number if license_number else "אין",
+                    "רישיון": license_number,
                     "חתימה": signature_name,
-                    "תאריך ושעה": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    "תאריך ושעה": get_israel_time()
                 }
-                
                 save_contract_data(driver_record)
-                st.success(f"תודה רבה {first_name} {last_name}! הפרטים נקלטו בהצלחה.")
+                st.success("הפרטים והאישור נשמרו בהצלחה במערכת!")
                 st.session_state.show_contract_screen = False
-    
+                st.rerun()
         st.stop()
+
+    # --- הצגת מסך ניהול המשלוחים הראשי ---
+    st.title(t["title"])
+    
+    # סינון משלוחים לפי הרשאות משתמש
+    role = st.session_state.role
+    username = st.session_state.username
+    company = st.session_state.company
+
+    if role == "מנהל מערכת ראשי (Super Admin)":
+        user_deliveries = st.session_state.deliveries
+    elif role == "מנהל חברה (Company Admin)":
+        company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == company]
+        user_deliveries = [d for d in st.session_state.deliveries if d.get("company") == company or d.get("courier") in company_couriers or d.get("courier") == username]
+    else:  # שליח רגיל
+        user_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == username]
 
     st.sidebar.markdown("---")
     st.sidebar.subheader(t["current_loc"])
-    start_point = st.sidebar.text_input(t["loc_placeholder"], "כסרא-סמיע")
+    start_location = st.sidebar.text_input(t["loc_placeholder"], value="כסרא-סמיע")
 
-    st.title(t["title"])
+    st.info(f"{t['active_deliveries']} **{len(user_deliveries)}** {t['active_deliveries_end']}")
+    st.caption(f"{t['current_time']} {get_israel_time()} | {t['start_point_label']} **{start_location}**")
 
-    if st.session_state.role == "שליח":
-        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] != "נמסר"])
-        st.info(f"📦 {t['active_deliveries']} **{my_deliveries_count}** {t['active_deliveries_end']}")
-    elif st.session_state.role == "מנהל חברה (Company Admin)":
-        comp_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == st.session_state.company]
-        comp_active = len([d for d in st.session_state.deliveries if (d.get("company") == st.session_state.company or d.get("courier") in comp_couriers) and d.get("status"] != "נמסר"])
-        st.info(f"🏢 חברת {st.session_state.company} | סך משלוחים פעילים של החברה: **{comp_active}**")
-
-    current_time_il_str = get_israel_time()
-    st.caption(f"🕒 {t['current_time']} **{current_time_il_str}** | 🏁 {t['start_point_label']} **{start_point}**")
-
-    st.subheader(t["add_new_del"])
-    
-    with st.form("delivery_form", clear_on_submit=True):
-        col1, col2 = st.columns(2)
-        with col1:
-            barcode_num = st.text_input(t["barcode"])
-            cust_name = st.text_input(t["cust_name"])
-            company_name = st.text_input(t["company_name"], "SHEIN")
-        with col2:
-            raw_cust_phone = st.text_input(t["phone"])
-            city_name = st.text_input(t["city"], "כסרא-סמיע")
-        
-        col_s1, col_s2, col_s3 = st.columns(3)
-        with col_s1:
-            street_name = st.text_input(t["street"])
-        with col_s2:
-            house_num = st.text_input(t["house"])
-        with col_s3:
-            floor_num = st.text_input(t["floor"])
+    # טופס הוספת משלוח חדש
+    with st.expander(t["add_new_del"], expanded=False):
+        with st.form("add_delivery_form"):
+            col1, col2 = st.columns(2)
+            with col1:
+                new_barcode = st.text_input(t["barcode"], value=f"TRK-{int(datetime.now().timestamp())}")
+                new_cust_name = st.text_input(t["cust_name"])
+                new_comp_name = st.text_input(t["company_name"], value=company if role != "מנהל מערכת ראשי (Super Admin)" else "Independent")
+                new_phone = st.text_input(t["phone"])
+            with col2:
+                new_city = st.text_input(t["city"])
+                new_street = st.text_input(t["street"])
+                new_house = st.text_input(t["house"])
+                new_floor = st.text_input(t["floor"])
             
-        cust_notes = st.text_input(t["notes"])
-        
-        submit_del = st.form_submit_button(t["save_del"])
-        if submit_del:
-            if cust_name and city_name:
-                clean_cust_phone = raw_cust_phone.replace("+", "").strip()
-                if clean_cust_phone.startswith("0"):
-                    clean_cust_phone = "972" + clean_cust_phone[1:]
-                elif not clean_cust_phone.startswith("972"):
-                    clean_cust_phone = "972" + clean_cust_phone
-                
-                addr_parts = []
-                if street_name:
-                    addr_parts.append(street_name)
-                if house_num:
-                    addr_parts.append(house_num)
-                
-                street_house_str = " ".join(addr_parts)
-                full_address = f"{street_house_str + ', ' if street_house_str else ''}{city_name}" + (f" (קומה {floor_num})" if floor_num else "")
-                
-                added_time = get_israel_time()
-                
-                assigned_comp = st.session_state.company if st.session_state.role != "מנהל מערכת ראשי (Super Admin)" else "Independent"
-                
-                st.session_state.deliveries.append({
-                    "ברקוד": barcode_num if barcode_num else "ללא ברקוד",
-                    "שם לקוח": cust_name,
-                    "שם חברה": company_name if company_name else "SHEIN",
-                    "טלפון": clean_cust_phone,
-                    "כתובת מלאה": full_address,
-                    "רחוב": street_name,
-                    "בית": house_num,
-                    "קומה": floor_num,
-                    "עיר": city_name,
-                    "הערות": cust_notes,
-                    "status": "ממתין",
-                    "courier": st.session_state.username,
-                    "company": assigned_comp,
-                    "date": added_time
-                })
-                st.success(t["del_success"])
-            else:
-                st.warning(t["fill_required"])
+            new_notes = st.text_area(t["notes"])
+            submit_delivery = st.form_submit_button(t["save_del"])
 
+            if submit_delivery:
+                if not new_cust_name or not new_city:
+                    st.error(t["fill_required"])
+                else:
+                    full_addr = f"{new_city}"
+                    if new_street:
+                        full_addr += f", {new_street}"
+                    if new_house:
+                        full_addr += f" {new_house}"
+
+                    delivery_item = {
+                        "ברקוד": new_barcode,
+                        "שם לקוח": new_cust_name,
+                        "שם חברה": new_comp_name,
+                        "טלפון": new_phone,
+                        "כתובת מלאה": full_addr,
+                        "רחוב": new_street,
+                        "בית": new_house,
+                        "קומה": new_floor,
+                        "עיר": new_city,
+                        "הערות": new_notes,
+                        "status": "ממתין",
+                        "courier": username,
+                        "company": company if role != "מנהל מערכת ראשי (Super Admin)" else "Independent",
+                        "date": get_israel_time()
+                    }
+                    st.session_state.deliveries.append(delivery_item)
+                    st.success(t["del_success"])
+                    st.rerun()
+
+    st.divider()
     st.subheader(t["list_title"])
-    
-    if st.button(t["sort_btn"]):
-        if st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
-            st.session_state.deliveries.sort(key=lambda x: (x.get("עיר", "") != start_point, x.get("עיר", ""), x.get("רחוב", ""), str(x.get("בית", "0"))))
-        elif st.session_state.role == "מנהל חברה (Company Admin)":
-            comp_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == st.session_state.company]
-            other_d = [d for d in st.session_state.deliveries if d.get("company") != st.session_state.company and d.get("courier") not in comp_couriers]
-            my_comp_d = [d for d in st.session_state.deliveries if d.get("company") == st.session_state.company or d.get("courier") in comp_couriers]
-            my_comp_d.sort(key=lambda x: (x.get("עיר", "") != start_point, x.get("עיר", ""), x.get("רחוב", ""), str(x.get("בית", "0"))))
-            st.session_state.deliveries = other_d + my_comp_d
-        else:
-            other_deliveries = [d for d in st.session_state.deliveries if d.get("courier") != st.session_state.username]
-            my_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
-            my_deliveries.sort(key=lambda x: (x.get("עיר", "") != start_point, x.get("עיר", ""), x.get("רחוב", ""), str(x.get("בית", "0"))))
-            st.session_state.deliveries = other_deliveries + my_deliveries
-            
-        st.success(t["sort_success"])
-        st.rerun()
 
-    if st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
-        current_deliveries = st.session_state.deliveries
-    elif st.session_state.role == "מנהל חברה (Company Admin)":
-        comp_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == st.session_state.company]
-        current_deliveries = [d for d in st.session_state.deliveries if d.get("company") == st.session_state.company or d.get("courier") in comp_couriers or d.get("courier") == st.session_state.username]
+    if not user_deliveries:
+        st.warning(t["no_deliveries"])
     else:
-        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
+        if st.button(t["sort_btn"]):
+            # סידור המסלול אלפabetית לפי עיר, רחוב ומספר בית
+            st.session_state.deliveries = sorted(
+                st.session_state.deliveries,
+                key=lambda x: (x.get("עיר", ""), x.get("רחוב", ""), str(x.get("בית", "")))
+            )
+            st.success(t["sort_success"])
+            st.rerun()
 
-    if len(current_deliveries) == 0:
-        st.info(t["no_deliveries"])
-    else:
-        for index, item in enumerate(current_deliveries, start=1):
-            with st.container():
-                col1, col2, col3 = st.columns([2, 1, 1])
-                with col1:
-                    status_str = f"✅ {t['status_delivered']}" if item.get("status") == "נמסר" else f"⏳ {t['status_waiting']}"
-                    st.markdown(f"**#{index} | שיוך: {item.get('courier')} ({item.get('company', 'Independent')}) | {status_str} | {t['barcode']}** {item.get('ברקוד')} | **{t['cust_name']}** {item.get('שם לקוח')}")
-                    st.write(f"📍 **{t['address']}** {item.get('כתובת מלאה')}")
-                    st.caption(f"{t['added_at']} {item.get('date', 'Today')}")
-                    if item.get('הערות'):
-                        st.caption(f"{t['notes']} {item.get('הערות')}")
-                    
-                    cust_tel = item.get("טלפון", "").strip()
-                    comp_name = item.get("שם חברה", "SHEIN")
-                    customer_name = item.get("שם לקוח", "Customer")
-                    if cust_tel:
-                        customer_msg = f"שלום {customer_name}, אני השליח. יש לך משלוח מ{comp_name}, אני בדרך אליך אגיע בקרוב מאוד! 🚚"
-                        encoded_customer_msg = urllib.parse.quote(customer_msg)
-                        wa_customer_url = f"https://wa.me/{cust_tel}?text={encoded_customer_msg}"
-                        st.markdown(f"[{t['whatsapp_btn']}]({wa_customer_url})", unsafe_allow_html=True)
+        for idx, d in enumerate(user_deliveries):
+            status_color = "🟢" if d.get("status") == "נמסר" else "🟠"
+            with st.expander(f"{status_color} {idx+1}. {d.get('שם לקוח')} | {d.get('עיר')} ({d.get('שם חברה')}) - [ברקוד: {d.get('ברקוד')}]"):
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    st.write(f"**{t['cust_name']}** {d.get('שם לקוח')}")
+                    st.write(f"**{t['company_name']}** {d.get('שם חברה')}")
+                    st.write(f"**{t['phone']}** {d.get('טלפון')}")
+                    st.write(f"**{t['address']}** {d.get('כתובת מלאה')}")
+                    if d.get("הערות"):
+                        st.info(f"**{t['notes']}** {d.get('הערות')}")
+                with col_b:
+                    st.write(f"**{t['added_at']}** {d.get('date')}")
+                    st.write(f"**סטטוס:** {d.get('status')}")
+                    st.write(f"**שליח מבצע:** {d.get('courier')}")
 
-                with col2:
-                    dest_address = item.get('כתובת מלאה', '')
-                    waze_url = f"https://www.waze.com/ul?from={urllib.parse.quote(start_point)}&q={urllib.parse.quote(dest_address)}&navigate=yes"
-                    st.markdown(f"[{t['waze_btn']} {start_point} ب-Waze]({waze_url})", unsafe_allow_html=True)
+                # כפתורי פעולה מהירים (וואטסאפ, ניווט, סימון כנמסר)
+                c_phone_clean = str(d.get("טלפון", "")).replace("+", "").strip()
+                if c_phone_clean.startswith("0"):
+                    c_phone_clean = "972" + c_phone_clean[1:]
                 
-                with col3:
-                    if item.get("status") != "נמסר":
-                        if st.button(f"{t['mark_delivered']} #{index}", key=f"deliver_{index}"):
-                            item["status"] = "נמסר"
+                wa_text = f"مرحباً {d.يجري if 'שם לקוח' in d else d.get('שם לקוח')}, مندوب التوصيل في طريقه إليك بخصوص شحنة من {d.get('שם חברה')}. يرجى الجاهزية."
+                encoded_wa = urllib.parse.quote(wa_text)
+                wa_link = f"https://wa.me/{c_phone_clean}?text={encoded_wa}"
+
+                waze_dest = urllib.parse.quote(f"{d.get('עיר')} {d.get('רחוב', '')} {d.get('בית', '')}")
+                waze_origin = urllib.parse.quote(start_location)
+                waze_link = f"https://www.waze.com/ul?q={waze_dest}&navigate=yes"
+
+                b_col1, b_col2, b_col3 = st.columns(3)
+                with b_col1:
+                    if c_phone_clean:
+                        st.markdown(f"[📲 וואטסאפ ללקוח]({wa_link})", unsafe_allow_html=True)
+                with b_col2:
+                    st.markdown(f"[🚗 נווט בוויז]({waze_link})", unsafe_allow_html=True)
+                with b_col3:
+                    if d.get("status") != "נמסר":
+                        if st.button(t["mark_delivered"], key=f"deliv_btn_{idx}"):
+                            # עדכון הסטטוס במסשיון
+                            for real_idx, orig_d in enumerate(st.session_state.deliveries):
+                                if orig_d.get("ברקוד") == d.get("ברקוד") and orig_d.get("שם לקוח") == d.get("שם לקוח"):
+                                    st.session_state.deliveries[real_idx]["status"] = "נמסר"
+                                    break
                             st.success(t["delivered_success"])
                             st.rerun()
-                
-                with st.expander(f"{t['edit_del']} #{index}"):
-                    with st.form(f"edit_delivery_form_{index}"):
-                        e_barcode = st.text_input(t["barcode"], value=item.get("ברקוד", ""))
-                        e_cust_name = st.text_input(t["cust_name"], value=item.get("שם לקוח", ""))
-                        e_company = st.text_input(t["company_name"], value=item.get("שם חברה", ""))
-                        e_phone = st.text_input(t["phone"], value=item.get("טלפון", ""))
-                        e_city = st.text_input(t["city"], value=item.get("עיר", ""))
-                        e_street = st.text_input(t["street"], value=item.get("רחוב", ""))
-                        e_house = st.text_input(t["house"], value=item.get("בית", ""))
-                        e_floor = st.text_input(t["floor"], value=item.get("קומה", ""))
-                        e_notes = st.text_input(t["notes"], value=item.get("הערות", ""))
-                        
-                        save_edit_btn = st.form_submit_button(t["save_changes"])
-                        if save_edit_btn:
-                            item["ברקוד"] = e_barcode
-                            item["שם לקוח"] = e_cust_name
-                            item["שם חברה"] = e_company
-                            item["טלפון"] = e_phone
-                            item["עיר"] = e_city
-                            item["רחוב"] = e_street
-                            item["בית"] = e_house
-                            item["קומה"] = e_floor
-                            item["הערות"] = e_notes
-                            
-                            _addr_parts = []
-                            if e_street:
-                                _addr_parts.append(e_street)
-                            if e_house:
-                                _addr_parts.append(e_house)
-                            _street_house_str = " ".join(_addr_parts)
-                            item["כתובת מלאה"] = f"{_street_house_str + ', ' if _street_house_str else ''}{e_city}" + (f" (קומה {e_floor})" if e_floor else "")
-                            
-                            st.success(t["edit_success"])
-                            st.rerun()
 
-                st.markdown("---")
+                # עריכת פרטי משלוח
+                with st.form(f"edit_delivery_form_{idx}"):
+                    st.subheader(t["edit_del"])
+                    e_cust = st.text_input(t["cust_name"], value=d.get("שם לקוח"), key=f"e_cust_{idx}")
+                    e_phone = st.text_input(t["phone"], value=d.get("טלפון"), key=f"e_phone_{idx}")
+                    e_city = st.text_input(t["city"], value=d.get("עיר"), key=f"e_city_{idx}")
+                    e_street = st.text_input(t["street"], value=d.get("רחוב", ""), key=f"e_street_{idx}")
+                    e_house = st.text_input(t["house"], value=d.get("בית", ""), key=f"e_house_{idx}")
+                    e_notes = st.text_area(t["notes"], value=d.get("הערות", ""), key=f"e_notes_{idx}")
+                    
+                    save_edit = st.form_submit_button(t["save_changes"])
+                    if save_edit:
+                        for real_idx, orig_d in enumerate(st.session_state.deliveries):
+                            if orig_d.get("ברקוד") == d.get("ברקוד"):
+                                st.session_state.deliveries[real_idx]["שם לקוח"] = e_cust
+                                st.session_state.deliveries[real_idx]["טלפון"] = e_phone
+                                st.session_state.deliveries[real_idx]["עיר"] = e_city
+                                st.session_state.deliveries[real_idx]["רחוב"] = e_street
+                                st.session_state.deliveries[real_idx]["בית"] = e_house
+                                st.session_state.deliveries[real_idx]["הערות"] = e_notes
+                                full_addr = f"{e_city}"
+                                if e_street:
+                                    full_addr += f", {e_street}"
+                                if e_house:
+                                    full_addr += f" {e_house}"
+                                st.session_state.deliveries[real_idx]["כתובת מלאה"] = full_addr
+                                break
+                        st.success(t["edit_success"])
+                        st.rerun()
