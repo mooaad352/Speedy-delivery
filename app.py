@@ -453,7 +453,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             d_floor = st.text_input("קומה:")
             d_city = st.text_input("עיר / יישוב:")
             d_notes = st.text_area("הערות:")
-            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
+            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
             assigned_courier = st.selectbox("שיוך שליח:", couriers_list if couriers_list else ["אין שליחים"])
             
             if st.form_submit_button("הוסף משלוח למערכת 🚀") and d_client and d_phone and d_city:
@@ -492,7 +492,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["manage_users"]:
         st.title("🔑 ניהול וצפייה בסיסמאות כל המשתמשים במערכת")
-        st.info("כאן תוכל לראות את כל המשתמשים הרשומים (מנהלים ושליחים), כולל הסיסמה הנוכחית של كل אחד מהם, לעדכן אותה أو למחוק משתמשים לפי הצורך.")
+        st.info("כאן תוכל לראות את כל המשתמשים הרשומים (מנהלים ושליחים), כולל הסיסמה הנוכחית של כל אחד מהם, לעדכן אותה או למחוק משתמשים לפי הצורך.")
         
         for usr, info in list(st.session_state.couriers_db.items()):
             if usr == "Admin": 
@@ -519,11 +519,11 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["monthly_report"]:
         st.title(t["monthly_report"])
-        st.write("הפקת דוח חודשי وחישוב עמלות:")
-        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
+        st.write("הפקת דוח חודשי וחישוב עמלות:")
+        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
         selected_c_rep = st.selectbox("בחר שליח לדוח:", all_couriers if all_couriers else ["אין שליחים"])
         if selected_c_rep:
-            delivered_count = len([d for d in st.session_state.deliveries if d.get("courier") == selected_c_rep and d.get("status") == "נמסר"])
+            delivered_count = len([d for d in st.session_state.deliveries if d.get("courier") == selected_c_rep and d.get("status"] == "נמסר"])
             c_info = st.session_state.couriers_db.get(selected_c_rep, {})
             is_exempt = "פטור" in str(c_info.get("hp_exempt", ""))
             invoice_stream = generate_monthly_invoice_html(selected_c_rep, c_info.get("hp_exempt", "אין"), is_exempt, delivered_count, price_per_unit=10.0)
@@ -555,6 +555,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
         t["courier_menu"],
         [
             t["main_sys"],
+            "📊 דוחות וסיכום כמויות (יומי, שבועי, חודשי)",
             t["smart_route"],
             t["add_delivery"],
             t["add_courier"],
@@ -566,7 +567,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
         logout_user()
 
     current_company = st.session_state.company
-    company_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("company") == current_company and i.get("role") == "שליח"]
+    company_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("company"] == current_company and i.get("role"] == "שליח"]
 
     if comp_menu == t["main_sys"]:
         st.title(f"📦 ניהול משלוחי חברה: {current_company}")
@@ -603,10 +604,71 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
                         st.success(t["delivered_success"])
                         st.rerun()
 
+    elif comp_menu == "📊 דוחות וסיכום כמויות (יומי, שבועי, חודשי)":
+        st.title(f"📊 דוחות וסיכום כמויות משלוחים - חברת {current_company}")
+        st.info("כאן תוכל לצפות בסיכום המדויק של כל המשלוחים המשויכים לחברה שלך ולשליחים תחת ניהולך, מחולקים לפי תקופות זמן.")
+        
+        comp_deliveries = [d for d in st.session_state.deliveries if d.get("company") == current_company or d.get("courier"] in company_couriers]
+        
+        # המרת תאריכים לצורך חישוב
+        today_date_str = datetime.now().strftime("%Y-%m-%d")
+        
+        # סינון לפי תקופות
+        daily_items = [d for d in comp_deliveries if str(d.get("date", "")).startswith(today_date_str)]
+        
+        # חישוב השבוע הנוכחי (7 ימים אחרונים לצורך פשטות ודיוק)
+        week_ago = datetime.now() - timedelta(days=7)
+        weekly_items = []
+        for d in comp_deliveries:
+            try:
+                d_time = datetime.strptime(str(d.get("date", "")), "%Y-%m-%d %H:%M")
+                if d_time >= week_ago:
+                    weekly_items.append(d)
+            except Exception:
+                pass
+                
+        # החודש הנוכחי
+        current_month_prefix = datetime.now().strftime("%Y-%m")
+        monthly_items = [d for d in comp_deliveries if str(d.get("date", "")).startswith(current_month_prefix)]
+
+        # הצגת כפתורי מדדים מרכזיים
+        col_m1, col_m2, col_m3 = st.columns(3)
+        col_m1.metric("📦 סה\"כ משלוחים להיום", len(daily_items), f"נמסרו: {len([d for d in daily_items if d.get('status') == 'נמסר'])}")
+        col_m2.metric("📅 סה\"כ משלוחים השבוע", len(weekly_items), f"נמסרו: {len([d for d in weekly_items if d.get('status') == 'נמסר'])}")
+        col_m3.metric("📊 סה\"כ משלוחים החודש", len(monthly_items), f"נמסרו: {len([d for d in monthly_items if d.get('status') == 'נמסר'])}")
+
+        st.divider()
+
+        tab_d, tab_w, tab_mo = st.tabs(["📅 פירוט יומי", "📆 פירוט שבועי", "📈 פירוט חודשי"])
+
+        with tab_d:
+            st.subheader(f"משלוחים להיום ({today_date_str})")
+            if daily_items:
+                df_daily = pd.DataFrame(daily_items)
+                st.dataframe(df_daily[["ברקוד", "שם לקוח", "עיר", "סטטוס", "courier", "date"]])
+            else:
+                st.info("אין משלוחים להיום.")
+
+        with tab_w:
+            st.subheader("משלוחים בשבוע האחרון")
+            if weekly_items:
+                df_weekly = pd.DataFrame(weekly_items)
+                st.dataframe(df_weekly[["ברקוד", "שם לקוח", "עיר", "סטטוס", "courier", "date"]])
+            else:
+                st.info("אין משלוחים בשבוע האחרון.")
+
+        with tab_mo:
+            st.subheader(f"משלוחים בחודש הנוכחי ({current_month_prefix})")
+            if monthly_items:
+                df_monthly = pd.DataFrame(monthly_items)
+                st.dataframe(df_monthly[["ברקוד", "שם לקוח", "עיר", "סטטוס", "courier", "date"]])
+            else:
+                st.info("אין משלוחים לחודש זה.")
+
     elif comp_menu == t["smart_route"]:
         st.title(t["smart_route"])
         selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", company_couriers if company_couriers else ["אין שליחים"])
-        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
+        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == selected_courier_route and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
         
         if not courier_deliveries:
             st.info("אין משלוחים פעילים לשליח זה.")
@@ -619,8 +681,8 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
                 end_location = st.selectbox("🏁 בחר נקודת סיום (יעד סופי):", all_cities, key="comp_end_loc")
             
             if st.button("🚀 הפעל סידור אוטומטי של המסלול"):
-                remaining = [d for d in courier_deliveries if d.get("עיר") != end_location]
-                end_items = [d for d in courier_deliveries if d.get("עיר") == end_location]
+                remaining = [d for d in courier_deliveries if d.get("עיר"] != end_location]
+                end_items = [d for d in courier_deliveries if d.get("עיר"] == end_location]
                 
                 sorted_route = []
                 current_point = start_location
@@ -678,7 +740,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
     elif comp_menu == t["manage_users"]:
         st.title("🔑 ניהול שליחי החברה וסיסמאות")
         for usr, info in list(st.session_state.couriers_db.items()):
-            if info.get("company") == current_company and info.get("role") == "שליח":
+            if info.get("company") == current_company and info.get("role"] == "שליח":
                 with st.expander(f"👤 {usr}"):
                     st.markdown(f"**סיסמה נוכחית:** `{info.get('password', '')}`")
                     st.markdown(f"**טלפון:** `{info.get('phone', '-')}`")
@@ -723,8 +785,8 @@ elif st.session_state.role == "שליח":
         st.title("📦 המשלוחים המוקצים אליך")
         col1, col2, col3 = st.columns(3)
         col1.metric("סך הכל משלוחים", len(my_deliveries))
-        col2.metric("ממתינים לביצוע", len([d for d in my_deliveries if d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]))
-        col3.metric("נמסרו בהצלחה", len([d for d in my_deliveries if d.get("status") == "נמסר"]))
+        col2.metric("ממתינים לביצוע", len([d for d in my_deliveries if d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]))
+        col3.metric("נמסרו בהצלחה", len([d for d in my_deliveries if d.get("status"] == "נמסר"]))
         st.divider()
 
         for idx, item in enumerate(my_deliveries):
@@ -756,7 +818,7 @@ elif st.session_state.role == "שליח":
                 with b4:
                     if st.button("סורב ❌", key=f"cour_r_{idx}"):
                         item["status"] = "סורב על ידי הלקוח"
-                        st.warning("המשלוח עודכן كـ סורב.")
+                        st.warning("המשלוח עודכן כסורב.")
                         st.rerun()
 
     elif courier_menu == "➕ הוספת משלוח":
