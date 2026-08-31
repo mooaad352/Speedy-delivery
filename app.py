@@ -339,11 +339,12 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         st.title(t["platform_profits"])
         st.markdown("### דוח רווחי פלטפורמה (חישוב עמלת שימוש: 1 ₪ לפני מע\"מ לכל משלוח שנמסר)")
         
-        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
+        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
         
         report_data = []
         for c in all_couriers:
-            delivered_by_courier = len([d for d in st.session_state.deliveries if d.get("courier") == c and d.get("status"] == "נמסר"])
+            # תיקון השגיאה בשורה 346: סגירה נכונה של הסוגריים המרובעים והעגולים
+            delivered_by_courier = len([d for d in st.session_state.deliveries if d.get("courier") == c and d.get("status") == "נמסר"])
             fee_total = delivered_by_courier * 1.00
             report_data.append({
                 "שם שליח/משתמש": c,
@@ -359,7 +360,6 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             total_all_revenue = total_all_delivered * 1.00
             st.metric("סך הכל הכנסות עמלות לך מכל השליחים (לפני מע״מ)", f"{total_all_revenue:,.2f} ₪")
             
-            # אפשרות להורדת דוח עמדות כקובץ HTML
             html_invoice = f"<h1>דוח עמדות פלטפורמה</h1><h3>סך הכל הכנסות: {total_all_revenue:,.2f} ₪ לפני מע״מ</h3>" + df_report.to_html(index=False)
             invoice_stream = BytesIO(html_invoice.encode("utf-8"))
             invoice_stream.seek(0)
