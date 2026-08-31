@@ -106,6 +106,92 @@ def generate_personal_html_contract(data_dict):
     file_stream.seek(0)
     return file_stream
 
+def generate_monthly_invoice_html(user_name, user_hp, is_exempt, count_deliveries, price_per_unit=1.0):
+    base_price = count_deliveries * price_per_unit
+    vat_amount = 0.0 if is_exempt else base_price * VAT_RATE
+    total_final = base_price + vat_amount
+    current_month_str = datetime.now().strftime("%m/%Y")
+    
+    html_content = f"""<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>חשבונית / דוח סיכום חודשי - {user_name}</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; background: #f9f9f9; color: #333; margin: 0; padding: 20px; }}
+        .invoice-box {{ max-width: 800px; margin: auto; background: #fff; padding: 30px; border: 1px solid #eee; box-shadow: 0 0 10px rgba(0,0,0,0.15); border-radius: 8px; }}
+        header {{ border-bottom: 2px solid #2563eb; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }}
+        .company-details h2 {{ margin: 0; color: #2563eb; }}
+        .invoice-details {{ text-align: left; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+        th, td {{ border: 1px solid #d1d5db; padding: 12px; text-align: right; }}
+        th {{ background-color: #f3f4f6; }}
+        .totals {{ margin-top: 25px; border-top: 2px solid #333; padding-top: 15px; text-align: left; font-size: 1.1em; }}
+        .totals div {{ margin-bottom: 8px; }}
+        .final-amount {{ font-weight: bold; font-size: 1.3em; color: #16a34a; }}
+        .footer {{ margin-top: 40px; text-align: center; font-size: 0.9em; color: #777; }}
+        .btn-print {{ background: #2563eb; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; font-size: 1em; margin-top: 20px; }}
+    </style>
+</head>
+<body>
+<div class="invoice-box">
+    <header>
+        <div class="company-details">
+            <h2>מקארט (Speedy Delivery) - דוח וחשבון חודשי</h2>
+            <p>סיכום פעילות עסקית</p>
+        </div>
+        <div class="invoice-details">
+            <p><strong>חודש דיווח:</strong> {current_month_str}</p>
+            <p><strong>תאריך הפקה:</strong> {datetime.now().strftime('%Y-%m-%d')}</p>
+        </div>
+    </header>
+
+    <section>
+        <h3>פרטי נותן השירות / השליח:</h3>
+        <p><strong>שם מלא / עסק:</strong> {user_name}</p>
+        <p><strong>ח.פ / ת.ז / עוסק פטור:</strong> {user_hp}</p>
+        <p><strong>סטטוס מס:</strong> {'עוסק פטור (ללא מע"מ)' if is_exempt else 'חייב במע"מ (כולל מע"מ 18%)'}</p>
+    </section>
+
+    <table>
+        <thead>
+            <tr>
+                <th>תיאור הפעילות</th>
+                <th>כמות משלוחים מזוכים</th>
+                <th>תעריף ליחידה</th>
+                <th>סה"כ לפני מע"מ</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>משלוחים שבוצעו וטופלו בהצלחה החודש</td>
+                <td>{count_deliveries}</td>
+                <td>₪{price_per_unit:.2f}</td>
+                <td>₪{base_price:.2f}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <div>סכום לפני מע"מ: <strong>₪{base_price:.2f}</strong></div>
+        {"" if is_exempt else f'<div>מע"מ (18%): <strong>₪{vat_amount:.2f}</strong></div>'}
+        <div class="final-amount">סכום סופי לתשלום: ₪{total_final:.2f}</div>
+    </div>
+
+    <div style="text-align: center;">
+        <button class="btn-print" onclick="window.print()">הדפס / שמור כ-PDF</button>
+    </div>
+
+    <div class="footer">
+        הופק אוטומטית ממערכת מקארט - Speedy Delivery.
+    </div>
+</div>
+</body>
+</html>"""
+    file_stream = BytesIO(html_content.encode("utf-8"))
+    file_stream.seek(0)
+    return file_stream
+
 st.set_page_config(page_title="Speedy Delivery - מערכת ניהול משלוחים", page_icon="🚚", layout="wide")
 
 CONTRACTS_FILE = "delivery_drivers_contracts.csv"
@@ -178,7 +264,7 @@ TRANSLATIONS = {
         "login_error": "שם משתמש או סיסמה שגויים.",
         "logout": "התנתק (Logout)",
         "admin_menu": "תפריט ניהול",
-        "courier_menu": "תפריט שליח",
+        "courier_menu": "תפריט שליח / מנהל חברה",
         "main_sys": "מערכת משלוחים ראשית",
         "smart_route": "🗺️ סידור מסלול משלוחים אוטומטי (מרחקי GPS)",
         "add_delivery": "➕ הוספת משלוח חדש",
@@ -204,7 +290,7 @@ TRANSLATIONS = {
         "login_error": "خطأ في اسم المستخدم أو كلمة المرور.",
         "logout": "تسجيل الخروج",
         "admin_menu": "قائمة الإدارة",
-        "courier_menu": "قائمة المندوب",
+        "courier_menu": "قائمة المندوب / مدير الشركة",
         "main_sys": "نظام الشحنات الرئيسي",
         "smart_route": "🗺️ ترتيب مسار الشحنات تلقائياً",
         "add_delivery": "➕ إضافة شحنة جديدة",
@@ -535,7 +621,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             user_company = info.get("company", "Independent")
             valid_user_items = [
                 d for d in st.session_state.deliveries 
-                if (d.get("courier") == usr or d.get("company") == user_company) and d.get("status") != "סורב על ידי הלקוח"
+                if (d.get("courier") == usr or d.get("company") == user_company) and d.get("status"] != "סורב על ידי הלקוח"
             ]
             
             count_valid_deliveries = len(valid_user_items)
@@ -544,14 +630,9 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             hp_exempt_str = str(info.get("hp_exempt", "")).lower()
             is_exempt = "פטור" in hp_exempt_str or hp_exempt_str == "אין" or hp_exempt_str == ""
             
-            if is_exempt:
-                vat_amount = 0.0
-                total_price = base_price
-                tax_status = "עוסק פטור (ללא מע\"מ)"
-            else:
-                vat_amount = base_price * VAT_RATE
-                total_price = base_price + vat_amount
-                tax_status = "עוסק מורשה / חברה (כולל מע\"מ 18%)"
+            vat_amount = 0.0 if is_exempt else base_price * VAT_RATE
+            total_price = base_price + vat_amount
+            tax_status = "עוסק פטור (ללא מע\"מ)" if is_exempt else "עוסק מורשה / חברה (כולל מע\"מ 18%)"
                 
             report_data.append({
                 "שם משתמש": usr,
@@ -568,6 +649,23 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         if report_data:
             df_report = pd.DataFrame(report_data)
             st.dataframe(df_report, use_container_width=True)
+            
+            for idx, r_row in enumerate(report_data):
+                usr_key = r_row["שם משתמש"]
+                usr_info = st.session_state.couriers_db.get(usr_key, {})
+                full_n = usr_info.get("full_name", usr_key)
+                hp_val = usr_info.get("hp_exempt", "אין")
+                is_ex = "פטור" in str(hp_val).lower() or str(hp_val).lower() == "אין" or str(hp_val) == ""
+                count_d = r_row["סך משלוחים מזוכה"]
+                
+                inv_stream = generate_monthly_invoice_html(full_n, hp_val, is_ex, count_d)
+                st.download_button(
+                    label=f"📥 הורד חשבונית HTML חודשית עבור {full_n} ({usr_key})",
+                    data=inv_stream,
+                    file_name=f"monthly_invoice_{usr_key}.html",
+                    mime="text/html",
+                    key=f"adm_inv_{idx}"
+                )
             
             total_all_deliveries = sum([d["סך משלוחים מזוכה"] for d in report_data])
             total_all_revenue = sum([float(d["סכום סופי לתשלום (ש\"ח)"].replace(" ₪", "")) for d in report_data])
@@ -641,13 +739,13 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
 else:
     st.sidebar.title(t["courier_menu"])
-    courier_menu_choice = st.sidebar.radio("תפריט פעולות", [t["main_sys"], t["smart_route"], t["add_delivery"], t["change_password"]])
+    courier_menu_choice = st.sidebar.radio("תפריט פעולות", [t["main_sys"], t["smart_route"], t["add_delivery"], t["monthly_report"], t["change_password"]])
     if st.sidebar.button(t["logout"]):
         logout_user()
 
     if courier_menu_choice == t["main_sys"]:
-        st.title("📦 המשלוחים שלי")
-        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username or d.get("company") == st.session_state.company]
+        st.title("📦 המשלוחים שלי / של החברה")
+        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username or d.get("company"] == st.session_state.company]
         
         for idx, item in enumerate(my_deliveries):
             status_color = "🟢" if item.get("status") == "נמסר" else ("🔴" if "סורב" in item.get("status", "") else ("🔵" if "נדחה" in item.get("status", "") else "🟠"))
@@ -709,7 +807,7 @@ else:
         st.title(t["smart_route"])
         st.write("בחר את נקודת ההתחלה שלך, והמערכת תסדר אוטומטית את כל המסלול עבורך מהקרוב ביותר לרחוק!")
         
-        my_deliveries = [d for d in st.session_state.deliveries if (d.get("courier") == st.session_state.username or d.get("company") == st.session_state.company) and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
+        my_deliveries = [d for d in st.session_state.deliveries if (d.get("courier") == st.session_state.username or d.get("company"] == st.session_state.company) and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
         
         if not my_deliveries:
             st.info("אין לך משלוחים פעילים כרגע.")
@@ -760,6 +858,38 @@ else:
                 }
                 st.session_state.deliveries.append(new_item)
                 st.success("המשלוח נוסף בהצלחה למערכת ושויך אליך!")
+
+    elif courier_menu_choice == t["monthly_report"]:
+        st.title("📊 הדוח החודשי שלי וחשבונית לתשלום")
+        user_info = st.session_state.couriers_db.get(st.session_state.username, {})
+        user_comp = user_info.get("company", "Independent")
+        
+        my_valid_deliveries = [
+            d for d in st.session_state.deliveries 
+            if (d.get("courier") == st.session_state.username or d.get("company") == user_comp) and d.get("status"] != "סורב על ידי הלקוח"
+        ]
+        count_my_deliv = len(my_valid_deliveries)
+        base_amt = count_my_deliv * 1.0
+        
+        hp_ex_str = str(user_info.get("hp_exempt", "")).lower()
+        is_ex_user = "פטור" in hp_ex_str or hp_ex_str == "אין" or hp_ex_str == ""
+        
+        vat_amt = 0.0 if is_ex_user else base_amt * VAT_RATE
+        total_amt = base_amt + vat_amt
+        
+        st.metric("📦 סך המשלוחים המזוכה שלך החודש", count_my_deliv)
+        st.metric("💰 סכום סופי לתשלום (כולל מע\"מ / פטור)", f"{total_amt:.2f} ₪")
+        
+        full_name_user = user_info.get("full_name", st.session_state.username)
+        hp_user_val = user_info.get("hp_exempt", "אין")
+        
+        my_inv_stream = generate_monthly_invoice_html(full_name_user, hp_user_val, is_ex_user, count_my_deliv)
+        st.download_button(
+            label="📥 הורד חשבונית / דוח חודשי אישי (.html)",
+            data=my_inv_stream,
+            file_name=f"my_monthly_invoice_{st.session_state.username}.html",
+            mime="text/html"
+        )
 
     elif courier_menu_choice == t["change_password"]:
         st.title(t["change_password"])
