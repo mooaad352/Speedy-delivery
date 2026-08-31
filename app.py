@@ -42,7 +42,7 @@ def generate_html_contract_form():
         <strong>תנאי שימוש, הצהרה ופטור מלא מאחריות משפטית:</strong><br><br>
         1. <strong>מהות הפלטפורמה:</strong> מערכת "Speedy Delivery" משמשת כפלטפורמה טכנולוגית עצמאית.<br><br>
         2. <strong>העדר יחסי עובד-מעביד:</strong> מוסכם בזאת במפורש כי לא מתקיימים יחסי עובד-מעביד.<br><br>
-        3. <strong>אחריות בלעדית של השליח:</strong> השליח נושא באחריות המלאה והבלעדית לכל נזק או אובדן במשלוח.<br><br>
+        3. <strong>אחריות בלעדית של השליח:</strong> השליח נושא באחריות המלאה והבלעדית לכל נזק أو אובדן במשלוח.<br><br>
         4. <strong>פטור מלא מאחריות למפעיל המערכת:</strong> מפעיל המערכת פטור מאחריות לנזקי גוף, רכוש ותאונות.<br><br>
         5. <strong>תשלומים והתחייבות פיננסית:</strong> השליח/מנהל מתחייב להסדיר את התשלומים בהתאם למשלוחים שבוצעו וטופלו במערכת.<br><br>
         6. <strong>הרשאה מלאה לבדיקת משלוחים שסורבו:</strong> ניתנת בזה הרשאה מלאה ובלעדית למפעיל המערכת לבדוק, ליצור קשר ולוודא באופן ישיר מול הלקוחות את כל המשלוחים שדווחו כסורבים או נדחו.<br><br>
@@ -470,7 +470,7 @@ elif str_lit.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             user_company = info.get("company", "Independent")
             valid_user_items = [
                 d for d in str_lit.session_state.deliveries 
-                if (d.get("courier") == usr or d.get("company") == user_company) and d.get("status"] != "סורב על ידי הלקוח"
+                if (d.get("courier") == usr or d.get("company") == user_company) and d.get("status") != "סורב על ידי הלקוח"
             ]
             
             count_valid_deliveries = len(valid_user_items)
@@ -591,7 +591,7 @@ elif str_lit.session_state.role == "שליח":
 
     if courier_menu == "📦 המשלוחים שלי":
         str_lit.title("📦 המשלוחים שלי לביצוע")
-        my_deliveries = [d for d in str_lit.session_state.deliveries if d.get("courier"] == courier_username]
+        my_deliveries = [d for d in str_lit.session_state.deliveries if d.get("courier") == courier_username]
         
         if not my_deliveries:
             str_lit.info("אין לך כרגע משלוחים משויכים. באפשרותך להוסיף משלוח חדש דרך התפריט בצד.")
@@ -606,7 +606,6 @@ elif str_lit.session_state.role == "שליח":
                     wa_msg = urllib.parse.quote(f"שלום {item['שם לקוח']}, אני השליח בדרך אליך! יש לי משלוח מ-{item['שם חברה']}. נא להיות זמין.")
                     wa_link = f"https://wa.me/{c_phone}?text={wa_msg}"
                     
-                    # וואטסאפ לבקשת הערכת משלוח
                     wa_rating_msg = urllib.parse.quote(f"תודה רבה שבחרת בנו! נשמח מאוד אם תוכל/י לדרג את שירות המשלוח מ-{item['שם חברה']} מ-1 עד 5 כוכבים, ולשלוח לנו את דעתך. (Speedy Delivery)")
                     wa_rating_link = f"https://wa.me/{c_phone}?text={wa_rating_msg}"
                     
