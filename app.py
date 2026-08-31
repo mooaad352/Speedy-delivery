@@ -15,6 +15,17 @@ def get_israel_time():
 def get_current_date():
     return datetime.now(timezone(ISRAEL_OFFSET))
 
+def format_whatsapp_phone(phone_str):
+    """
+    מנקה את מספר הטלפון ומוודא שהוא מתחיל בקידומת הבינלאומית 972
+    """
+    clean_phone = "".join(filter(str.isdigit, str(phone_str)))
+    if clean_phone.startswith("0"):
+        clean_phone = "972" + clean_phone[1:]
+    elif not clean_phone.startswith("972") and len(clean_phone) > 0:
+        clean_phone = "972" + clean_phone
+    return clean_phone
+
 # הגדרת עיצוב הדף (כיוון מימין לשמאל כברירת מחדל)
 st.set_page_config(page_title="Speedy Delivery - מערכת ניהול משלוחים", page_icon="🚚", layout="wide")
 
@@ -37,7 +48,7 @@ def load_users_db():
     # ברירת מחדל ראשונית אם הקובץ לא קיים
     default_users = {
         "Admin": {"password": "Sma.srablove2028", "role": "מנהל מערכת ראשי (Super Admin)", "phone": ADMIN_PHONE, "company": "System"},
-        "mohammad": {"password": "123", "role": "שליח", "phone": "+972502616375", "company": "Independent"}
+        "mohammad": {"password": "123", "role": "שליח", "phone": "972502616375", "company": "Independent"}
     }
     save_users_db(default_users)
     return default_users
@@ -359,7 +370,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                     new_barcode = st.text_input(t["barcode"], value=f"DEL-{len(admin_deliveries)+101}")
                     new_cust_name = st.text_input(t["cust_name"])
                     new_company_name = st.text_input(t["company_name"], value="Shop")
-                    new_phone = st.text_input(t["phone"], value="972")
+                    new_phone = st.text_input(t["phone"], value="050")
                 with col_b:
                     new_city = st.text_input(t["city"])
                     new_street = st.text_input(t["street"])
@@ -379,7 +390,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                             "ברקוד": new_barcode,
                             "שם לקוח": new_cust_name,
                             "שם חברה": new_company_name,
-                            "טלפון": new_phone,
+                            "טלפון": format_whatsapp_phone(new_phone),
                             "כתובת מלאה": f"{new_city}, {new_street} {new_house}".strip(),
                             "רחוב": new_street,
                             "בית": new_house,
@@ -423,7 +434,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                                 st.success(t["delivered_success"])
                                 st.rerun()
                     with col_btn2:
-                        phone_clean = item['טלפון'].strip().replace("+", "")
+                        phone_clean = format_whatsapp_phone(item['טלפון'])
                         cust_n = item['שם לקוח']
                         comp_n = item['שם חברה']
                         wa_text = f"שלום {cust_n}, שליח בדרך אליך עם משלוח מ-{comp_n}."
@@ -437,7 +448,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             new_comp_username = st.text_input("שם משתמש למנהל החברה:")
             new_comp_password = st.text_input("סיסמה:", type="password")
             new_comp_name = st.text_input("שם חברת המשלוחים / עסק:")
-            new_comp_phone = st.text_input("מספר טלפון ליצירת קשר (למשל: 972500000000):")
+            new_comp_phone = st.text_input("מספר טלפון ליצירת קשר (למשל: 0500000000):")
             
             submit_comp = st.form_submit_button("הוסף מנהל חברה חדש")
             if submit_comp:
@@ -445,23 +456,23 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                     if new_comp_username in st.session_state.couriers_db:
                         st.error("שם המשתמש כבר קיים במערכת!")
                     else:
+                        formatted_phone = format_whatsapp_phone(new_comp_phone)
                         st.session_state.couriers_db[new_comp_username] = {
                             "password": new_comp_password,
                             "role": "מנהל חברה (Company Admin)",
-                            "phone": new_comp_phone,
+                            "phone": formatted_phone,
                             "company": new_comp_name
                         }
                         save_users_db(st.session_state.couriers_db)
                         st.success(f"מנהל החברה '{new_comp_username}' נוסף בהצלחה!")
                         
-                        if new_comp_phone:
-                            phone_clean = new_comp_phone.strip().replace("+", "")
+                        if formatted_phone:
                             app_url = "https://share.streamlit.io/"
                             msg = (f"שלום {new_comp_name},\n\nנוצר לך חשבון מנהל חברה במערכת ניהול המשלוחים Speed Delivery.\n"
                                    f"שם משתמש: {new_comp_username}\nסיסמה: {new_comp_password}\n\n"
                                    f"קישור לכניסה למערכת:\n{app_url}\n\n"
                                    f"נא לאשר את תנאי השימוש ואישור העמלות בקישור המערכת.")
-                            wa_link = f"https://wa.me/{phone_clean}?text={urllib.parse.quote(msg)}"
+                            wa_link = f"https://wa.me/{formatted_phone}?text={urllib.parse.quote(msg)}"
                             st.markdown(f"### 📲 [לחץ כאן לשליחת פרטי ההתחברות והחוזה בוואטסאפ למנהל החברה]({wa_link})" , unsafe_allow_html=True)
                 else:
                     st.warning("נא למלא את כל השדות החובה.")
@@ -472,7 +483,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         with st.form("add_courier_form"):
             c_username = st.text_input("שם משתמש לשליח:")
             c_password = st.text_input("סיסמה:", type="password")
-            c_phone = st.text_input("מספר טלפון של השליח (למשל: 972500000000):")
+            c_phone = st.text_input("מספר טלפון של השליח (למשל: 0500000000):")
             
             company_list = ["Independent (שליח פרטי/עצמאי)"] + list(set([info.get("company", "Independent") for usr, info in st.session_state.couriers_db.items() if info.get("company") != "Independent" and info.get("company") != "System"]))
             c_company_choice = st.selectbox("שיוך שליח:", company_list)
@@ -485,24 +496,24 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                     if c_username in st.session_state.couriers_db:
                         st.error("שם המשתמש כבר קיים!")
                     else:
+                        formatted_phone = format_whatsapp_phone(c_phone)
                         st.session_state.couriers_db[c_username] = {
                             "password": c_password,
                             "role": "שליח",
-                            "phone": c_phone,
+                            "phone": formatted_phone,
                             "company": c_company
                         }
                         save_users_db(st.session_state.couriers_db)
                         st.success(f"השליח '{c_username}' נוסף בהצלחה!")
                         
-                        if c_phone:
-                            phone_clean = c_phone.strip().replace("+", "")
+                        if formatted_phone:
                             app_url = "https://share.streamlit.io/"
                             msg = (f"שלום {c_username},\n\nנוצר לך חשבון שליח במערכת ניהול המשלוחים Speed Delivery.\n"
                                    f"שם משתמש: {c_username}\nסיסמה: {c_password}\n"
                                    f"שיוך: {c_company}\n\n"
                                    f"קישור לכניסה למערכת:\n{app_url}\n\n"
                                    f"נא להיכנס למערכת כדי לצפות במשלוחים ולאשר את תנאי העבודה והחוזה.")
-                            wa_link = f"https://wa.me/{phone_clean}?text={urllib.parse.quote(msg)}"
+                            wa_link = f"https://wa.me/{formatted_phone}?text={urllib.parse.quote(msg)}"
                             st.markdown(f"### 📲 [לחץ כאן לשליחת פרטי ההתחברות, החוזה והקישור בוואטסאפ לשליח]({wa_link})" , unsafe_allow_html=True)
                 else:
                     st.warning("נא למלא שם משתמש וסיסמה.")
@@ -529,7 +540,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                     
                     if update_btn:
                         users_db[usr]["password"] = new_pass
-                        users_db[usr]["phone"] = new_ph
+                        users_db[usr]["phone"] = format_whatsapp_phone(new_ph)
                         save_users_db(users_db)
                         st.success(f"הפרטים של {usr} עודכנו בהצלחה!")
                         st.rerun()
