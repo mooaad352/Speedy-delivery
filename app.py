@@ -368,7 +368,6 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             new_pass = st.text_input(t["password"], type="password")
             new_phone_input = st.text_input(t["phone"])
             
-            # בחירת חברה לשייך אליה את השליח
             company_options = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role") == "מנהל חברה (Company Admin)"]
             company_options.insert(0, "עצמאי (Independent / מנהל ראשי)")
             assigned_company = st.selectbox("שייך לחברת משלוחים / מנהל", company_options)
@@ -431,23 +430,20 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["monthly_report"]:
         st.title(t["monthly_report"])
-        st.info("💡 החיוב למערכת מבוסס על 1 ₪ לכל משלוח שנקלט במערכת עבור כל שליח / חברה (לפני מע״מ לעוסק מורשה / פטור לעוסק פטור).")
+        st.info("💡 החיוב למערכת מבוסס על 1 ₪ לכל משלוח שנקלט במערכת עבור כל שליח / חברה.")
         
         current_month_str = get_current_date().strftime("%Y-%m")
         st.subheader(f"📅 סיכום חודש נוכחי: {current_month_str}")
 
-        # הצגת סיכום לפי חברות / מנהלי חברות
-        company_admins = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role") == "מנהל חברה (Company Admin)"]
+        company_admins = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role"] == "מנהל חברה (Company Admin)"]
         
         for c_usr in company_admins:
             c_info = st.session_state.couriers_db[c_usr]
             c_name = c_info.get("company", c_usr)
             c_phone = c_info.get("phone", "")
             
-            # שליחים ששייכים לחברה זו
             company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == c_name]
             
-            # כל המשלוחים של השליחים בחברה זו החודש
             company_deliveries = [
                 d for d in st.session_state.deliveries 
                 if (d.get("company") == c_name or d.get("courier") in company_couriers or d.get("courier") == c_usr) 
@@ -468,7 +464,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                     fee_msg = f"שלום {c_name}, סיכום השימוש של חברתך במערכת לחודש {current_month_str}:\n- סך משלוחים שנקלטו (כל השליחים): {total_count}\n- סכום לתשלום: ₪{amount_base:.2f}\n\nתודה רבה!"
                     encoded_fee_msg = urllib.parse.quote(fee_msg)
                     wa_fee_url = f"https://wa.me/{c_phone}?text={encoded_fee_msg}"
-                    st.markdown(f"[📲 שליחת הודעת חיוב עמלות למנהל החברה בוואטסאפ]({wa_fee_url})", unsafe_allow_html=True)
+                    st.markdown(f"[📲 שליחת הודעת חיוב עמלות למנהל החברה בוואטسאפ]({wa_fee_url})", unsafe_allow_html=True)
         
         st.stop()
 
@@ -556,7 +552,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
         st.subheader("👥 פירוט פעילות לפי שליחי החברה:")
         for c in company_couriers:
             c_deliveries = [d for d in company_deliveries if d.get("courier") == c]
-            st.write(- f"**שליח: {c}** | מספר משלוחים שביצע: {len(c_deliveries)}")
+            st.write(f"- **שליח: {c}** | מספר משלוחים שביצע: {len(c_deliveries)}")
         
         st.subheader("📋 רשימת כל המשלוחים המלאה של החברה:")
         for d in company_deliveries:
@@ -612,17 +608,17 @@ if st.session_state.logged_in:
         st.subheader("3. תנאי השימוש במערכת ותשלום עמלות")
         contract_text = """
 השימוש במערכת ניהול המשלוחים כפוף לתנאים הבאים:
-1. מהות השירות: המערכת משמשת ככלי טכנולוגי מתקדם לניהול, סידור ורישום משלוחים עבור הפעילות העסקית העצמאית של השליח. הרישיון הינו אישי, בלתי ניתן להעברה ומוענק לשימוש בכפוף לעמידה בתנאים אלו.
+1. מהות השירות: המערכת משמשת ככלי טכנולוגי מתקדם לניהול, סידור ורישום משלוחים עבור הפעילות העסקית העצמאית של השליח.
 2. תשלום עמלות ודמי שימוש: השליח מתחייב לשלם למנהל המערכת דמי שימוש ועמלה בסך 1 ₪ עבור כל משלוח שנקלט במערכת תחת חשבונו.
-3. הסרת אחריות משפטית ותפעולית: האחריות הבלעדית והמלאה על ביצוע המשלוחים בשטח חלה על השליח בלבד.
-4. קניין רוחני: כל הזכויות במערכת הינן רכושו הבלעדי של מנהל המערכת.
+3. הסרת אחריות משפטית ותפעולית: האחריות הבלעדית על ביצוע המשלוחים חלה על השליח בלבד.
+4. קניין רוחני: כל הזכויות במערכת הינן רכושו של מנהל המערכת.
 """
         st.text_area("תנאי השימוש המחייבים:", contract_text, height=200, disabled=True)
 
         st.divider()
 
         st.subheader("4. אישור וחתימה דיגיטלית")
-        agree = st.checkbox("אני מאשר/ת שקראתי את תנאי השימוש בעיון, כי אני מסכים לתשלום העמלה ושכל הפרטים שמסרתי נכונים ומדויקים.")
+        agree = st.checkbox("אני מאשר/ת שקראתי את תנאי השימוש בעיון, כי אני מסכים לתשלום העמלה ושכל הפרטים נכונים.")
         signature_name = st.text_input("הקלד את שמך המלא כחתימה דיגיטלית (חובה)")
 
         if st.button("שמור אישור והשלם רישום"):
@@ -651,7 +647,7 @@ if st.session_state.logged_in:
                 }
                 
                 save_contract_data(driver_record)
-                st.success(f"תודה רבה {first_name} {last_name}! אישור תנאי השימוש והפרטים שלך נקלטו בהצלחה.")
+                st.success(f"תודה רבה {first_name} {last_name}! הפרטים נקלטו בהצלחה.")
                 st.session_state.show_contract_screen = False
     
         st.stop()
@@ -663,11 +659,11 @@ if st.session_state.logged_in:
     st.title(t["title"])
 
     if st.session_state.role == "שליח":
-        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status"] != "נמסר"])
+        my_deliveries_count = len([d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") != "נמסר"])
         st.info(f"📦 {t['active_deliveries']} **{my_deliveries_count}** {t['active_deliveries_end']}")
     elif st.session_state.role == "מנהל חברה (Company Admin)":
         comp_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == st.session_state.company]
-        comp_active = len([d for d in st.session_state.deliveries if (d.get("company") == st.session_state.company or d.get("courier") in comp_couriers) and d.get("status"] != "נמסר"])
+        comp_active = len([d for d in st.session_state.deliveries if (d.get("company") == st.session_state.company or d.get("courier") in comp_couriers) and d.get("status") != "נמסר"])
         st.info(f"🏢 חברת {st.session_state.company} | סך משלוחים פעילים של החברה: **{comp_active}**")
 
     current_time_il_str = get_israel_time()
@@ -743,28 +739,27 @@ if st.session_state.logged_in:
         if st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             st.session_state.deliveries.sort(key=lambda x: (x.get("עיר", "") != start_point, x.get("עיר", ""), x.get("רחוב", ""), str(x.get("בית", "0"))))
         elif st.session_state.role == "מנהל חברה (Company Admin)":
-            comp_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company"] == st.session_state.company]
+            comp_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == st.session_state.company]
             other_d = [d for d in st.session_state.deliveries if d.get("company") != st.session_state.company and d.get("courier") not in comp_couriers]
             my_comp_d = [d for d in st.session_state.deliveries if d.get("company") == st.session_state.company or d.get("courier") in comp_couriers]
             my_comp_d.sort(key=lambda x: (x.get("עיר", "") != start_point, x.get("עיר", ""), x.get("רחוב", ""), str(x.get("בית", "0"))))
             st.session_state.deliveries = other_d + my_comp_d
         else:
             other_deliveries = [d for d in st.session_state.deliveries if d.get("courier") != st.session_state.username]
-            my_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username]
+            my_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
             my_deliveries.sort(key=lambda x: (x.get("עיר", "") != start_point, x.get("עיר", ""), x.get("רחוב", ""), str(x.get("בית", "0"))))
             st.session_state.deliveries = other_deliveries + my_deliveries
             
         st.success(t["sort_success"])
         st.rerun()
 
-    # סינון הרשימה המוצגת לפי הרשאה
     if st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         current_deliveries = st.session_state.deliveries
     elif st.session_state.role == "מנהל חברה (Company Admin)":
-        comp_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company"] == st.session_state.company]
-        current_deliveries = [d for d in st.session_state.deliveries if d.get("company") == st.session_state.company or d.get("courier") in comp_couriers or d.get("courier"] == st.session_state.username]
+        comp_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == st.session_state.company]
+        current_deliveries = [d for d in st.session_state.deliveries if d.get("company") == st.session_state.company or d.get("courier") in comp_couriers or d.get("courier") == st.session_state.username]
     else:
-        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username]
+        current_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
 
     if len(current_deliveries) == 0:
         st.info(t["no_deliveries"])
@@ -792,7 +787,7 @@ if st.session_state.logged_in:
                 with col2:
                     dest_address = item.get('כתובת מלאה', '')
                     waze_url = f"https://www.waze.com/ul?from={urllib.parse.quote(start_point)}&q={urllib.parse.quote(dest_address)}&navigate=yes"
-                    st.markdown(f"[{t['waze_btn']} {start_point} ב-Waze]({waze_url})", unsafe_allow_html=True)
+                    st.markdown(f"[{t['waze_btn']} {start_point} ب-Waze]({waze_url})", unsafe_allow_html=True)
                 
                 with col3:
                     if item.get("status") != "נמסר":
