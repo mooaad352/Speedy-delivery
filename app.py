@@ -362,8 +362,7 @@ elif str_lit.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                 str_lit.write(f"**ברקוד:** {item['ברקוד']} | **טלפון:** {item['טלפון']} | **כתובת:** {item['כתובת מלאה']} | **הערות:** {item.get('הערות', 'אין')}")
                 
                 c_phone = format_whatsapp_phone(item['טלפון'])
-                barcode_str = f" (ברקוד/QR: {item['ברקוד']})" if item.get('ברקוד') else ""
-                wa_msg = urllib.parse.quote(f"שלום {item['שם לקוח']}, השליח בדרך אליך עם המשלוח שלך מ-{item['שם חברה']}{barcode_str}. נא להיות זמין.")
+                wa_msg = urllib.parse.quote(f"שלום {item['שם לקוח']}, אני השליח בדרך אליך! יש לי משלוח מ{item['שם חברה']}.")
                 wa_link = f"https://wa.me/{c_phone}?text={wa_msg}"
                 waze_query = urllib.parse.quote(f"{item['כתובת מלאה']}, {item['עיר']}")
                 waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
@@ -394,7 +393,7 @@ elif str_lit.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         with str_lit.form("add_delivery_form"):
             d_barcode = str_lit.text_input("ברקוד משלוח / מספר מעקב (QR):", value=f"DEL-{int(datetime.now().timestamp())}")
             d_client = str_lit.text_input("שם הלקוח:")
-            d_company = str_lit.text_input("שם חברה / מותג ששולח (למשל: SHEIN):")
+            d_company = str_lit.text_input("שם חברה / מותג ששולח (למשל: SHIN):")
             d_phone = str_lit.text_input("טלפון הלקוח:")
             d_address = str_lit.text_input("כתובת מלאה:")
             d_city = str_lit.text_input("עיר / יישוב:")
@@ -453,7 +452,7 @@ elif str_lit.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["monthly_report"]:
         str_lit.title("📊 סיכום חודשי ודוחות כספיים (1 ש\"ח לכל משלוח שנוסף, למעט משלוחים שסורבו)")
-        str_lit.write("החישוב כולל את כל המשלוחים שנוספו והגיעו למצב 'נמסר' (כולל אלו שעוכבו או נדחו למחר ובסוף נמסרו). משלוחים שסורבו על ידי הלקוח **אינם** מחושבים.")
+        str_lit.write("החישוב כולל את כל המשלוחים שנוספו והגיעו למצב 'נמסר' (כולל אלו שעוכבו או נדחה למחר ובסוף נמסרו). משלוחים שסורבו על ידי הלקוח **אינם** מחושבים.")
         
         report_data = []
         for usr, info in str_lit.session_state.couriers_db.items():
@@ -550,8 +549,7 @@ elif str_lit.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                     str_lit.write(f"**הערות משלוח:** {r_item.get('הערות', 'אין')}")
                     
                     c_phone = format_whatsapp_phone(r_item['טלפון'])
-                    barcode_str = f" (ברקוד/QR: {r_item['ברקוד']})" if r_item.get('ברקוד') else ""
-                    verify_msg = urllib.parse.quote(f"שלום {r_item['שם לקוח']}, מעוניינים לוודא מולך האם אכן סירבת לקבל את המשלוח שלך מ-{r_item['שם חברה']}{barcode_str}? (מערכת Speedy Delivery)")
+                    verify_msg = urllib.parse.quote(f"שלום {r_item['שם לקוח']}, מעוניינים לוודא מולך האם אכן סירבת לקבל את המשלוח שלך מ-{r_item['שם חברה']}? (מערכת Speedy Delivery)")
                     wa_verify_link = f"https://wa.me/{c_phone}?text={verify_msg}"
                     phone_call_link = f"tel:{c_phone}"
                     
@@ -582,8 +580,7 @@ elif str_lit.session_state.role == "מנהל חברה (Company Admin)":
                 str_lit.write(f"**ברקוד:** {item['ברקוד']} | **טלפון:** {item['טלפון']} | **כתובת:** {item['כתובת מלאה']} | **הערות:** {item.get('הערות', 'אין')}")
                 
                 c_phone = format_whatsapp_phone(item['טלפון'])
-                barcode_str = f" (ברקוד/QR: {item['ברקוד']})" if item.get('ברקוד') else ""
-                wa_msg = urllib.parse.quote(f"שלום {item['שם לקוח']}, השליח בדרך אליך מטעם {company_name} עם המשלוח שלך{barcode_str}.")
+                wa_msg = urllib.parse.quote(f"שלום {item['שם לקוח']}, אני השליח בדרך אליך! יש לי משלוח מ{company_name}.")
                 wa_link = f"https://wa.me/{c_phone}?text={wa_msg}"
                 waze_query = urllib.parse.quote(f"{item['כתובת מלאה']}, {item['עיר']}")
                 waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
@@ -691,8 +688,7 @@ elif str_lit.session_state.role == "שליח":
                     str_lit.write(f"**ברקוד:** {item['ברקוד']} | **טלפון:** {item['טלפון']} | **כתובת:** {item['כתובת מלאה']} | **הערות:** {item.get('הערות', 'אין')}")
                     
                     c_phone = format_whatsapp_phone(item['טלפון'])
-                    barcode_str = f" (ברקוד/QR: {item['ברקוד']})" if item.get('ברקוד') else ""
-                    wa_msg = urllib.parse.quote(f"שלום {item['שם לקוח']}, השליח בדרך אליך עם המשלוח שלך מ-{item['שם חברה']}{barcode_str}.")
+                    wa_msg = urllib.parse.quote(f"שלום {item['שם לקוח']}, אני השליח בדרך אליך! יש לי משלוח מ{item['שם חברה']}.")
                     wa_link = f"https://wa.me/{c_phone}?text={wa_msg}"
                     waze_query = urllib.parse.quote(f"{item['כתובת מלאה']}, {item['עיר']}")
                     waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
