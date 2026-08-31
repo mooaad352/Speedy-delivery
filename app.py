@@ -217,7 +217,9 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         st.title(t["smart_route"])
         couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", couriers_list if couriers_list else ["אין שליחים"])
-        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]] if couriers_list else []
+        
+        # תוקן כאן: סגירת הסוגריים התקינה
+        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]] if couriers_list else []
         
         if not courier_deliveries:
             st.info("אין משלוחים פעילים לשליח זה.")
@@ -329,10 +331,10 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["monthly_report"]:
         st.title(t["monthly_report"])
-        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
+        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         selected_c_rep = st.selectbox("בחר שליח לדוח:", all_couriers if all_couriers else ["אין שליחים"])
         if selected_c_rep:
-            delivered_count = len([d for d in st.session_state.deliveries if d.get("courier"] == selected_c_rep and d.get("status") == "נמסר"])
+            delivered_count = len([d for d in st.session_state.deliveries if d.get("courier") == selected_c_rep and d.get("status") == "נמסר"])
             
             html_invoice = f"<h1>דוח חודשי - {selected_c_rep}</h1><p>סהכ משלוחים שבוצעו: {delivered_count}</p>"
             invoice_stream = BytesIO(html_invoice.encode("utf-8"))
@@ -355,7 +357,6 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             st.divider()
             st.subheader("🗑️ מחיקת נרשם או חוזה שמור")
             
-            # יצירת אפשרות לבחירת נרשם למחיקה לפי שם משתמש או טלפון
             contract_options = []
             for idx, row in contracts_df.iterrows():
                 display_label = f"שם: {row.get('שם מלא', 'לא ידוע')} | משתמש: {row.get('שם משתמש', '')} | טלפון: {row.get('טלפון', '')}"
