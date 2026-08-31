@@ -369,7 +369,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                 new_notes = st.text_area(t["notes"])
                 
                 company_list = list(set([info.get("company", "Independent") for usr, info in st.session_state.couriers_db.items()]))
-                assigned_company = st.selectbox("שייך לחברת משלוחים:", company_list)
+                assigned_company = st.selectbox("שייך לחברת משלוחים / עצמאי:", company_list)
                 
                 submit_new_del = st.form_submit_button(t["save_del"])
                 if submit_new_del:
@@ -408,7 +408,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         else:
             for idx, item in enumerate(admin_deliveries):
                 status_color = "🟢" if item["status"] == "נמסר" else "🟠"
-                with st.expander(f"{status_color} 📦 {item['שם לקוח']} | {item['עיר']} | חברה: {item.get('company', 'Independent')} | סטטוס: {item['status']}"):
+                with st.expander(f"{status_color} 📦 {item['שם לקוח']} | {item['עיר']} | חברה/שליח: {item.get('company', 'Independent')} | סטטוס: {item['status']}"):
                     st.write(f"**{t['barcode']}** {item['ברקוד']}")
                     st.write(f"**{t['company_name']}** {item['שם חברה']}")
                     st.write(f"**{t['phone']}** {item['טלפון']}")
@@ -454,20 +454,19 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                         save_users_db(st.session_state.couriers_db)
                         st.success(f"מנהל החברה '{new_comp_username}' נוסף בהצלחה!")
                         
-                        # כפתור שליחת וואטסאפ אוטומטית עם פרטי התחברות וחוזה
                         if new_comp_phone:
                             phone_clean = new_comp_phone.strip().replace("+", "")
-                            app_url = "https://share.streamlit.io/" # החלف בכתובת האפליקציה שלך במידת הצורך
+                            app_url = "https://share.streamlit.io/"
                             msg = (f"שלום {new_comp_name},\n\nנוצר לך חשבון מנהל חברה במערכת ניהול המשלוחים Speed Delivery.\n"
                                    f"שם משתמש: {new_comp_username}\nסיסמה: {new_comp_password}\n\n"
                                    f"קישור לכניסה למערכת:\n{app_url}\n\n"
-                                   f"נא לאשר את תנאי השימוש והחוזים בקישור הבא או ישירות מול המנהל.")
+                                   f"נא לאשר את תנאי השימוש ואישור העמלות בקישור המערכת.")
                             wa_link = f"https://wa.me/{phone_clean}?text={urllib.parse.quote(msg)}"
                             st.markdown(f"### 📲 [לחץ כאן לשליחת פרטי ההתחברות והחוזה בוואטסאפ למנהל החברה]({wa_link})" , unsafe_allow_html=True)
                 else:
                     st.warning("נא למלא את כל השדות החובה.")
 
-    # 3. הוספת שליח חדש
+    # 3. הוספת שליח חדש (פרטי או שייך לחברה)
     elif admin_menu == t["add_courier"]:
         st.title(t["add_courier"])
         with st.form("add_courier_form"):
@@ -475,8 +474,10 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             c_password = st.text_input("סיסמה:", type="password")
             c_phone = st.text_input("מספר טלפון של השליח (למשל: 972500000000):")
             
-            company_list = list(set([info.get("company", "Independent") for usr, info in st.session_state.couriers_db.items()]))
-            c_company = st.selectbox("שייך לחברת משלוחים:", company_list)
+            company_list = ["Independent (שליח פרטי/עצמאי)"] + list(set([info.get("company", "Independent") for usr, info in st.session_state.couriers_db.items() if info.get("company") != "Independent" and info.get("company") != "System"]))
+            c_company_choice = st.selectbox("שיוך שליח:", company_list)
+            
+            c_company = "Independent" if "Independent" in c_company_choice else c_company_choice
             
             submit_courier = st.form_submit_button("הוסף שליח חדש")
             if submit_courier:
@@ -493,16 +494,16 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                         save_users_db(st.session_state.couriers_db)
                         st.success(f"השליח '{c_username}' נוסף בהצלחה!")
                         
-                        # כפתור שליחת וואטסאפ אוטומטית לשליח החדש
                         if c_phone:
                             phone_clean = c_phone.strip().replace("+", "")
                             app_url = "https://share.streamlit.io/"
                             msg = (f"שלום {c_username},\n\nנוצר לך חשבון שליח במערכת ניהול המשלוחים Speed Delivery.\n"
-                                   f"שם משתמש: {c_username}\nסיסמה: {c_password}\n\n"
+                                   f"שם משתמש: {c_username}\nסיסמה: {c_password}\n"
+                                   f"שיוך: {c_company}\n\n"
                                    f"קישור לכניסה למערכת:\n{app_url}\n\n"
-                                   f"נא להיכנס, לאשר את תנאי העבודה והחוזים.")
+                                   f"נא להיכנס למערכת כדי לצפות במשלוחים ולאשר את תנאי העבודה והחוזה.")
                             wa_link = f"https://wa.me/{phone_clean}?text={urllib.parse.quote(msg)}"
-                            st.markdown(f"### 📲 [לחץ כאן לשליחת פרטי ההתחברות והחוזה בוואטסאפ לשליח]({wa_link})" , unsafe_allow_html=True)
+                            st.markdown(f"### 📲 [לחץ כאן לשליחת פרטי ההתחברות, החוזה והקישור בוואטסאפ לשליח]({wa_link})" , unsafe_allow_html=True)
                 else:
                     st.warning("נא למלא שם משתמש וסיסמה.")
 
@@ -515,7 +516,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         for usr, info in list(users_db.items()):
             if usr == "Admin":
                 continue
-            with st.expander(f"👤 משתמש: {usr} | תפקיד: {info.get('role')} | חברה: {info.get('company', 'N/A')}"):
+            with st.expander(f"👤 משתמש: {usr} | תפקיד: {info.get('role')} | חברה/שליח: {info.get('company', 'N/A')}"):
                 with st.form(f"edit_user_{usr}"):
                     new_pass = st.text_input("עדכן סיסמה חדשה:", value=info.get("password", ""))
                     new_ph = st.text_input("עדכן טלפון:", value=info.get("phone", ""))
@@ -539,31 +540,44 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                         st.success(f"המשתמש {usr} נמחק מהמערכת.")
                         st.rerun()
 
-    # 5. דוח חודשי
+    # 5. דוח חודשי (כולל מנהלי חברות ושליחים פרטיים/עצמאיים)
     elif admin_menu == t["monthly_report"]:
         st.title(t["monthly_report"])
-        st.info("💡 החיוב וההתחשבנות מתבצעים ישירות מול מנהלי החברות או השליחים העצמאיים עבור כל משלוח שנקלט.")
+        st.info("💡 החיוב וההתחשבנות החודשית מתבצעים מול מנהלי חברות המשלוחים וגם מול השליחים הפרטיים/העצמאיים עבור המשלוחים שלהם.")
         
         current_month_str = get_current_date().strftime("%Y-%m")
         st.subheader(f"📅 סיכום חודש נוכחי: {current_month_str}")
 
-        company_admins = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role") == "מנהל חברה (Company Admin)"]
-        
+        accounting_targets = []
+        for usr, info in st.session_state.couriers_db.items():
+            if usr == "Admin":
+                continue
+            role = info.get("role")
+            company_val = info.get("company", "Independent")
+            
+            if role == "מנהל חברה (Company Admin)" or (role == "שליח" and company_val == "Independent"):
+                accounting_targets.append((usr, info))
+
         report_data = []
         total_system_deliveries = 0
 
-        for c_usr in company_admins:
-            c_info = st.session_state.couriers_db[c_usr]
-            c_name = c_info.get("company", c_usr)
+        for usr, info in accounting_targets:
+            role = info.get("role")
+            comp_name = info.get("company", usr)
             
-            comp_deliveries = [d for d in st.session_state.deliveries if d.get("company") == c_name]
+            if role == "מנהל חברה (Company Admin)":
+                comp_deliveries = [d for d in st.session_state.deliveries if d.get("company") == comp_name]
+            else:
+                comp_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == usr or d.get("company") == usr]
+
             count_del = len(comp_deliveries)
             total_system_deliveries += count_del
             
             report_data.append({
-                "שם מנהל": c_usr,
-                "שם חברה": c_name,
-                "טלפון": c_info.get("phone", ""),
+                "שם משתמש / גורם": usr,
+                "סוג / תפקיד": role,
+                "שם עסק / חברה": comp_name,
+                "טלפון": info.get("phone", ""),
                 "כמות משלוחים החודש": count_del
             })
 
@@ -572,7 +586,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             st.dataframe(df_report, use_container_width=True)
             st.metric("סך הכל משלוחים במערכת החודש", total_system_deliveries)
         else:
-            st.info("אין נתוני חברות זמינים להצגה בדוח החודשי.")
+            st.info("אין נתונים זמינים להצגה בדוח החודשי.")
 
     # 6. תנאי שימוש
     elif admin_menu == t["contract_menu"]:
