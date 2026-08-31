@@ -358,7 +358,6 @@ elif st.session_state.role != "מנהל מערכת ראשי (Super Admin)" and n
             if agree_terms and f_full_name and f_id_num and f_address and f_email and f_phone:
                 registration_date = get_israel_time()
                 
-                # עדכון במסד הנתונים שהמשתמש חתם ושמרנו את הפרטים שלו
                 st.session_state.couriers_db[st.session_state.username]["contract_signed"] = True
                 st.session_state.couriers_db[st.session_state.username]["full_name"] = f_full_name
                 st.session_state.couriers_db[st.session_state.username]["id_number"] = f_id_num
@@ -370,7 +369,6 @@ elif st.session_state.role != "מנהל מערכת ראשי (Super Admin)" and n
                 
                 save_users_db(st.session_state.couriers_db)
                 
-                # שמירת הנתונים בפנקס הרישומים (CSV) אצלך
                 contract_record = {
                     "שם משתמש": st.session_state.username,
                     "תפקיד": st.session_state.role,
@@ -636,6 +634,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             if role == "מנהל חברה (Company Admin)":
                 comp_deliveries = [d for d in st.session_state.deliveries if d.get("company") == comp_name]
             else:
+                # === שורה 828 המתוקנת כאן עם סוגריים עגולים ( ) בדרישה ל- .get() ===
                 comp_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == usr or d.get("company") == usr]
 
             count_del = len(comp_deliveries)
@@ -701,14 +700,15 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
                 
                 new_notes = st.text_area(t["notes"])
                 
+                # בחירת שליח ששייך לחברה הזו בלבד
                 company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role") == "שליח"]
-                courier_options = [st.session_state.username] + company_couriers
-                assigned_courier = st.selectbox("שייך לשליח בחברה:", courier_options)
+                assigned_courier = st.selectbox("שייך לשליח מהחברה:", ["טרם שויך (Admin/כללי)"] + company_couriers)
                 
                 submit_comp_del = st.form_submit_button(t["save_del"])
                 if submit_comp_del:
                     if new_cust_name and new_city:
                         current_time_il = get_israel_time()
+                        courier_val = "Admin" if assigned_courier == "טרם שויך (Admin/כללי)" else assigned_courier
                         new_item = {
                             "ברקוד": new_barcode,
                             "שם לקוח": new_cust_name,
@@ -721,7 +721,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
                             "עיר": new_city,
                             "הערות": new_notes,
                             "status": "ממתין",
-                            "courier": assigned_courier,
+                            "courier": courier_val,
                             "company": company_name,
                             "date": current_time_il
                         }
@@ -732,195 +732,88 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
                         st.warning(t["fill_required"])
 
         st.divider()
-        st.subheader("📋 רשימת משלוחי החברה והשליחים תחתיה")
-        
+        st.subheader("📋 משלוחי החברה")
         comp_deliveries = [d for d in st.session_state.deliveries if d.get("company") == company_name]
         if not comp_deliveries:
-            st.info(t["no_deliveries"])
+            st.info("אין עדיין משלוחים לרשימת החברה שלך.")
         else:
             for idx, item in enumerate(comp_deliveries):
                 status_color = "🟢" if item["status"] == "נמסר" else "🟠"
-                with st.expander(f"{status_color} 📦 {item['שם לקוח']} | עיר: {item['עיר']} | שליח: {item.get('courier')} | סטטוס: {item['status']}"):
-                    st.write(f"**{t['barcode']}** {item['ברקוד']}")
-                    st.write(f"**{t['phone']}** {item['טלפון']}")
-                    st.write(f"**{t['address']}** {item['עיר']}, {item.get('רחוב', '')} {item.get('בית', '')}")
+                with st.expander(f"{status_color} 📦 {item['שם לקוח']} | {item['עיר']} | שליח: {item.get('courier', 'Admin')} | סטטוס: {item['status']}"):
+                    st.write(f"**ברקוד:** {item['ברקוד']}")
+                    st.write(f"**טלפון לקוח:** {item['טלפון']}")
+                    st.write(f"**כתובת:** {item['עיר']}, {item.get('רחוב', '')} {item.get('בית', '')}")
                     st.write(f"**הערות:** {item.get('הערות', 'אין')}")
-                    
-                    if item["status"] == "ממתין":
-                        if st.button(t["mark_delivered"], key=f"comp_mark_{idx}"):
-                            item["status"] = "נמסר"
-                            st.success(t["delivered_success"])
-                            st.rerun()
 
     elif company_menu == "👥 הוספה וניהול שליחי החברה":
-        st.subheader("➕ הוספת שליח חדש תחת החברה שלך")
-        with st.form("add_my_courier_form"):
-            c_username = st.text_input("שם משתמש לשליח החדש:")
-            c_password = st.text_input("סיסמה:", type="password")
-            c_phone = st.text_input("מספר טלפון של השליח (למשל: 0500000000):")
+        st.subheader("👥 ניהול שליחי חברת המשלוחים שלך")
+        with st.form("company_add_courier_form"):
+            cc_username = st.text_input("שם משתמש לשליח החדש:")
+            cc_password = st.text_input("סיסמה:", type="password")
+            cc_phone = st.text_input("מספר טלפון נייד של השליח:")
             
-            submit_my_courier = st.form_submit_button("הוסף שליח לחברה שלי")
-            if submit_my_courier:
-                if c_username and c_password:
-                    if c_username in st.session_state.couriers_db:
+            submit_cc = st.form_submit_button("הוסף שליח לחברה שלי")
+            if submit_cc:
+                if cc_username and cc_password:
+                    if cc_username in st.session_state.couriers_db:
                         st.error("שם המשתמש כבר קיים במערכת!")
                     else:
-                        formatted_phone = format_whatsapp_phone(c_phone)
-                        st.session_state.couriers_db[c_username] = {
-                            "password": c_password,
+                        formatted_phone = format_whatsapp_phone(cc_phone)
+                        st.session_state.couriers_db[cc_username] = {
+                            "password": cc_password,
                             "role": "שליח",
                             "phone": formatted_phone,
                             "company": company_name,
                             "contract_signed": False
                         }
                         save_users_db(st.session_state.couriers_db)
-                        st.success(f"השליח '{c_username}' נוסף בהצלחה!")
+                        st.success(f"השליח '{cc_username}' נוסף בהצלחה לחברה שלך!")
                 else:
-                    st.warning("נא למלא את כל שדות החובה.")
+                    st.warning("נא למלא שם משתמש וסיסמה.")
 
         st.divider()
-        st.subheader("👤 רשימת השליחים הרשומים בחברה שלך")
-        # --- כאן תוקנה השגיאה (שימוש בסוגריים עגולים נכונים) ---
-        company_couriers_dict = {usr: info for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role") == "שליח"}
-        
-        if not company_couriers_dict:
+        st.subheader("רשימת שליחי החברה הפעילים:")
+        company_couriers_list = {usr: info for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role") == "שליח"}
+        if not company_couriers_list:
             st.info("אין עדיין שליחים רשומים תחת החברה שלך.")
         else:
-            for usr, info in company_couriers_dict.items():
-                with st.expander(f"שליח: {usr} | שם מלא: {info.get('full_name', 'טרם מילא')} | חתימה: {'✅' if info.get('contract_signed') else '❌'}"):
-                    st.write(f"**ת.ז:** {info.get('id_number', 'לא הוזן')}")
-                    st.write(f"**כתובת:** {info.get('address', 'לא הוזן')}")
-                    st.write(f"**אימייל:** {info.get('email', 'לא הוזן')}")
-                    st.write(f"**טלפון:** {info.get('phone', 'לא הוזן')}")
-                    st.write(f"**ח.פ / עוסק פטור:** {info.get('hp_exempt', 'אין')}")
-                    
-                    with st.form(f"edit_my_courier_{usr}"):
-                        new_pass = st.text_input("סיסמה חדשה:", value=info.get("password", ""))
-                        new_phone = st.text_input("טלפון חדש:", value=info.get("phone", ""))
-                        
-                        col_s1, col_s2 = st.columns(2)
-                        with col_s1:
-                            update_courier_btn = st.form_submit_button("עדכן פרטי שליח")
-                        with col_s2:
-                            delete_courier_btn = st.form_submit_button("הסר שליח מהחברה ❌")
-                        
-                        if update_courier_btn:
-                            st.session_state.couriers_db[usr]["password"] = new_pass
-                            st.session_state.couriers_db[usr]["phone"] = format_whatsapp_phone(new_phone)
-                            save_users_db(st.session_state.couriers_db)
-                            st.success("פרטי השליח עודכנו בהצלחה!")
-                            st.rerun()
-                        
-                        if delete_courier_btn:
-                            del st.session_state.couriers_db[usr]
-                            save_users_db(st.session_state.couriers_db)
-                            st.success("השליח הוסר בהצלחה.")
-                            st.rerun()
+            for usr, info in company_couriers_list.items():
+                st.write(f"👤 **{usr}** | טלפון: {info.get('phone')} | חתימה על חוזה: {'✅' if info.get('contract_signed') else '❌'}")
 
     elif company_menu == "📊 סיכומי כמויות (יומי, שבועי, חודשי)":
-        st.subheader("📊 דוחות וסיכומי פעילות (יומי, שבועי, חודשי)")
-        
-        now_dt = get_current_date()
-        today_str = now_dt.strftime("%Y-%m-%d")
-        start_of_month = now_dt.strftime("%Y-%m")
-
+        st.subheader("📊 דוחות וסיכומי פעילות החברה")
         comp_deliveries = [d for d in st.session_state.deliveries if d.get("company") == company_name]
-        admin_self_deliv = [d for d in comp_deliveries if d.get("courier"] == st.session_state.username or d.get("courier") == "Admin"]
-        
-        st.markdown("### 📌 סיכום אישי שלך (מנהל החברה)")
-        m_today = len([d for d in admin_self_deliv if d.get("date", "").startswith(today_str)])
-        m_month = len([d for d in admin_self_deliv if d.get("date", "").startswith(start_of_month)])
-        
-        col_m1, col_m2 = st.columns(2)
-        col_m1.metric("המשלוחים שלך היום", m_today)
-        col_m2.metric("המשלוחים שלך החודש", m_month)
+        total_comp = len(comp_deliveries)
+        delivered_comp = len([d for d in comp_deliveries if d["status"] == "נמסר"])
+        pending_comp = len([d for d in comp_deliveries if d["status"] == "ממתין"])
 
-        st.divider()
-        st.markdown("### 📈 סיכום כמויות לפי שליחי החברה שלך")
-        
-        company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role") == "שליח"]
-        
-        summary_rows = []
-        for c_usr in company_couriers:
-            c_deliv = [d for d in comp_deliveries if d.get("courier") == c_usr]
-            
-            c_daily = len([d for d in c_deliv if d.get("date", "").startswith(today_str)])
-            c_monthly = len([d for d in c_deliv if d.get("date", "").startswith(start_of_month)])
-            c_total = len(c_deliv)
-            
-            summary_rows.append({
-                "שם השליח": c_usr,
-                "משלוחים היום": c_daily,
-                "משלוחים החודש": c_monthly,
-                "סך הכל משלוחים": c_total
-            })
-
-        if summary_rows:
-            df_summary = pd.DataFrame(summary_rows)
-            st.dataframe(df_summary, use_container_width=True)
-            st.metric("סך הכל משלוחים שבוצעו על ידי כלל שליחי החברה החודש", sum([r["משלוחים החודש"] for r in summary_rows]))
-        else:
-            st.info("אין עדיין שליחים או משלוחים משויכים לשליחי החברה.")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("סך הכל משלוחי חברה", total_comp)
+        col2.metric("נמסרו בהצלחה", delivered_comp)
+        col3.metric("ממתינים לביצוע", pending_comp)
 
 # --- אזור שליח רגיל ---
-else:
-    st.title(f"{t['welcome_courier']} {st.session_state.username}")
+elif st.session_state.role == "שליח":
+    st.title(f"🛵 {t['welcome_courier']} {st.session_state.username}")
+    
     if st.sidebar.button(t["logout"]):
         logout_user()
+        
+    st.markdown(f"### {t['current_loc']}")
+    courier_start_loc = st.text_input(t["loc_placeholder"], value="כסרא-סמיע")
     
-    st.write(f"הנך מחובר כחלק מ-{st.session_state.company}")
+    courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username or d.get("company") == st.session_state.company]
     
-    with st.expander(t["add_new_del"], expanded=False):
-        with st.form("courier_add_delivery_form"):
-            col_a, col_b = st.columns(2)
-            with col_a:
-                new_barcode = st.text_input(t["barcode"], value=f"DEL-{len(st.session_state.deliveries)+101}")
-                new_cust_name = st.text_input(t["cust_name"])
-                new_company_name = st.text_input(t["company_name"], value=st.session_state.company)
-                new_phone = st.text_input(t["phone"], value="050")
-            with col_b:
-                new_city = st.text_input(t["city"])
-                new_street = st.text_input(t["street"])
-                new_house = st.text_input(t["house"])
-                new_floor = st.text_input(t["floor"])
-            
-            new_notes = st.text_area(t["notes"])
-            
-            submit_courier_del = st.form_submit_button(t["save_del"])
-            if submit_courier_del:
-                if new_cust_name and new_city:
-                    current_time_il = get_israel_time()
-                    new_item = {
-                        "ברקוד": new_barcode,
-                        "שם לקוח": new_cust_name,
-                        "שם חברה": new_company_name,
-                        "טלפון": format_whatsapp_phone(new_phone),
-                        "כתובת מלאה": f"{new_city}, {new_street} {new_house}".strip(),
-                        "רחוב": new_street,
-                        "בית": new_house,
-                        "קומה": new_floor,
-                        "עיר": new_city,
-                        "הערות": new_notes,
-                        "status": "ממתין",
-                        "courier": st.session_state.username,
-                        "company": st.session_state.company,
-                        "date": current_time_il
-                    }
-                    st.session_state.deliveries.append(new_item)
-                    st.success(t["del_success"])
-                    st.rerun()
-                else:
-                    st.warning(t["fill_required"])
-
+    pending_courier = len([d for d in courier_deliveries if d["status"] == "ממתין"])
+    st.info(f"{t['active_deliveries']} **{pending_courier}** {t['active_deliveries_end']}")
+    
     st.divider()
     st.subheader(t["list_title"])
     
-    filtered_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
-    
-    if not filtered_deliveries:
+    if not courier_deliveries:
         st.info(t["no_deliveries"])
     else:
-        for idx, item in enumerate(filtered_deliveries):
+        for idx, item in enumerate(courier_deliveries):
             status_color = "🟢" if item["status"] == "נמסר" else "🟠"
             with st.expander(f"{status_color} 📦 {item['שם לקוח']} | {item['עיר']} | סטטוס: {item['status']}"):
                 st.write(f"**{t['barcode']}** {item['ברקוד']}")
@@ -929,14 +822,14 @@ else:
                 st.write(f"**{t['address']}** {item['עיר']}, {item.get('רחוב', '')} {item.get('בית', '')}")
                 st.write(f"**הערות:** {item.get('הערות', 'אין')}")
                 
-                col_btn1, col_btn2 = st.columns(2)
-                with col_btn1:
+                col_b1, col_b2 = st.columns(2)
+                with col_b1:
                     if item["status"] == "ממתין":
-                        if st.button(t["mark_delivered"], key=f"mark_{idx}"):
+                        if st.button(t["mark_delivered"], key=f"courier_mark_{idx}"):
                             item["status"] = "נמסר"
                             st.success(t["delivered_success"])
                             st.rerun()
-                with col_btn2:
+                with col_b2:
                     phone_clean = format_whatsapp_phone(item['טלפון'])
                     cust_n = item['שם לקוח']
                     comp_n = item['שם חברה']
