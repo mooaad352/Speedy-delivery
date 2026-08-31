@@ -209,7 +209,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["smart_route"]:
         st.title(t["smart_route"])
-        couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
+        couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", couriers_list if couriers_list else ["אין שליחים"])
         courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]] if couriers_list else []
         
@@ -259,7 +259,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             d_floor = st.text_input("קומה:")
             d_city = st.text_input("עיר / יישוב:")
             d_notes = st.text_area("הערות:")
-            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
+            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
             assigned_courier = st.selectbox("שיוך שליח:", couriers_list if couriers_list else ["אין שליחים"])
             
             if st.form_submit_button("הוסף משלוח למערכת 🚀") and d_client and d_phone and d_city:
@@ -323,7 +323,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["monthly_report"]:
         st.title(t["monthly_report"])
-        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
+        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         selected_c_rep = st.selectbox("בחר שליח לדוח:", all_couriers if all_couriers else ["אין שליחים"])
         if selected_c_rep:
             delivered_count = len([d for d in st.session_state.deliveries if d.get("courier") == selected_c_rep and d.get("status") == "נמסר"])
@@ -369,7 +369,7 @@ else:
         if st.sidebar.button(t["logout"]):
             logout_user()
 
-        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == my_username]
+        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == my_username]
 
         if courier_menu == "📦 המשלוחים שלי":
             st.title("📦 המשלוחים המוקצים אליך")
