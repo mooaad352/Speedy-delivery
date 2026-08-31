@@ -529,10 +529,10 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                             "role": "מנהל חברה (Company Admin)",
                             "phone": formatted_phone,
                             "company": new_comp_name,
-                            "contract_signed": False  # ידרוש מילוי פרטים וחתימה בהתחברות הראשונה
+                            "contract_signed": False
                         }
                         save_users_db(st.session_state.couriers_db)
-                        st.success(f"מנהל החברה '{new_comp_username}' נוסף בהצלחה! טופס הרישום והחוזה יוצגו לו אוטומטית בכניסתו הראשונה.")
+                        st.success(f"מנהל החברה '{new_comp_username}' נוסף בהצלחה!")
                 else:
                     st.warning("נא למלא את כל השדות החובה.")
 
@@ -561,10 +561,10 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                             "role": "שליח",
                             "phone": formatted_phone,
                             "company": c_company,
-                            "contract_signed": False  # ידרוש מילוי פרטים וחתימה בהתחברות הראשונה
+                            "contract_signed": False
                         }
                         save_users_db(st.session_state.couriers_db)
-                        st.success(f"השליח '{c_username}' נוסף בהצלחה! טופס הרישום והחוזה יוצגו לו אוטומטית בכניסתו הראשונה.")
+                        st.success(f"השליח '{c_username}' נוסף בהצלחה!")
                 else:
                     st.warning("נא למלא שם משתמש וסיסמה.")
 
@@ -660,7 +660,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
     # 6. פנקס נרשמים וחוזים שמורים
     elif admin_menu == t["contract_menu"]:
         st.title(t["contract_menu"])
-        st.write("כאן שמורים אצלך כל הפרטים המלאים של כל מי שנרשם לאפליקציה (שם מלא, ת.ז, כתובת, אימייל, טלפון, ח.פ / עוסק פטור ותאריך רישום):")
+        st.write("כאן שמורים אצלך כל הפרטים המלאים של כל מי שנרשם לאפליקציה:")
         contracts_df = load_contracts_data()
         if not contracts_df.empty:
             st.dataframe(contracts_df, use_container_width=True)
@@ -771,16 +771,17 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
                             "role": "שליח",
                             "phone": formatted_phone,
                             "company": company_name,
-                            "contract_signed": False  # ידרוש מילוי פרטים בכניסה הראשונה
+                            "contract_signed": False
                         }
                         save_users_db(st.session_state.couriers_db)
-                        st.success(f"השליח '{c_username}' נוסף בהצלחה! טופס הרישום והחוזה יוצגו לו אוטומטית בכניסתו הראשונה.")
+                        st.success(f"השליח '{c_username}' נוסף בהצלחה!")
                 else:
                     st.warning("נא למלא את כל שדות החובה.")
 
         st.divider()
         st.subheader("👤 רשימת השליחים הרשומים בחברה שלך")
-        company_couriers_dict = {usr: info for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role"] == "שליח"}
+        # --- כאן תוקנה השגיאה (שימוש בסוגריים עגולים נכונים) ---
+        company_couriers_dict = {usr: info for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role") == "שליח"}
         
         if not company_couriers_dict:
             st.info("אין עדיין שליחים רשומים תחת החברה שלך.")
@@ -824,7 +825,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
         start_of_month = now_dt.strftime("%Y-%m")
 
         comp_deliveries = [d for d in st.session_state.deliveries if d.get("company") == company_name]
-        admin_self_deliv = [d for d in comp_deliveries if d.get("courier") == st.session_state.username or d.get("courier") == "Admin"]
+        admin_self_deliv = [d for d in comp_deliveries if d.get("courier"] == st.session_state.username or d.get("courier") == "Admin"]
         
         st.markdown("### 📌 סיכום אישי שלך (מנהל החברה)")
         m_today = len([d for d in admin_self_deliv if d.get("date", "").startswith(today_str)])
@@ -837,7 +838,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
         st.divider()
         st.markdown("### 📈 סיכום כמויות לפי שליחי החברה שלך")
         
-        company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role"] == "שליח")
+        company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role") == "שליח"]
         
         summary_rows = []
         for c_usr in company_couriers:
@@ -914,7 +915,7 @@ else:
     st.divider()
     st.subheader(t["list_title"])
     
-    filtered_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username]
+    filtered_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
     
     if not filtered_deliveries:
         st.info(t["no_deliveries"])
