@@ -19,11 +19,15 @@ st.set_page_config(page_title="Speedy Delivery - מערכת ניהול משלו�
 
 # --- קובץ שמירת חוזי שימוש ופרטי שליחים ---
 CONTRACTS_FILE = "delivery_drivers_contracts.csv"
+UPLOAD_DIR = "uploaded_documents"
+
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
 
 def load_contracts_data():
     if os.path.exists(CONTRACTS_FILE):
         return pd.read_csv(CONTRACTS_FILE)
-    return pd.DataFrame(columns=["שם פרטי", "שם משפחה", "תז", "טלפון", "כתובת", "סוג עוסק", "רכב", "רישיון", "חתימה", "תאריך ושעה"])
+    return pd.DataFrame(columns=["שם פרטי", "שם משפחה", "תז", "חפ_או_עוסק", "מספר_חפ", "קובץ_חפ", "טלפון", "כתובת", "סוג עוסק", "רכב", "רישיון", "חתימה", "תאריך ושעה"])
 
 def save_contract_data(new_data):
     df = load_contracts_data()
@@ -318,7 +322,8 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
                     }
                     st.success("Added successfully!")
                     
-                    base_url = "https://share.streamlit.io"
+                    # שימוש בכתובת המדויקת של האפליקציה שלך
+                    base_url = "https://speedy-delivery-app.streamlit.app/"
                     login_link = f"{base_url}?username={urllib.parse.quote(new_user)}"
                     
                     st.info(f"🔗 קישור התחברות ישיר לשליח החדש:\n`{login_link}`")
@@ -418,32 +423,35 @@ if st.session_state.logged_in:
     # בדיקה האם השליח ביקש להציג את מסך אישור החוזה והפרטים
     if st.session_state.get("show_contract_screen", False) and st.session_state.role != "מנהל מערכת (Admin)":
         st.title("📝 תנאי שימוש במערכת ורישום פרטי השליח")
-        st.write("אנא מלא את פרטיך האישיים במדויק וקרא את תנאי השימוש טרם האישור.")
+        st.write("אנא מלא את פרטיך האישיים והעסקיים במדויק וקרא את תנאי השימוש טרם האישור.")
 
         if st.button("⬅️ חזרה למערכת המשלוחים"):
             st.session_state.show_contract_screen = False
             st.rerun()
 
-        with st.form("driver_contract_form"):
-            st.subheader("1. פרטים אישיים ועסקיים")
-            col1, col2 = st.columns(2)
+        st.subheader("1. פרטים אישיים ועסקיים")
+        col1, col2 = st.columns(2)
 
-            with col1:
-                first_name = st.text_input("שם פרטי (חובה)")
-                last_name = st.text_input("שם משפחה (חובה)")
-                id_number = st.text_input("מספר תעודת זהות (חובה)")
-                phone = st.text_input("מספר טלפון נייד (חובה)")
+        with col1:
+            first_name = st.text_input("שם פרטי (חובה)")
+            last_name = st.text_input("שם משפחה (חובה)")
+            id_number = st.text_input("מספר תעודת זהות (חובה)")
+            phone = st.text_input("מספר טלפון נייד (חובה)")
 
-            with col2:
-                address = st.text_input("כתובת מלאה (רחוב, בית, ישוב) (חובה)")
-                business_type = st.selectbox("סוג מעמד עסקי", ["עוסק פטור", "עוסק מורשה"])
-                vehicle_type = st.selectbox("סוג כלי רכב", ["אופנוע", "רכב פרטי", "אופניים חשמליים", "ברגל"])
-                license_number = st.text_input("מספר רישיון נהיגה")
+        with col2:
+            address = st.text_input("כתובת מלאה (רחוב, בית, ישוב) (חובה)")
+            business_type = st.selectbox("סוג מעמד עסקי", ["עוסק פטור", "עוסק מורשה"])
+            business_id_number = st.text_input("מספר ח.פ / מספר עוסק מורשה / פטור")
+            vehicle_type = st.selectbox("סוג כלי רכב", ["אופנוע", "רכב פרטי", "אופניים חשמליים", "ברגל"])
+            license_number = st.text_input("מספר רישיון נהיגה")
 
-            st.divider()
+        st.subheader("2. העלאת מסמך עסק / תעודת עוסק או ח.פ")
+        uploaded_file = st.file_uploader("העלה צילום / מסמך (PDF או תמונה של תעודת עוסק / ח.פ)", type=["pdf", "png", "jpg", "jpeg"])
 
-            st.subheader("2. תנאי השימוש במערכת ותשלום עמלות")
-            contract_text = """
+        st.divider()
+
+        st.subheader("3. תנאי השימוש במערכת ותשלום עמלות")
+        contract_text = """
 השימוש במערכת ניהול המשלוחים כפוף לתנאים הבאים:
 1. מהות השירות: המערכת משמשת ככלי טכנולוגי מתקדם לניהול, סידור ורישום משלוחים עבור הפעילות העסקית העצמאית של השליח. הרישיון הינו אישי, בלתי ניתן להעברה ומוענק לשימוש בכפוף לעמידה בתנאים אלו.
 2. תשלום עמלות ודמי שימוש: השליח מתחייב לשלם למנהל המערכת דמי שימוש ועמלה בסך 1 ₪ עבור כל משלוח שנקלט במערכת תחת חשבונו. הסכום האמור הוא לפני מע"מ עבור שליחים שהם עוסק מורשה, בעוד ששליחים שהם עוסק פטור פטורים מתשלום מע"מ בהתאם לחוק.
@@ -453,36 +461,43 @@ if st.session_state.logged_in:
 6. הפסקת שימוש: מנהל המערכת שומר לעצמו את הזכות לחסום או להפסיק את גיסתו של כל שליח למערכת באופן מיידי במקרה של הפרת תנאי מתנאים אלו או אי-תשלום עמלות.
 7. שיפוי: השליח מתחייב לשפות את מנהל המערכת בגין כל נזק, הפסד או הוצאה (לרבות שכר טרחת עורך דין) שייגרמו עקב הפרת תנאים אלו או פעילותו של השליח.
 """
-            st.text_area("תנאי השימוש המחייבים:", contract_text, height=200, disabled=True)
+        st.text_area("תנאי השימוש המחייבים:", contract_text, height=200, disabled=True)
 
-            st.divider()
+        st.divider()
 
-            st.subheader("3. אישור וחתימה דיגיטלית")
-            agree = st.checkbox("אני מאשר/ת שקראתי את תנאי השימוש בעיון, כי אני מסכים לתשלום העמלה (1 ₪ לכל משלוח שנקלט) ושכל הפרטים שמסרתי נכונים ומדויקים.")
-            signature_name = st.text_input("הקלד את שמך המלא כחתימה דיגיטלית (חובה)")
+        st.subheader("4. אישור וחתימה דיגיטלית")
+        agree = st.checkbox("אני מאשר/ת שקראתי את תנאי השימוש בעיון, כי אני מסכים לתשלום העמלה (1 ₪ לכל משלוח שנקלט) ושכל הפרטים שמסרתי נכונים ומדויקים.")
+        signature_name = st.text_input("הקלד את שמך המלא כחתימה דיגיטלית (חובה)")
 
-            submit_contract = st.form_submit_button(label="שמור אישור והשלם רישום")
+        if st.button("שמור אישור והשלם רישום"):
+            if not first_name or not last_name or not id_number or not phone or not address or not signature_name or not agree:
+                st.error("אנא מלא את כל שדות החובה (שם פרטי, שם משפחה, ת.ז, טלפון, כתובת), הקלד חתימה דיגיטלית וסמן את תיבת האישור.")
+            else:
+                file_path_saved = "ללא קובץ"
+                if uploaded_file is not None:
+                    file_path_saved = os.path.join(UPLOAD_DIR, f"{id_number}_{uploaded_file.name}")
+                    with open(file_path_saved, "wb") as f:
+                        f.write(uploaded_file.getbuffer())
 
-            if submit_contract:
-                if not first_name or not last_name or not id_number or not phone or not address or not signature_name or not agree:
-                    st.error("אנא מלא את כל שדות החובה (שם פרטי, שם משפחה, ת.ז, טלפון, כתובת), הקלד חתימה דיגיטלית וסמן את תיבת האישור.")
-                else:
-                    driver_record = {
-                        "שם פרטי": first_name,
-                        "שם משפחה": last_name,
-                        "תז": id_number,
-                        "טלפון": phone,
-                        "כתובת": address,
-                        "סוג עוסק": business_type,
-                        "רכב": vehicle_type,
-                        "רישיון": license_number if license_number else "אין",
-                        "חתימה": signature_name,
-                        "תאריך ושעה": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    }
-                    
-                    save_contract_data(driver_record)
-                    st.success(f"תודה רבה {first_name} {last_name}! אישור תנאי השימוש והפרטים שלך נקלטו בהצלחה במערכת.")
-        
+                driver_record = {
+                    "שם פרטי": first_name,
+                    "שם משפחה": last_name,
+                    "תז": id_number,
+                    "סוג עוסק": business_type,
+                    "מספר_חפ": business_id_number if business_id_number else "לא הוזן",
+                    "קובץ_חפ": file_path_saved,
+                    "טלפון": phone,
+                    "כתובת": address,
+                    "רכב": vehicle_type,
+                    "רישיון": license_number if license_number else "אין",
+                    "חתימה": signature_name,
+                    "תאריך ושעה": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+                
+                save_contract_data(driver_record)
+                st.success(f"תודה רבה {first_name} {last_name}! אישור תנאי השימוש והפרטים שלך נקלטו בהצלחה במערכת.")
+                st.session_state.show_contract_screen = False
+    
         st.stop()
 
     st.sidebar.markdown("---")
