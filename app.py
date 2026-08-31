@@ -472,12 +472,12 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["monthly_report"]:
         st.title(t["monthly_report"])
-        st.info("💡 החיוב למערכת מבוסס על 1 ₪ לכל משלוח שנקלט במערכת עבור כל שליח / חברה.")
+        st.info("💡 החיוב וההתחשבנות מתבצעים ישירות מול מנהלי החברות או השליחים העצמאיים עבור כל משלוח שנקלט.")
         
         current_month_str = get_current_date().strftime("%Y-%m")
         st.subheader(f"📅 סיכום חודש נוכחי: {current_month_str}")
 
-        company_admins = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role") == "מנהל חברה (Company Admin)"]
+        company_admins = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role"] == "מנהל חברה (Company Admin)"]
         
         for c_usr in company_admins:
             c_info = st.session_state.couriers_db[c_usr]
@@ -512,16 +512,16 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["contract_menu"]:
         st.title(t["contract_menu"])
-        st.write("צפייה באישור תנאי השימוש ופרטי השליחים הרשומים במערכת:")
+        st.write("צפייה באישור תנאי השימוש ופרטי השליחים ומנהלי החברות הרשומים במערכת:")
         
         contracts_df = load_contracts_data()
         if contracts_df.empty:
-            st.info("עדיין לא נרשמו שליחים שאישרו את תנאי המערכת.")
+            st.info("עדיין לא נרשמו שליחים או מנהלים שאישרו את תנאי המערכת.")
         else:
             st.dataframe(contracts_df, use_container_width=True)
             csv_data = contracts_df.to_csv(index=False).encode('utf-8-sig')
             st.download_button(
-                label="הורד רשימת אישורי שליחים (CSV)",
+                label="הורד רשימת אישורי חוזים (CSV)",
                 data=csv_data,
                 file_name="delivery_drivers_contracts.csv",
                 mime="text/csv",
@@ -531,6 +531,75 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 # --- אזור ניהול לחברת משלוחים (Company Admin) ---
 elif st.session_state.role == "מנהל חברה (Company Admin)":
     st.sidebar.title(f"{t['welcome_company_admin']}: {st.session_state.company}")
+    st.sidebar.markdown("---")
+    
+    if st.sidebar.button("📝 חוזה ותנאי ניהול חברה ואחריות שליחים"):
+        st.session_state.show_company_contract_screen = True
+    else:
+        if "show_company_contract_screen" not in st.session_state:
+            st.session_state.show_company_contract_screen = False
+
+    if st.sidebar.button(t["logout"]):
+        logout_user()
+
+    my_company_name = st.session_state.company
+
+    # מסך חוזה למנהל חברה
+    if st.session_state.get("show_company_contract_screen", False):
+        st.title("📝 חוזה התקשרות ואחריות - מנהל חברת משלוחים")
+        st.write(f"הסכם זה מיועד למנהל החברה: **{my_company_name}**.")
+
+        if st.button("⬅️ חזרה למערכת הניהול"):
+            st.session_state.show_company_contract_screen = False
+            st.rerun()
+
+        st.subheader("1. פרטי מנהל החברה והעסק")
+        c_col1, c_col2 = st.columns(2)
+        with c_col1:
+            comp_first_name = st.text_input("שם פרטי (מנהל חברה)")
+            comp_last_name = st.text_input("שם משפחה (מנהל חברה)")
+            comp_id = st.text_input("תעודת זהות / ח.פ של החברה")
+        with c_col2:
+            comp_phone = st.text_input("טלפון נייד ליצירת קשר")
+            comp_address = st.text_input("כתובת העסק / החברה")
+
+        st.subheader("2. תנאי התחייבות והתחשבנות מול המערכת הראשית")
+        company_contract_text = """
+תנאי ההתקשרות למנהל חברת משלוחים:
+1. אחריות כוללת על השליחים: מנהל החברה מצהיר ומתחייב שהוא האחראי הישיר והבלעדי על כל השליחים הרשומים תחת חברתו במערכת.
+2. ריכוז התחשבנות: ההתחשבנות הכספית ותשלום עמלות המערכת יתבצעו ישירות מול מנהל החברה עבור כלל המשלוחים של שליחי החברה, ולא מול השליחים בנפרד.
+3. תשלום עמלה: מנהל החברה מתחייב לשלם את דמי השימוש והעמלה (1 ₪ למשלוח) עבור כלל הפעילות של החברה והשליחים תחתיו בהתאם לסיכום מול המנהל הראשי.
+"""
+        st.text_area("תנאי ניהול והתחייבות:", company_contract_text, height=200, disabled=True)
+
+        comp_agree = st.checkbox("אני מאשר/ת את תנאי ניהול החברה, האחריות על השליחים וההתחשבנות המרכזית מולי.")
+        comp_sig = st.text_input("חתימה דיגיטלית (שם מלא של מנהל החברה)")
+
+        if st.button("שמור חוזה מנהל חברה"):
+            if not comp_first_name or not comp_id or not comp_sig or not comp_agree:
+                st.error("אנא מלא את כל שדות החובה וסמן את תיבת האישור.")
+            else:
+                comp_record = {
+                    "שם פרטי": comp_first_name,
+                    "שם משפחה": comp_last_name,
+                    "תז": comp_id,
+                    "חפ_או_עוסק": "מנהל חברה",
+                    "מספר_חפ": comp_id,
+                    "קובץ_חפ": "חוזה מנהל חברה",
+                    "טלפון": comp_phone,
+                    "כתובת": comp_address,
+                    "סוג עוסק": "חברה / מנהל ראשי תחתיו",
+                    "רכב": "ניהול צי שליחים",
+                    "רישיון": "N/A",
+                    "חתימה": comp_sig,
+                    "תאריך ושעה": get_israel_time()
+                }
+                save_contract_data(comp_record)
+                st.success("חוזה מנהל החברה נשמר בהצלחה במערכת!")
+                st.session_state.show_company_contract_screen = False
+                st.rerun()
+        st.stop()
+
     company_menu = st.sidebar.radio(
         t["admin_menu"], 
         [
@@ -539,11 +608,6 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
             t["monthly_report"]
         ]
     )
-    
-    if st.sidebar.button(t["logout"]):
-        logout_user()
-
-    my_company_name = st.session_state.company
 
     if company_menu == t["add_courier"]:
         st.title(t["add_courier"])
@@ -608,7 +672,7 @@ if st.session_state.logged_in:
         st.sidebar.title(f"{t['welcome_courier']}, {st.session_state.username}")
         st.sidebar.markdown("---")
         
-        if st.sidebar.button("📝 אישור תנאי שימוש ופרטים אישיים"):
+        if st.sidebar.button("📝 אישור תנאי שימוש ופרטים אישיים (שליח עצמאי)"):
             st.session_state.show_contract_screen = True
         else:
             if "show_contract_screen" not in st.session_state:
@@ -617,9 +681,9 @@ if st.session_state.logged_in:
         if st.sidebar.button(t["logout"]):
             logout_user()
 
-    # בדיקה האם השליח ביקש להציג את מסך אישור החוזה והפרטים
+    # בדיקה האם השליח העצמאי ביקש להציג את מסך אישור החוזה והפרטים
     if st.session_state.get("show_contract_screen", False) and st.session_state.role == "שליח":
-        st.title("📝 תנאי שימוש במערכת ורישום פרטי השליח")
+        st.title("📝 תנאי שימוש במערכת ורישום פרטי השליח העצמאי")
         st.write("אנא מלא את פרטיך האישיים והעסקיים במדויק וקרא את תנאי השימוש טרם האישור.")
 
         if st.button("⬅️ חזרה למערכת המשלוחים"):
@@ -801,7 +865,7 @@ if st.session_state.logged_in:
                 if c_phone_clean.startswith("0"):
                     c_phone_clean = "972" + c_phone_clean[1:]
                 
-                wa_text = f"مرحباً {d.get('שם לקוח')}, مندوب التوصيل في طريقه إليك بخصوص شحنة من {d.get('שם حברה')}. يرجى الجاهزية."
+                wa_text = f"مرحباً {d.get('שם לקוח')}, مندوب التوصيل في طريقه إليك بخصوص شحنة من {d.get('שם חברה')}. يرجى الجاهزية."
                 encoded_wa = urllib.parse.quote(wa_text)
                 wa_link = f"https://wa.me/{c_phone_clean}?text={encoded_wa}"
 
