@@ -774,7 +774,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
                 
                 new_notes = st.text_area(t["notes"])
                 
-                company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role"] == "שליח"]
+                company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role") == "שליח"]
                 assigned_courier = st.selectbox("שייך לשליח מהחברה:", ["טרם שויך (Admin/כללי)"] + company_couriers)
                 
                 submit_comp_del = st.form_submit_button(t["save_del"])
@@ -850,7 +850,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
 
         st.divider()
         st.subheader("רשימת שליחי החברה הפעילים:")
-        company_couriers_list = {usr: info for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role"] == "שליח"}
+        company_couriers_list = {usr: info for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role") == "שליח"}
         if not company_couriers_list:
             st.info("אין עדיין שליחים רשומים תחת החברה שלך.")
         else:
