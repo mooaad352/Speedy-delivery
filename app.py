@@ -404,7 +404,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         st.title(t["smart_route"])
         couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", couriers_list if couriers_list else ["אין שליחים"])
-        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
+        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]] # תיקון
         
         if not courier_deliveries:
             st.info("אין משלוחים פעילים לשליח זה.")
@@ -536,8 +536,25 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["contract_menu"]:
         st.title(t["contract_menu"])
+        st.info("כאן מוצגים כל הלקוחות והשליחים שנרשמו וחתמו על החוזה. באפשרותך לצפות בפרטים או למחוק נרשם שאינך מעוניין בו.")
+        
         contracts_df = load_contracts_data()
-        st.dataframe(contracts_df)
+        
+        if contracts_df.empty:
+            st.info("אין כרגע נרשמים שמורים במערכת.")
+        else:
+            for index, row in contracts_df.iterrows():
+                with st.expander(f"📄 נרשם: {row.get('שם מלא', 'ללא שם')} | משתמש: {row.get('שם משתמש', '')} | טלפון: {row.get('טלפון', '')}"):
+                    st.write(f"**תפקיד:** {row.get('תפקיד', '')} | **חברה:** {row.get('חברה', '')}")
+                    st.write(f"**ת.ז:** {row.get('ת.ז', '')} | **כתובת:** {row.get('כתובת', '')}")
+                    st.write(f"**אימייל:** {row.get('אימייל', '')} | **ח.פ / עוסק פטור:** {row.get('ח.פ / עוסק פטור', '')}")
+                    st.write(f"**תאריך רישום:** {row.get('תאריך רישום', '')}")
+                    
+                    if st.button(f"🗑️ מחק נרשם זה מהפנקס", key=f"del_contract_{index}"):
+                        contracts_df = contracts_df.drop(index)
+                        contracts_df.to_csv(CONTRACTS_FILE, index=False, encoding="utf-8-sig")
+                        st.success("הנרשם נמחק בהצלחה מהפנקס!")
+                        st.rerun()
 
     elif admin_menu == t["change_password"]:
         st.title(t["change_password"])
