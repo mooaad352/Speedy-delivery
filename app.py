@@ -289,6 +289,18 @@ if not st.session_state.logged_in:
 
 elif st.session_state.role != "מנהל מערכת ראשי (Super Admin)" and not st.session_state.couriers_db.get(st.session_state.username, {}).get("contract_signed", False):
     st.title("📝 טופס התרשמות, רישום פרטים ותנאי שימוש במערכת")
+    
+    # הצגת תוכן החוזה המלא ישירות במסך של השליח לפני האישור
+    st.markdown("""
+    <div style="background-color: #f9fafb; border: 1px solid #d1d5db; padding: 20px; border-radius: 8px; max-height: 220px; overflow-y: scroll; margin-bottom: 20px; line-height: 1.6;">
+        <strong>חוזה התקשרות ותנאי שימוש - Speedy Delivery:</strong><br>
+        1. <strong>מהות השימוש:</strong> פלטפורמה טכנולוגית זו נועדה לניהול, שיבוץ ומעקב אחר משלוחים.<br>
+        2. <strong>היעדר אחריות והעסקה ישירה:</strong> מפעיל המערכת אינו מעסיק את השליחים ואינו אחראים בשום אופן על אופן ביצוע המשלוחים בפועל, תנאי השכר או נזקים שעלולים להיגרם צד ג'.<br>
+        3. <strong>עצמאות השליח:</strong> השליח מצהיר כי הוא פועל כגורם עצמאי לחלוטין ונושא באחריות המלאה והבלעדית לכל פעילותו תחת פלטפורמה זו.<br>
+        4. <strong>שמירת פרטיות:</strong> המשתמש מתחייב למסור פרטים נכונים ומדויקים לצורך רישום והפעלת חשבונו במערכת.
+    </div>
+    """, unsafe_allow_html=True)
+
     with st.form("first_login_contract_form"):
         f_full_name = st.text_input("שם מלא (חובה):")
         f_id_num = st.text_input("תעודת זהות (חובה):")
@@ -296,8 +308,8 @@ elif st.session_state.role != "מנהל מערכת ראשי (Super Admin)" and n
         f_email = st.text_input("כתובת אימייל (חובה):")
         f_phone = st.text_input("מספר טלפון נייד (חובה):", value=st.session_state.couriers_db.get(st.session_state.username, {}).get("phone", ""))
         f_hp_or_exempt = st.text_input("מספר ח.פ / עוסק פטור (אופציונלי):")
-        agree_terms = st.checkbox("אני מאשר/ת את תנאי השימוש ופטור האחריות הטכנולוגית.")
-        submit_contract = st.form_submit_button("אישור רישום וכניסה 🚀")
+        agree_terms = st.checkbox("קראתי את החוזה בעיון, הבנתי ואני מאשר/ת את תנאי השימוש ופטור האחריות.")
+        submit_contract = st.form_submit_button("אישור החוזה וסיום הרישום 🚀")
         if submit_contract:
             if agree_terms and f_full_name and f_id_num and f_address and f_email and f_phone:
                 reg_date = get_israel_time()
@@ -316,10 +328,10 @@ elif st.session_state.role != "מנהל מערכת ראשי (Super Admin)" and n
                     "שם מלא": f_full_name, "ת.ז": f_id_num, "כתובת": f_address, "אימייל": f_email,
                     "טלפון": format_whatsapp_phone(f_phone), "ח.פ / עוסק פטור": f_hp_or_exempt if f_hp_or_exempt else "אין", "תאריך רישום": reg_date
                 })
-                st.success("הפרטים נשמרו בהצלחה!")
+                st.success("הפרטים והחוזה נשמרו בהצלחה!")
                 st.rerun()
             else:
-                st.error("נא למלא את כל שדות החובה ולסמן וי על התנאים.")
+                st.error("נא למלא את כל שדות החובה ולסמן וי על אישור החוזה.")
     if st.sidebar.button(t["logout"]):
         logout_user()
 
@@ -435,7 +447,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
     elif comp_menu == "📍 מעקב מיקום שליחי החברה":
         st.subheader("📍 המיקום האחרון של שליחי החברה שלך:")
         locs = load_locations_db()
-        comp_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("company") == company_name]
+        comp_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("company"] == company_name]
         found = False
         for usr in comp_couriers:
             if usr in locs:
