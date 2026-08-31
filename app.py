@@ -6,7 +6,7 @@ import os
 
 # הגדרת שעון ישראל (UTC+2 / UTC+3)
 ISRAEL_OFFSET = timedelta(hours=2)
-ADMIN_PHONE = "972502616375"  # מספר הטלפון שלך כאדמין
+ADMIN_PHONE = "972502616375"  # מספר הטלפון שלך כמנהל המערכת
 
 def get_israel_time():
     return datetime.now(timezone(ISRAEL_OFFSET)).strftime("%Y-%m-%d %H:%M")
@@ -17,13 +17,13 @@ def get_current_date():
 # הגדרת עיצוב הדף (כיוון מימין לשמאל כברירת מחדל)
 st.set_page_config(page_title="Speedy Delivery - מערכת ניהול משלוחים", page_icon="🚚", layout="wide")
 
-# --- קובץ שמירת חוזי שליחים ---
+# --- קובץ שמירת חוזי שימוש ופרטי שליחים ---
 CONTRACTS_FILE = "delivery_drivers_contracts.csv"
 
 def load_contracts_data():
     if os.path.exists(CONTRACTS_FILE):
         return pd.read_csv(CONTRACTS_FILE)
-    return pd.DataFrame(columns=["שם", "תז", "טלפון", "עיר", "רכב", "רישיון", "חתימה", "תאריך ושעה"])
+    return pd.DataFrame(columns=["שם פרטי", "שם משפחה", "תז", "טלפון", "כתובת", "סוג עוסק", "רכב", "רישיון", "חתימה", "תאריך ושעה"])
 
 def save_contract_data(new_data):
     df = load_contracts_data()
@@ -45,8 +45,8 @@ TRANSLATIONS = {
         "main_sys": "نظام الشحنات الرئيسي",
         "add_courier": "إضافة مندوب جديد",
         "manage_users": "إدارة وتعديل المستخدمين",
-        "monthly_report": "📊 تقرير الحسابات الشهري والرواتب",
-        "contract_menu": "📝 عقد وتوقيع المناديب",
+        "monthly_report": "📊 تقرير الحسابات الشهري والعمولات",
+        "contract_menu": "📝 شروط وطريقة استخدام النظام",
         "current_loc": "📍 موقعك الحالي / نقطة الانطلاق",
         "loc_placeholder": "أدخل موقعك الحالي (بلدة / مدينة):",
         "active_deliveries": "لديك حالياً",
@@ -97,8 +97,8 @@ TRANSLATIONS = {
         "main_sys": "מערכת משלוחים ראשית",
         "add_courier": "הוספת שליח חדש",
         "manage_users": "ניהול ועריכת משתמשים",
-        "monthly_report": "📊 סיכום חודשי, חישוב שכר ותשלום לשליחים",
-        "contract_menu": "📝 חוזה וחתימת שליחים",
+        "monthly_report": "📊 סיכום חודשי, חישוב עמלות ותשלומים למערכת",
+        "contract_menu": "📝 תנאי שימוש במערכת ואישור עמלות",
         "current_loc": "📍 מיקום נוכחי ונקודת מוצא",
         "loc_placeholder": "הכנס את המיקום הנוכחי שלך (עיר / כפר):",
         "active_deliveries": "יש לך כרגע",
@@ -149,8 +149,8 @@ TRANSLATIONS = {
         "main_sys": "Main Deliveries System",
         "add_courier": "Add New Courier",
         "manage_users": "Manage & Edit Users",
-        "monthly_report": "📊 Monthly Couriers Report & Payment",
-        "contract_menu": "📝 Couriers Contract & Signatures",
+        "monthly_report": "📊 Monthly System Fees & Reports",
+        "contract_menu": "📝 System Usage Terms & Fees",
         "current_loc": "📍 Current Location & Origin",
         "loc_placeholder": "Enter your current location (City/Village):",
         "active_deliveries": "You currently have",
@@ -347,57 +347,53 @@ elif st.session_state.role == "מנהל מערכת (Admin)":
 
     elif admin_menu == t["monthly_report"]:
         st.title(t["monthly_report"])
-        st.info("💡 החישוב מבוסס על 1 ₪ למשלוח שנמסר + חישוב מדויק לפני מע״מ ואחרי מע״מ (18%).")
+        st.info("💡 החיוב למערכת מבוסס על 1 ₪ לכל משלוח שנקלט במערכת עבור כל שליח (לפני מע״מ לעוסק מורשה / פטור למע״מ לעוסק פטור).")
         
         couriers_list = [usr for usr, info in st.session_state.couriers_db.items() if info.get("role") == "שליח"]
         current_month_str = get_current_date().strftime("%Y-%m")
         st.subheader(f"📅 סיכום חודש נוכחי: {current_month_str}")
 
         for courier in couriers_list:
-            completed_deliveries = [
+            courier_deliveries = [
                 d for d in st.session_state.deliveries 
-                if d.get("courier") == courier and d.get("status") == "נמסר" and d.get("date", "").startswith(current_month_str)
+                if d.get("courier") == courier and d.get("date", "").startswith(current_month_str)
             ]
-            total_count = len(completed_deliveries)
+            total_count = len(courier_deliveries)
             
-            amount_before_vat = total_count * 1.0
-            vat_amount = amount_before_vat * 0.18
-            amount_after_vat = amount_before_vat * 1.18
+            amount_base = total_count * 1.0
             
             courier_phone = st.session_state.couriers_db[courier].get("phone", "")
             
-            with st.expander(f"👤 שליח: {courier} | משלוחים שבוצעו: {total_count} | סכום לפני מעמ: ₪{amount_before_vat:.2f} | אחרי מעמ: ₪{amount_after_vat:.2f}"):
+            with st.expander(f"👤 שליח: {courier} | משלוחים שנקלטו: {total_count} | סכום בסיס: ₪{amount_base:.2f}"):
                 st.write(f"📞 טלפון השליח: {courier_phone}")
                 st.write(f"📊 פירוט חישוב:")
-                st.write(f"- סך משלוחים: {total_count}")
-                st.write(f"- סכום לפני מע״מ: ₪{amount_before_vat:.2f}")
-                st.write(f"- מע״מ (18%): ₪{vat_amount:.2f}")
-                st.write(f"- **סכום סופי לתשלום (כולל מע״מ): ₪{amount_after_vat:.2f}**")
+                st.write(f"- סך משלוחים שנקלטו במערכת: {total_count}")
+                st.write(f"- סכום לתשלום (1 ש״ח למשלוח): ₪{amount_base:.2f}")
                 
-                st.write(f"📦 רשימת המשלוחים שנמסרו החודש:")
-                for d in completed_deliveries:
-                    st.caption(f"- ברקוד: {d.get('ברקוד')} | ללקוח: {d.get('שם לקוח')} | תאריך: {d.get('date')}")
+                st.write(f"📦 רשימת המשלוחים שנקלטו החודש:")
+                for d in courier_deliveries:
+                    st.caption(f"- ברקוד: {d.get('ברקוד')} | ללקוח: {d.get('שם לקוח')} | סטטוס: {d.get('status')} | תאריך: {d.get('date')}")
                 
                 if courier_phone:
-                    salary_msg = f"שלום {courier}, סיכום המשלוחים שלך לחודש {current_month_str}:\n- סך משלוחים: {total_count}\n- סכום לפני מע״מ: ₪{amount_before_vat:.2f}\n- סכום כולל מע״מ (18%): ₪{amount_after_vat:.2f}\n\nתודה על העבודה הקשה!"
-                    encoded_salary_msg = urllib.parse.quote(salary_msg)
-                    wa_salary_url = f"https://wa.me/{courier_phone}?text={encoded_salary_msg}"
-                    st.markdown(f"[📲 שליחת הודעת סיכום שכר מלאה (כולל מע״מ) לשליח בוואטסאפ]({wa_salary_url})", unsafe_allow_html=True)
+                    fee_msg = f"שלום {courier}, סיכום השימוש שלך במערכת לחודש {current_month_str}:\n- סך משלוחים שנקלטו: {total_count}\n- סכום לתשלום: ₪{amount_base:.2f}\n\nתודה רבה!"
+                    encoded_fee_msg = urllib.parse.quote(fee_msg)
+                    wa_fee_url = f"https://wa.me/{courier_phone}?text={encoded_fee_msg}"
+                    st.markdown(f"[📲 שליחת הודעת חיוב עמלות לשליח בוואטסאפ]({wa_fee_url})", unsafe_allow_html=True)
         
         st.stop()
 
     elif admin_menu == t["contract_menu"]:
         st.title(t["contract_menu"])
-        st.write("צפייה בחוזים ובשליחים שחתמו על טופס ההתקשרות במערכת:")
+        st.write("צפייה באישור תנאי השימוש ופרטי השליחים הרשומים במערכת:")
         
         contracts_df = load_contracts_data()
         if contracts_df.empty:
-            st.info("עדיין לא נרשמו שליחים שחתמו על החוזה.")
+            st.info("עדיין לא נרשמו שליחים שאישרו את תנאי המערכת.")
         else:
             st.dataframe(contracts_df, use_container_width=True)
             csv_data = contracts_df.to_csv(index=False).encode('utf-8-sig')
             st.download_button(
-                label="הורד רשימת חוזי שליחים (CSV)",
+                label="הורד רשימת אישורי שליחים (CSV)",
                 data=csv_data,
                 file_name="delivery_drivers_contracts.csv",
                 mime="text/csv",
@@ -410,8 +406,7 @@ if st.session_state.logged_in:
         st.sidebar.title(f"{t['welcome_courier']}, {st.session_state.username}")
         st.sidebar.markdown("---")
         
-        # אפשרות לשליח לחתום על החוזה מהסיידבר אם ירצה
-        if st.sidebar.button("📝 חתימה על חוזה שליחים"):
+        if st.sidebar.button("📝 אישור תנאי שימוש ופרטים אישיים"):
             st.session_state.show_contract_screen = True
         else:
             if "show_contract_screen" not in st.session_state:
@@ -420,59 +415,65 @@ if st.session_state.logged_in:
         if st.sidebar.button(t["logout"]):
             logout_user()
 
-    # בדיקה האם השליח ביקש להציג את מסך החוזה
+    # בדיקה האם השליח ביקש להציג את מסך אישור החוזה והפרטים
     if st.session_state.get("show_contract_screen", False) and st.session_state.role != "מנהל מערכת (Admin)":
-        st.title("📝 חוזה התקשרות ורישום שליחים")
-        st.write("אנא מלא את כל הפרטים הנדרשים וקרא בעיון את החוזה טרם החתימה הדיגיטלית.")
+        st.title("📝 תנאי שימוש במערכת ורישום פרטי השליח")
+        st.write("אנא מלא את פרטיך האישיים במדויק וקרא את תנאי השימוש טרם האישור.")
 
         if st.button("⬅️ חזרה למערכת המשלוחים"):
             st.session_state.show_contract_screen = False
             st.rerun()
 
         with st.form("driver_contract_form"):
-            st.subheader("1. פרטים אישיים")
+            st.subheader("1. פרטים אישיים ועסקיים")
             col1, col2 = st.columns(2)
 
             with col1:
-                full_name = st.text_input("שם מלא (חובה)")
-                id_number = st.text_input("מספר תעודת זהות / ח.פ (חובה)")
+                first_name = st.text_input("שם פרטי (חובה)")
+                last_name = st.text_input("שם משפחה (חובה)")
+                id_number = st.text_input("מספר תעודת זהות (חובה)")
                 phone = st.text_input("מספר טלפון נייד (חובה)")
 
             with col2:
-                city = st.text_input("עיר מגורים / אזור פעילות")
+                address = st.text_input("כתובת מלאה (רחוב, בית, ישוב) (חובה)")
+                business_type = st.selectbox("סוג מעמד עסקי", ["עוסק פטור", "עוסק מורשה"])
                 vehicle_type = st.selectbox("סוג כלי רכב", ["אופנוע", "רכב פרטי", "אופניים חשמליים", "ברגל"])
-                license_number = st.text_input("מספר רישיון נהיגה (אם רלוונטי)")
+                license_number = st.text_input("מספר רישיון נהיגה")
 
             st.divider()
 
-            st.subheader("2. תנאי ההתקשרות והחוזה")
+            st.subheader("2. תנאי השימוש במערכת ותשלום עמלות")
             contract_text = """
-אני החתימה מטה מתחייב/ת בזאת לספק את שירותי המשלוחים בהתאם לכללים הבאים:
-1. שמירה מוחלטת על שלמות המשלוחים והגעתם בזמן הסביר והמוסכם ליעד.
-2. שמירה על קשר רציף ותקין עם מנהל המערכת בעת ביצוע משלוחים בפועל.
-3. ידוע לי כי התשלום יועבר בהתאם לסיכום מראש מול הנהלת האפליקציה בלבד.
-4. האחריות הבלעדית על כלי הרכב, תחזוקתו, דלק והוצאותיו חלות על השליח בלבד.
-5. כל הפרטים שאמסור במסגרת טופס זה הינם נכונים, מדויקים ומלאים.
+השימוש במערכת ניהול המשלוחים כפוף לתנאים הבאים:
+1. מהות השירות: המערכת משמשת ככלי טכנולוגי מתקדם לניהול, סידור ורישום משלוחים עבור הפעילות העסקית העצמאית של השליח. הרישיון הינו אישי, בלתי ניתן להעברה ומוענק לשימוש בכפוף לעמידה בתנאים אלו.
+2. תשלום עמלות ודמי שימוש: השליח מתחייב לשלם למנהל המערכת דמי שימוש ועמלה בסך 1 ₪ עבור כל משלוח שנקלט במערכת תחת חשבונו. הסכום האמור הוא לפני מע"מ עבור שליחים שהם עוסק מורשה, בעוד ששליחים שהם עוסק פטור פטורים מתשלום מע"מ בהתאם לחוק.
+3. הסרת אחריות משפטית ותפעולית: האחריות הבלעדית והמלאה על ביצוע המשלוחים בשטח, החבילות מול הלקוחות, כלי הרכב, רישיונות, ביטוחים וכל הוצאה נלווית – חלה על השליח בלבד. מנהל המערכת מספק תוכנה טכנולוגית בלבד ואינו צד לעסקאות שבין השליח ללקוחותיו, ולא יישא באחריות לכל נזק, אובדן, עיכוב או תקלות בשטח.
+4. אמינות נתונים ושימוש במערכת: כל הפרטים, הכתובות והמשלוחים שהשליח מזין למערכת הינם באחריותו המלאה. השליח מתחייב שלא לעשות במערכת שימוש בלתי חוקי או פוגעני.
+5. קניין רוחני: כל הזכויות במערכת, בקוד, בעיצוב ובשם הינן רכושו הבלעדי של מנהל המערכת. חל איסור מוחלט להעתיק, לשכפל או לבצע הנדסה לאחור לתוכנה.
+6. הפסקת שימוש: מנהל המערכת שומר לעצמו את הזכות לחסום או להפסיק את גיסתו של כל שליח למערכת באופן מיידי במקרה של הפרת תנאי מתנאים אלו או אי-תשלום עמלות.
+7. שיפוי: השליח מתחייב לשפות את מנהל המערכת בגין כל נזק, הפסד או הוצאה (לרבות שכר טרחת עורך דין) שייגרמו עקב הפרת תנאים אלו או פעילותו של השליח.
 """
-            st.text_area("תנאי החוזה המחייבים:", contract_text, height=160, disabled=True)
+            st.text_area("תנאי השימוש המחייבים:", contract_text, height=200, disabled=True)
 
             st.divider()
 
             st.subheader("3. אישור וחתימה דיגיטלית")
-            agree = st.checkbox("אני מאשר/ת שקראתי את כל תנאי החוזה בעיון והפרטים שמסרתי נכונים ומדויקים.")
+            agree = st.checkbox("אני מאשר/ת שקראתי את תנאי השימוש בעיון, כי אני מסכים לתשלום העמלה (1 ₪ לכל משלוח שנקלט) ושכל הפרטים שמסרתי נכונים ומדויקים.")
             signature_name = st.text_input("הקלד את שמך המלא כחתימה דיגיטלית (חובה)")
 
-            submit_contract = st.form_submit_button(label="שמור חוזה והשלם רישום")
+            submit_contract = st.form_submit_button(label="שמור אישור והשלם רישום")
 
             if submit_contract:
-                if not full_name or not id_number or not phone or not signature_name or not agree:
-                    st.error("אנא מלא את כל שדות החובה, הקלד חתימה דיגיטלית וסמן את תיבת האישור לחוזה.")
+                if not first_name or not last_name or not id_number or not phone or not address or not signature_name or not agree:
+                    st.error("אנא מלא את כל שדות החובה (שם פרטי, שם משפחה, ת.ז, טלפון, כתובת), הקלד חתימה דיגיטלית וסמן את תיבת האישור.")
                 else:
                     driver_record = {
-                        "שם": full_name,
+                        "שם פרטי": first_name,
+                        "שם משפחה": last_name,
                         "תז": id_number,
                         "טלפון": phone,
-                        "עיר": city,
+                        "כתובת": address,
+                        "סוג עוסק": business_type,
                         "רכב": vehicle_type,
                         "רישיון": license_number if license_number else "אין",
                         "חתימה": signature_name,
@@ -480,7 +481,7 @@ if st.session_state.logged_in:
                     }
                     
                     save_contract_data(driver_record)
-                    st.success(f"תודה רבה {full_name}! החוזה נחתם בהצלחה והועבר למערכת.")
+                    st.success(f"תודה רבה {first_name} {last_name}! אישור תנאי השימוש והפרטים שלך נקלטו בהצלחה במערכת.")
         
         st.stop()
 
