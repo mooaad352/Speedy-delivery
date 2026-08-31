@@ -206,7 +206,7 @@ TRANSLATIONS = {
         "manage_users": "إدارة وتعديل المستخدمين",
         "monthly_report": "📊 تقرير الحسابات والعمولات",
         "contract_menu": "📝 سجل العقود والبيانات المسجلة",
-        "live_tracking": "📍 متابعة مواقع الشליחים (GPS)",
+        "live_tracking": "📍 متابعة مواقع الشليחים (GPS)",
         "list_title": "📋 قائمة الشحنات",
         "whatsapp_btn": "📲 إرسال واتساب",
         "waze_btn": "🧭 التنقل عبر Waze",
@@ -501,7 +501,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
             d_city = st.text_input("עיר / יישוב:")
             d_notes = st.text_area("הערות:")
             
-            comp_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("company") == company_name and i.get("role"] == "שליח"]
+            comp_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("company") == company_name and i.get("role") == "שליח"]
             assigned_c = st.selectbox("שיוך שליח מהחברה:", comp_couriers if comp_couriers else [st.session_state.username])
             
             if st.form_submit_button("הוסף משלוח לחברה 🚀") and d_client and d_phone and d_city:
