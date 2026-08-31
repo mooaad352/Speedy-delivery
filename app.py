@@ -47,8 +47,8 @@ def load_users_db():
             pass
     # ברירת מחדל ראשונית אם הקובץ לא קיים
     default_users = {
-        "Admin": {"password": "Sma.srablove2028", "role": "מנהל מערכת ראשי (Super Admin)", "phone": ADMIN_PHONE, "company": "System"},
-        "mohammad": {"password": "123", "role": "שליח", "phone": "972502616375", "company": "Independent"}
+        "Admin": {"password": "Sma.srablove2028", "role": "מנהל מערכת ראשי (Super Admin)", "phone": ADMIN_PHONE, "company": "System", "contract_signed": True},
+        "mohammad": {"password": "123", "role": "שליח", "phone": "972502616375", "company": "Independent", "contract_signed": True}
     }
     save_users_db(default_users)
     return default_users
@@ -60,7 +60,7 @@ def save_users_db(users_dict):
 def load_contracts_data():
     if os.path.exists(CONTRACTS_FILE):
         return pd.read_csv(CONTRACTS_FILE)
-    return pd.DataFrame(columns=["שם פרטי", "שם משפחה", "תז", "חפ_או_עוסק", "מספר_חפ", "קובץ_חפ", "טלפון", "כתובת", "סוג עוסק", "רכב", "רישיון", "חתימה", "תאריך ושעה"])
+    return pd.DataFrame(columns=["שם משתמש", "תפקיד", "חברה", "שם מלא", "ת.ז", "כתובת", "אימייל", "טלפון", "ח.פ / עוסק פטור", "תאריך רישום"])
 
 def save_contract_data(new_data):
     df = load_contracts_data()
@@ -84,7 +84,7 @@ TRANSLATIONS = {
         "add_company_admin": "إضافة مدير شركة توصيل",
         "manage_users": "إدارة وتعديل المستخدمين",
         "monthly_report": "📊 تقرير الحسابات الشهري والعمولات",
-        "contract_menu": "📝 شروط وطريقة استخدام النظام",
+        "contract_menu": "📝 سجل العقود والبيانات المسجلة",
         "current_loc": "📍 موقعك الحالي / نقطة الانطلاق",
         "loc_placeholder": "أدخل موقعك الحالي (بلدة / مدينة):",
         "active_deliveries": "لديك حالياً",
@@ -138,7 +138,7 @@ TRANSLATIONS = {
         "add_company_admin": "הוספת מנהל חברת משלוחים",
         "manage_users": "ניהול ועריכת משתמשים",
         "monthly_report": "📊 סיכום חודשי, חישוב עמלות ותשלומים למערכת",
-        "contract_menu": "📝 תנאי שימוש במערכת ואישור עמלות",
+        "contract_menu": "📝 פנקס נרשמים וחוזים שמורים",
         "current_loc": "📍 מיקום נוכחי ונקודת מוצא",
         "loc_placeholder": "הכנס את המיקום הנוכחי שלך (עיר / כפר):",
         "active_deliveries": "יש לך כרגע",
@@ -192,7 +192,7 @@ TRANSLATIONS = {
         "add_company_admin": "Add Delivery Company Admin",
         "manage_users": "Manage & Edit Users",
         "monthly_report": "📊 Monthly System Fees & Reports",
-        "contract_menu": "📝 System Usage Terms & Fees",
+        "contract_menu": "📝 Registered Contracts & Users Data",
         "current_loc": "📍 Current Location & Origin",
         "loc_placeholder": "Enter your current location (City/Village):",
         "active_deliveries": "You currently have",
@@ -325,6 +325,73 @@ if not st.session_state.logged_in:
                 st.rerun()
             else:
                 st.error(t["login_error"])
+
+# --- בדיקת חתימה ורישום פרטים בכניסה ראשונה ---
+elif st.session_state.role != "מנהל מערכת ראשי (Super Admin)" and not st.session_state.couriers_db.get(st.session_state.username, {}).get("contract_signed", False):
+    st.title("📝 טופס רישום פרטים אישיים ותנאי שימוש במערכת")
+    st.warning("⚠️ זוהי כניסתך הראשונה. נא למלא את כל הפרטים הנדרשים (שם מלא, ת.ז, כתובת, אימייל וטלפון) ואישור החוזה כדי להמשיך.")
+    
+    with st.expander("📄 הצג את תוכן החוזה והתנאים (לחץ לפתיחה)", expanded=False):
+        st.markdown("""
+        ### הסכם התקשרות ותנאי שימוש במערכת Speed Delivery
+        1. **אחריות ביצוע:** ביצוע כל משלוח בצורה אחראית, מהירה ובטוחה.
+        2. **עמלות ותשלומים:** ההתחשבנות מתבצעת בהתאם לכמויות המדווחות במערכת אל מול הנהלת החברה הראשית.
+        3. **אחריות נתונים:** שמירה מלאה על פרטיות הלקוחות ואי שימוש במידע לצרכים זרים.
+        """)
+    
+    with st.form("first_login_contract_form"):
+        st.subheader("פרטי הרישום שלך במערכת:")
+        f_full_name = st.text_input("שם מלא (חובה):")
+        f_id_num = st.text_input("תעודת זהות (חובה):")
+        f_address = st.text_input("כתובת מלאה - עיר / ישוב / רחוב (חובה):")
+        f_email = st.text_input("כתובת אימייל (חובה):")
+        f_phone = st.text_input("מספר טלפון נייד (חובה):", value=st.session_state.couriers_db.get(st.session_state.username, {}).get("phone", ""))
+        
+        st.divider()
+        f_hp_or_exempt = st.text_input("מספר ח.פ למורשים / עוסק פטור (רשות - במידה ואין, ניתן להשאיר ריק):")
+        
+        agree_terms = st.checkbox("אני מאשר/ת קראתי את תנאי החוזה, ואני מסכים/ה לכל תנאי השימוש והעמלות של המערכת.")
+        
+        submit_contract = st.form_submit_button("אישור רישום וכניסה למערכת 🚀")
+        
+        if submit_contract:
+            if agree_terms and f_full_name and f_id_num and f_address and f_email and f_phone:
+                registration_date = get_israel_time()
+                
+                # עדכון במסד הנתונים שהמשתמש חתם ושמרנו את הפרטים שלו
+                st.session_state.couriers_db[st.session_state.username]["contract_signed"] = True
+                st.session_state.couriers_db[st.session_state.username]["full_name"] = f_full_name
+                st.session_state.couriers_db[st.session_state.username]["id_number"] = f_id_num
+                st.session_state.couriers_db[st.session_state.username]["address"] = f_address
+                st.session_state.couriers_db[st.session_state.username]["email"] = f_email
+                st.session_state.couriers_db[st.session_state.username]["phone"] = format_whatsapp_phone(f_phone)
+                st.session_state.couriers_db[st.session_state.username]["hp_exempt"] = f_hp_or_exempt if f_hp_or_exempt else "אין"
+                st.session_state.couriers_db[st.session_state.username]["registration_date"] = registration_date
+                
+                save_users_db(st.session_state.couriers_db)
+                
+                # שמירת הנתונים בפנקס הרישומים (CSV) אצלך
+                contract_record = {
+                    "שם משתמש": st.session_state.username,
+                    "תפקיד": st.session_state.role,
+                    "חברה": st.session_state.company,
+                    "שם מלא": f_full_name,
+                    "ת.ז": f_id_num,
+                    "כתובת": f_address,
+                    "אימייל": f_email,
+                    "טלפון": format_whatsapp_phone(f_phone),
+                    "ח.פ / עוסק פטור": f_hp_or_exempt if f_hp_or_exempt else "אין",
+                    "תאריך רישום": registration_date
+                }
+                save_contract_data(contract_record)
+                
+                st.success("הפרטים נשמרו בהצלחה אצל המנהל! מעביר אותך למערכת...")
+                st.rerun()
+            else:
+                st.error("נא למלא את כל שדות החובה (שם מלא, ת.ז, כתובת, אימייל וטלפון) ולוודא שסימנת וי על אישור תנאי השימוש.")
+
+    if st.sidebar.button(t["logout"]):
+        logout_user()
 
 # --- אזור הניהול למנהל הראשי (Super Admin) ---
 elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
@@ -461,23 +528,15 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                             "password": new_comp_password,
                             "role": "מנהל חברה (Company Admin)",
                             "phone": formatted_phone,
-                            "company": new_comp_name
+                            "company": new_comp_name,
+                            "contract_signed": False  # ידרוש מילוי פרטים וחתימה בהתחברות הראשונה
                         }
                         save_users_db(st.session_state.couriers_db)
-                        st.success(f"מנהל החברה '{new_comp_username}' נוסף בהצלחה!")
-                        
-                        if formatted_phone:
-                            app_url = "https://speedy-delivery-app.streamlit.app/"
-                            msg = (f"שלום {new_comp_name},\n\nנוצר לך חשבון מנהל חברה במערכת ניהול המשלוחים Speed Delivery.\n"
-                                   f"שם משתמש: {new_comp_username}\nסיסמה: {new_comp_password}\n\n"
-                                   f"קישור לכניסה למערכת:\n{app_url}\n\n"
-                                   f"נא לאשר את תנאי השימוש ואישור העמלות בקישור המערכת.")
-                            wa_link = f"https://wa.me/{formatted_phone}?text={urllib.parse.quote(msg)}"
-                            st.markdown(f"### 📲 [לחץ כאן לשליחת פרטי ההתחברות והחוזה בוואטסאפ למנהל החברה]({wa_link})" , unsafe_allow_html=True)
+                        st.success(f"מנהל החברה '{new_comp_username}' נוסף בהצלחה! טופס הרישום והחוזה יוצגו לו אוטומטית בכניסתו הראשונה.")
                 else:
                     st.warning("נא למלא את כל השדות החובה.")
 
-    # 3. הוספת שליח חדש (פרטי או שייך לחברה)
+    # 3. הוספת שליח חדש
     elif admin_menu == t["add_courier"]:
         st.title(t["add_courier"])
         with st.form("add_courier_form"):
@@ -501,20 +560,11 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                             "password": c_password,
                             "role": "שליח",
                             "phone": formatted_phone,
-                            "company": c_company
+                            "company": c_company,
+                            "contract_signed": False  # ידרוש מילוי פרטים וחתימה בהתחברות הראשונה
                         }
                         save_users_db(st.session_state.couriers_db)
-                        st.success(f"השליח '{c_username}' נוסף בהצלחה!")
-                        
-                        if formatted_phone:
-                            app_url = "https://speedy-delivery-app.streamlit.app/"
-                            msg = (f"שלום {c_username},\n\nנוצר לך חשבון שליח במערכת ניהול המשלוחים Speed Delivery.\n"
-                                   f"שם משתמש: {c_username}\nסיסמה: {c_password}\n"
-                                   f"שיוך: {c_company}\n\n"
-                                   f"קישור לכניסה למערכת:\n{app_url}\n\n"
-                                   f"נא להיכנס למערכת כדי לצפות במשלוחים ולאשר את תנאי העבודה והחוזה.")
-                            wa_link = f"https://wa.me/{formatted_phone}?text={urllib.parse.quote(msg)}"
-                            st.markdown(f"### 📲 [לחץ כאן לשליחת פרטי ההתחברות, החוזה והקישור בוואטסאפ לשליח]({wa_link})" , unsafe_allow_html=True)
+                        st.success(f"השליח '{c_username}' נוסף בהצלחה! טופס הרישום והחוזה יוצגו לו אוטומטית בכניסתו הראשונה.")
                 else:
                     st.warning("נא למלא שם משתמש וסיסמה.")
 
@@ -527,7 +577,14 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         for usr, info in list(users_db.items()):
             if usr == "Admin":
                 continue
-            with st.expander(f"👤 משתמש: {usr} | תפקיד: {info.get('role')} | חברה/שליח: {info.get('company', 'N/A')}"):
+            with st.expander(f"👤 משתמש: {usr} | שם מלא: {info.get('full_name', 'טרם מילא')} | תפקיד: {info.get('role')} | חתימה: {'✅' if info.get('contract_signed') else '❌'}"):
+                st.write(f"**ת.ז:** {info.get('id_number', 'לא הוזן')}")
+                st.write(f"**כתובת:** {info.get('address', 'לא הוזן')}")
+                st.write(f"**אימייל:** {info.get('email', 'לא הוזן')}")
+                st.write(f"**טלפון:** {info.get('phone', 'לא הוזן')}")
+                st.write(f"**ח.פ / עוסק פטור:** {info.get('hp_exempt', 'אין')}")
+                st.write(f"**תאריך רישום:** {info.get('registration_date', 'לא זמין')}")
+                
                 with st.form(f"edit_user_{usr}"):
                     new_pass = st.text_input("עדכן סיסמה חדשה:", value=info.get("password", ""))
                     new_ph = st.text_input("עדכן טלפון:", value=info.get("phone", ""))
@@ -551,7 +608,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                         st.success(f"המשתמש {usr} נמחק מהמערכת.")
                         st.rerun()
 
-    # 5. דוח חודשי (כולל מנהלי חברות ושליחים פרטיים/עצמאיים)
+    # 5. דוח חודשי
     elif admin_menu == t["monthly_report"]:
         st.title(t["monthly_report"])
         st.info("💡 החיוב וההתחשבנות החודשית מתבצעים מול מנהלי חברות המשלוחים וגם מול השליחים הפרטיים/העצמאיים עבור המשלוחים שלהם.")
@@ -586,6 +643,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             
             report_data.append({
                 "שם משתמש / גורם": usr,
+                "שם מלא": info.get("full_name", ""),
                 "סוג / תפקיד": role,
                 "שם עסק / חברה": comp_name,
                 "טלפון": info.get("phone", ""),
@@ -599,15 +657,15 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         else:
             st.info("אין נתונים זמינים להצגה בדוח החודשי.")
 
-    # 6. תנאי שימוש
+    # 6. פנקס נרשמים וחוזים שמורים
     elif admin_menu == t["contract_menu"]:
         st.title(t["contract_menu"])
-        st.write("כאן ניתן לראות את תנאי השימוש ואישורי העמלות של המערכת.")
+        st.write("כאן שמורים אצלך כל הפרטים המלאים של כל מי שנרשם לאפליקציה (שם מלא, ת.ז, כתובת, אימייל, טלפון, ח.פ / עוסק פטור ותאריך רישום):")
         contracts_df = load_contracts_data()
         if not contracts_df.empty:
             st.dataframe(contracts_df, use_container_width=True)
         else:
-            st.info("אין עדיין חוזים או אישורי תנאים רשומים במערכת.")
+            st.info("אין עדיין נרשמים או חוזים רשומים במערכת.")
 
 # --- אזור מנהל חברת משלוחים ---
 elif st.session_state.role == "מנהל חברה (Company Admin)":
@@ -626,7 +684,6 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
         ]
     )
 
-    # 1. ניהול והוספת משלוחים לחברה
     if company_menu == "📦 ניהול והוספת משלוחים":
         st.subheader("➕ הוספת משלוח חדש מטעם החברה")
         with st.expander(t["add_new_del"], expanded=True):
@@ -644,7 +701,6 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
                 
                 new_notes = st.text_area(t["notes"])
                 
-                # בחירת שליח מתוך השליחים של החברה הזו
                 company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role") == "שליח"]
                 courier_options = [st.session_state.username] + company_couriers
                 assigned_courier = st.selectbox("שייך לשליח בחברה:", courier_options)
@@ -696,7 +752,6 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
                             st.success(t["delivered_success"])
                             st.rerun()
 
-    # 2. הוספה וניהול שליחי החברה
     elif company_menu == "👥 הוספה וניהול שליחי החברה":
         st.subheader("➕ הוספת שליח חדש תחת החברה שלך")
         with st.form("add_my_courier_form"):
@@ -715,30 +770,29 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
                             "password": c_password,
                             "role": "שליח",
                             "phone": formatted_phone,
-                            "company": company_name
+                            "company": company_name,
+                            "contract_signed": False  # ידרוש מילוי פרטים בכניסה הראשונה
                         }
                         save_users_db(st.session_state.couriers_db)
-                        st.success(f"השליח '{c_username}' נוסף בהצלחה לחברה שלך!")
-                        
-                        if formatted_phone:
-                            app_url = "https://speedy-delivery-app.streamlit.app/"
-                            msg = (f"שלום {c_username},\n\nנוצר לך חשבון שליח תחת חברת {company_name} במערכת Speed Delivery.\n"
-                                   f"שם משתמש: {c_username}\nסיסמה: {c_password}\n\n"
-                                   f"קישור לכניסה:\n{app_url}")
-                            wa_link = f"https://wa.me/{formatted_phone}?text={urllib.parse.quote(msg)}"
-                            st.markdown(f"### 📲 [לחץ כאן לשליחת פרטי ההתחברות בוואטסאפ לשליח החדש]({wa_link})" , unsafe_allow_html=True)
+                        st.success(f"השליח '{c_username}' נוסף בהצלחה! טופס הרישום והחוזה יוצגו לו אוטומטית בכניסתו הראשונה.")
                 else:
                     st.warning("נא למלא את כל שדות החובה.")
 
         st.divider()
         st.subheader("👤 רשימת השליחים הרשומים בחברה שלך")
-        company_couriers_dict = {usr: info for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role") == "שליח"}
+        company_couriers_dict = {usr: info for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role"] == "שליח"}
         
         if not company_couriers_dict:
             st.info("אין עדיין שליחים רשומים תחת החברה שלך.")
         else:
             for usr, info in company_couriers_dict.items():
-                with st.expander(f"שליח: {usr} | טלפון: {info.get('phone', 'אין')}"):
+                with st.expander(f"שליח: {usr} | שם מלא: {info.get('full_name', 'טרם מילא')} | חתימה: {'✅' if info.get('contract_signed') else '❌'}"):
+                    st.write(f"**ת.ז:** {info.get('id_number', 'לא הוזן')}")
+                    st.write(f"**כתובת:** {info.get('address', 'לא הוזן')}")
+                    st.write(f"**אימייל:** {info.get('email', 'לא הוזן')}")
+                    st.write(f"**טלפון:** {info.get('phone', 'לא הוזן')}")
+                    st.write(f"**ח.פ / עוסק פטור:** {info.get('hp_exempt', 'אין')}")
+                    
                     with st.form(f"edit_my_courier_{usr}"):
                         new_pass = st.text_input("סיסמה חדשה:", value=info.get("password", ""))
                         new_phone = st.text_input("טלפון חדש:", value=info.get("phone", ""))
@@ -762,20 +816,14 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
                             st.success("השליח הוסר בהצלחה.")
                             st.rerun()
 
-    # 3. סיכומי כמויות (יומי, שבועי, חודשי) - בהפרדה מלאה ממנהל החברה עצמו
     elif company_menu == "📊 סיכומי כמויות (יומי, שבועי, חודשי)":
         st.subheader("📊 דוחות וסיכומי פעילות (יומי, שבועי, חודשי)")
         
         now_dt = get_current_date()
         today_str = now_dt.strftime("%Y-%m-%d")
-        
-        # חישוב תאריך תחילת שבוע וחודש לצורך סינון
-        start_of_week = (now_dt - timedelta(days=now_dt.weekday())).strftime("%Y-%m-%d")
         start_of_month = now_dt.strftime("%Y-%m")
 
         comp_deliveries = [d for d in st.session_state.deliveries if d.get("company") == company_name]
-
-        # 1. המשלוחים של מנהל החברה עצמו בלבד (אינו קשור לשליחים שלו)
         admin_self_deliv = [d for d in comp_deliveries if d.get("courier") == st.session_state.username or d.get("courier") == "Admin"]
         
         st.markdown("### 📌 סיכום אישי שלך (מנהל החברה)")
@@ -787,12 +835,9 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
         col_m2.metric("המשלוחים שלך החודש", m_month)
 
         st.divider()
-
-        # 2. סיכום לכל שליח בנפרד ולכל החברה
         st.markdown("### 📈 סיכום כמויות לפי שליחי החברה שלך")
         
-        # תוקן כאן השימוש בסוגריים עגולים במקום מרובעים
-        company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role") == "שליח"]
+        company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role"] == "שליח")
         
         summary_rows = []
         for c_usr in company_couriers:
@@ -824,7 +869,6 @@ else:
     
     st.write(f"הנך מחובר כחלק מ-{st.session_state.company}")
     
-    # אפשרות להוספת משלוח חדש גם לשליחים
     with st.expander(t["add_new_del"], expanded=False):
         with st.form("courier_add_delivery_form"):
             col_a, col_b = st.columns(2)
@@ -870,7 +914,7 @@ else:
     st.divider()
     st.subheader(t["list_title"])
     
-    filtered_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
+    filtered_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username]
     
     if not filtered_deliveries:
         st.info(t["no_deliveries"])
