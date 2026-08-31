@@ -189,6 +189,7 @@ TRANSLATIONS = {
         "contract_menu": "📝 פנקס נרשמים וחוזים שמורים",
         "live_tracking": "📍 מעקב מיקום שליחים בזמן אמת",
         "verify_rejected": "🔍 אימות משלוחים שסורבו מול לקוחות",
+        "change_password": "🔐 החלפת סיסמה אישית",
         "whatsapp_btn": "📲 שלח וואטסאפ ללקוח",
         "waze_btn": "🧭 נווט ב-Waze",
         "mark_delivered": "סמן כנמסר",
@@ -214,6 +215,7 @@ TRANSLATIONS = {
         "contract_menu": "📝 سجل العقود والبيانات المسجلة",
         "live_tracking": "📍 متابعة مواقع الشليחים (GPS)",
         "verify_rejected": "🔍 التحقق من الشحنات المرفوضة مع العملاء",
+        "change_password": "🔐 تغيير كلمة المرور الشخصية",
         "whatsapp_btn": "📲 إرسال واتساب",
         "waze_btn": "🧭 التنقل عبر Waze",
         "mark_delivered": "تحديد كـ تم التسليم",
@@ -343,7 +345,8 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             t["monthly_report"],
             t["contract_menu"],
             t["live_tracking"],
-            t["verify_rejected"]
+            t["verify_rejected"],
+            t["change_password"]
         ]
     )
     if st.sidebar.button(t["logout"]):
@@ -461,7 +464,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             d_city = st.text_input("עיר / יישוב / כפר:")
             d_notes = st.text_area("הערות למשלוח:")
             
-            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
+            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
             assigned_courier = st.selectbox("שיוך שליח:", couriers_list if couriers_list else ["אין שליחים"])
             
             submit_new_del = st.form_submit_button("הוסף משלוח למערכת 🚀")
@@ -532,7 +535,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             user_company = info.get("company", "Independent")
             valid_user_items = [
                 d for d in st.session_state.deliveries 
-                if (d.get("courier") == usr or d.get("company") == user_company) and d.get("status"] != "סורב על ידי הלקוח"
+                if (d.get("courier") == usr or d.get("company") == user_company) and d.get("status") != "סורב על ידי הלקוח"
             ]
             
             count_valid_deliveries = len(valid_user_items)
@@ -609,7 +612,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         st.title("🔍 אימות משלוחים שסורבו מול לקוחות (בקרת מנהל ראשי)")
         st.write("כאן תוכל לצפות בכל המשלוחים שדווחו כ'סורב על ידי הלקוח' על ידי השליחים או מנהלי החברות, ולבדוק ישירות מול הלקוח בטלפון או בוואטסאפ.")
         
-        rejected_deliveries = [d for d in st.session_state.deliveries if d.get("status") == "סורב על ידי הלקוח"]
+        rejected_deliveries = [d for d in st.session_state.deliveries if d.get("status"] == "סורב על ידי הלקוח"]
         
         if not rejected_deliveries:
             st.info("אין כרגע משלוחים שסומנו כסורבו על ידי הלקוחות.")
@@ -619,15 +622,32 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                 with st.expander(f"❌ לקוח: {r_item['שם לקוח']} | עיר: {r_item['עיר']} | ברקוד: {r_item['ברקוד']}"):
                     st.write(f"**טלפון הלקוח:** {r_item['טלפון']} | **כתובת:** {full_address_str} | **שליח מטפל:** {r_item.get('courier', 'לא צוין')}")
 
+    elif admin_menu == t["change_password"]:
+        st.title(t["change_password"])
+        with st.form("admin_self_change_pwd"):
+            curr_pass = st.text_input("סיסמה נוכחית:", type="password")
+            new_pass1 = st.text_input("סיסמה חדשה:", type="password")
+            new_pass2 = st.text_input("אימות סיסמה חדשה:", type="password")
+            if st.form_submit_button("עדכן סיסמה אישית 🔐"):
+                if st.session_state.couriers_db[st.session_state.username]["password"] == curr_pass:
+                    if new_pass1.strip() and new_pass1 == new_pass2:
+                        st.session_state.couriers_db[st.session_state.username]["password"] = new_pass1.strip()
+                        save_users_db(st.session_state.couriers_db)
+                        st.success("הסיסמה האישית עודכנה בהצלחה!")
+                    else:
+                        st.error("הסיסמאות החדשות אינן תואמות או ריקות.")
+                else:
+                    st.error("הסיסמה הנוכחית שגויה.")
+
 else:
     st.sidebar.title(t["courier_menu"])
-    courier_menu_choice = st.sidebar.radio("תפריט פעולות", [t["main_sys"], t["smart_route"], t["add_delivery"]])
+    courier_menu_choice = st.sidebar.radio("תפריט פעולות", [t["main_sys"], t["smart_route"], t["add_delivery"], t["change_password"]])
     if st.sidebar.button(t["logout"]):
         logout_user()
 
     if courier_menu_choice == t["main_sys"]:
         st.title("📦 המשלוחים שלי")
-        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == st.session_state.username or d.get("company"] == st.session_state.company]
+        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username or d.get("company"] == st.session_state.company]
         
         for idx, item in enumerate(my_deliveries):
             status_color = "🟢" if item["status"] == "נמסר" else ("🔴" if "סורב" in item["status"] else ("🔵" if "נדחה" in item["status"] else "🟠"))
@@ -663,11 +683,33 @@ else:
                         st.warning("עודכן כסורב ולא ייחשב בתשלום.")
                         st.rerun()
 
+                st.markdown("---")
+                with st.form(f"courier_edit_del_form_{idx}"):
+                    st.subheader("✏️ עריכת פרטי משלוח")
+                    e_client = st.text_input("שם לקוח:", value=item.get("שם לקוח", ""), key=f"c_ec_{idx}")
+                    e_phone = st.text_input("טלפון לקוח:", value=item.get("טלפון", ""), key=f"c_ep_{idx}")
+                    e_street = st.text_input("שם כביש / רחוב (או שם הכפר בלבד אם אין רחוב):", value=item.get("כביש", ""), key=f"c_est_{idx}")
+                    e_house = st.text_input("מספר בית (אם יש):", value=item.get("מספר בית", ""), key=f"c_eh_{idx}")
+                    e_floor = st.text_input("קומה (אם יש):", value=item.get("קומה", ""), key=f"c_ef_{idx}")
+                    e_city = st.text_input("עיר / יישוב / כפר:", value=item.get("עיר", ""), key=f"c_eci_{idx}")
+                    e_notes = st.text_area("הערות:", value=item.get("הערות", ""), key=f"c_en_{idx}")
+                    
+                    if st.form_submit_button("שמור שינויים במשלוח 💾"):
+                        item["שם לקוח"] = e_client
+                        item["טלפון"] = format_whatsapp_phone(e_phone)
+                        item["כביש"] = e_street
+                        item["מספר בית"] = e_house
+                        item["קומה"] = e_floor
+                        item["עיר"] = e_city
+                        item["הערות"] = e_notes
+                        st.success("פרטי המשלוח עודכנו בהצלחה!")
+                        st.rerun()
+
     elif courier_menu_choice == t["smart_route"]:
         st.title(t["smart_route"])
         st.write("בחר את נקודת ההתחלה שלך, והמערכת תסדר אוטומטית את כל המסלול עבורך מהקרוב ביותר לרחוק!")
         
-        my_deliveries = [d for d in st.session_state.deliveries if (d.get("courier") == st.session_state.username or d.get("company") == st.session_state.company) and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
+        my_deliveries = [d for d in st.session_state.deliveries if (d.get("courier") == st.session_state.username or d.get("company"] == st.session_state.company) and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
         
         if not my_deliveries:
             st.info("אין לך משלוחים פעילים כרגע.")
@@ -718,3 +760,20 @@ else:
                 }
                 st.session_state.deliveries.append(new_item)
                 st.success("המשלוח נוסף בהצלחה למערכת ושויך אליך!")
+
+    elif courier_menu_choice == t["change_password"]:
+        st.title(t["change_password"])
+        with st.form("courier_self_change_pwd"):
+            curr_pass = st.text_input("סיסמה נוכחית:", type="password")
+            new_pass1 = st.text_input("סיסמה חדשה:", type="password")
+            new_pass2 = st.text_input("אימות סיסמה חדשה:", type="password")
+            if st.form_submit_button("עדכן סיסמה אישית 🔐"):
+                if st.session_state.couriers_db[st.session_state.username]["password"] == curr_pass:
+                    if new_pass1.strip() and new_pass1 == new_pass2:
+                        st.session_state.couriers_db[st.session_state.username]["password"] = new_pass1.strip()
+                        save_users_db(st.session_state.couriers_db)
+                        st.success("הסיסמה האישית עודכנה בהצלחה!")
+                    else:
+                        st.error("הסיסמאות החדשות אינן תואמות או ריקות.")
+                else:
+                    st.error("הסיסמה הנוכחית שגויה.")
