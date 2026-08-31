@@ -4,16 +4,21 @@ from datetime import datetime, timezone, timedelta
 import pandas as pd
 import os
 import json
-from io import BytesIO
 
+# הגדרת שעון ישראל (UTC+2 / UTC+3)
 ISRAEL_OFFSET = timedelta(hours=2)
-ADMIN_PHONE = "972502616375"
-VAT_RATE = 0.18   # מע"מ 18%
+ADMIN_PHONE = "972502616375"  # מספר הטלפון שלך כמנהל המערכת הראשי
 
 def get_israel_time():
     return datetime.now(timezone(ISRAEL_OFFSET)).strftime("%Y-%m-%d %H:%M")
 
+def get_current_date():
+    return datetime.now(timezone(ISRAEL_OFFSET))
+
 def format_whatsapp_phone(phone_str):
+    """
+    מנקה את מספר הטלפון ומוודא שהוא מתחיל בקידומת הבינלאומית 972
+    """
     clean_phone = "".join(filter(str.isdigit, str(phone_str)))
     if clean_phone.startswith("0"):
         clean_phone = "972" + clean_phone[1:]
@@ -21,200 +26,30 @@ def format_whatsapp_phone(phone_str):
         clean_phone = "972" + clean_phone
     return clean_phone
 
-def generate_html_contract_form():
-    html_content = """<!DOCTYPE html>
-<html lang="he" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Speedy Delivery - טופס התרשמות וחוזה התקשרות</title>
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; direction: rtl; text-align: right; color: #333; }
-        .container { max-width: 750px; margin: 30px auto; background: #ffffff; padding: 35px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
-        h2 { color: #1f2937; text-align: center; margin-bottom: 25px; }
-        .contract-box { background: #f9fafb; border: 1px solid #d1d5db; padding: 15px; border-radius: 6px; height: 260px; overflow-y: scroll; font-size: 13px; margin-bottom: 20px; line-height: 1.6; color: #111827; }
-    </style>
-</head>
-<body>
-<div class="container">
-    <h2>📝 טופס התרשמות וחוזה התקשרות - Speedy Delivery</h2>
-    <div class="contract-box">
-        <strong>תנאי שימוש, הצהרה ופטור מלא מאחריות משפטית:</strong><br><br>
-        1. <strong>מהות הפלטפורמה:</strong> מערכת "Speedy Delivery" משמשת כפלטפורמה טכנולוגית עצמאית.<br><br>
-        2. <strong>העדר יחסי עובד-מעביד:</strong> מוסכם בזאת במפורש כי לא מתקיימים יחסי עובד-מעביד.<br><br>
-        3. <strong>אחריות בלעדית של השליח:</strong> השליח נושא באחריות המלאה והבלעדית לכל נזק או אובדן במשלוח.<br><br>
-        4. <strong>פטור מלא מאחריות למפעיל המערכת:</strong> מפעיל המערכת פטור מאחריות לנזקי גוף, רכוש ותאונות.<br><br>
-        5. <strong>תשלומים והתחייבות פיננסית:</strong> השליח/מנהל מתחייב להסדיר את התשלומים בהתאם למשלוחים שבוצעו וטופלו במערכת.<br><br>
-        6. <strong>הרשאה מלאה לבדיקת משלוחים שסורבו:</strong> ניתנת בזה הרשאה מלאה ובלעדית למפעיל המערכת לבדוק, ליצור קשר ולוודא באופן ישיר מול הלקוחות את כל המשלוחים שדווחו כסורבים או נדחו.<br><br>
-        7. <strong>זכות תביעה אישית:</strong> מפעיל המערכת רשאי להגיש תביעה משפטית אישית בגין אי-הסדרת תשלום.<br><br>
-        8. <strong>שיפוי:</strong> השליח מתחייב לשפות את מפעיל המערכת בגין כל נזק.
-    </div>
-</div>
-</body>
-</html>"""
-    file_stream = BytesIO(html_content.encode("utf-8"))
-    file_stream.seek(0)
-    return file_stream
-
-def generate_personal_html_contract(data_dict):
-    html_content = f"""<!DOCTYPE html>
-<html lang="he" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>חוזה חתום - {data_dict.get('שם מלא', '')}</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 25px; direction: rtl; text-align: right; color: #333; }}
-        .container {{ max-width: 750px; margin: auto; background: #ffffff; padding: 35px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }}
-        h2 {{ color: #1f2937; text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }}
-        .details-table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
-        .details-table th, .details-table td {{ border: 1px solid #d1d5db; padding: 10px 14px; text-align: right; font-size: 14px; }}
-        .details-table th {{ background-color: #f3f4f6; color: #374151; }}
-        .contract-box {{ background: #f9fafb; border: 1px solid #d1d5db; padding: 15px; border-radius: 6px; font-size: 13px; margin-top: 20px; line-height: 1.6; color: #111827; }}
-        .signature {{ margin-top: 25px; font-weight: bold; color: #16a34a; text-align: center; font-size: 16px; }}
-    </style>
-</head>
-<body>
-<div class="container">
-    <h2>📄 טופס התרשמות וחוזה חתום - Speedy Delivery</h2>
-    <table class="details-table">
-        <tr><th>שם משתמש</th><td>{data_dict.get('שם משתמש', '')}</td></tr>
-        <tr><th>תפקיד</th><td>{data_dict.get('תפקיד', '')}</td></tr>
-        <tr><th>חברה משוייכת</th><td>{data_dict.get('חברה', '')}</td></tr>
-        <tr><th>שם מלא</th><td>{data_dict.get('שם מלא', '')}</td></tr>
-        <tr><th>תעודת זהות</th><td>{data_dict.get('ת.ז', '')}</td></tr>
-        <tr><th>כתובת מלאה</th><td>{data_dict.get('כתובת', '')}</td></tr>
-        <tr><th>אימייל</th><td>{data_dict.get('אימייל', '')}</td></tr>
-        <tr><th>טלפון נייד</th><td>{data_dict.get('טלפון', '')}</td></tr>
-        <tr><th>ח.פ / עוסק פטור</th><td>{data_dict.get('ח.פ / עוסק פטור', '')}</td></tr>
-        <tr><th>תאריך ושעת אישור החוזה</th><td>{data_dict.get('תאריך רישום', '')}</td></tr>
-    </table>
-    <div class="contract-box">
-        <strong>תנאי שימוש, הצהרה ופטור מלא מאחריות משפטית:</strong><br><br>
-        1. מערכת "Speedy Delivery" מהווה פלטפורמה טכנולוגית עצמאית.<br>
-        2. לא מתקיימים יחסי עובד-מעביד.<br>
-        3. השליח אחראי באופן מלא על ניהול המשלוחים במערכת.<br>
-        4. פטור מלא מאחריות למפעיל המערכת.<br>
-        5. התחייבות לתשלום על המשלוחים שבוצעו וטופלו בתחילת חודש.<br>
-        6. <strong>הרשאה מלאה לבדיקת משלוחים שסורבו:</strong> ניתנת בזה הרשאה מלאה ובלעדית למפעיל המערכת לבדוק, ליצור קשר ולוודא באופן ישיר מול הלקוחות את כל המשלוחים שדווחו כסורבים או נדחו.<br>
-    </div>
-    <div class="signature">✅ החוזה אושר ונחתם דיגיטלית בהצלחה</div>
-</div>
-</body>
-</html>"""
-    file_stream = BytesIO(html_content.encode("utf-8"))
-    file_stream.seek(0)
-    return file_stream
-
-def generate_monthly_invoice_html(user_name, user_hp, is_exempt, count_deliveries, price_per_unit=1.0):
-    base_price = count_deliveries * price_per_unit
-    vat_amount = 0.0 if is_exempt else base_price * VAT_RATE
-    total_final = base_price + vat_amount
-    current_month_str = datetime.now().strftime("%m/%Y")
-    
-    html_content = f"""<!DOCTYPE html>
-<html lang="he" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <title>חשבונית / דוח סיכום חודשי - {user_name}</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; background: #f9f9f9; color: #333; margin: 0; padding: 20px; }}
-        .invoice-box {{ max-width: 800px; margin: auto; background: #fff; padding: 30px; border: 1px solid #eee; box-shadow: 0 0 10px rgba(0,0,0,0.15); border-radius: 8px; }}
-        header {{ border-bottom: 2px solid #2563eb; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }}
-        .company-details h2 {{ margin: 0; color: #2563eb; }}
-        .invoice-details {{ text-align: left; }}
-        table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
-        th, td {{ border: 1px solid #d1d5db; padding: 12px; text-align: right; }}
-        th {{ background-color: #f3f4f6; }}
-        .totals {{ margin-top: 25px; border-top: 2px solid #333; padding-top: 15px; text-align: left; font-size: 1.1em; }}
-        .totals div {{ margin-bottom: 8px; }}
-        .final-amount {{ font-weight: bold; font-size: 1.3em; color: #16a34a; }}
-        .footer {{ margin-top: 40px; text-align: center; font-size: 0.9em; color: #777; }}
-        .btn-print {{ background: #2563eb; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; font-size: 1em; margin-top: 20px; }}
-    </style>
-</head>
-<body>
-<div class="invoice-box">
-    <header>
-        <div class="company-details">
-            <h2>מקארט (Speedy Delivery) - דוח וחשבון חודשי</h2>
-            <p>סיכום פעילות עסקית</p>
-        </div>
-        <div class="invoice-details">
-            <p><strong>חודש דיווח:</strong> {current_month_str}</p>
-            <p><strong>תאריך הפקה:</strong> {datetime.now().strftime('%Y-%m-%d')}</p>
-        </div>
-    </header>
-
-    <section>
-        <h3>פרטי נותן השירות / השליח:</h3>
-        <p><strong>שם מלא / עסק:</strong> {user_name}</p>
-        <p><strong>ח.פ / ת.ז / עוסק פטור:</strong> {user_hp}</p>
-        <p><strong>סטטוס מס:</strong> {'עוסק פטור (ללא מע"מ)' if is_exempt else 'חייב במע"מ (כולל מע"מ 18%)'}</p>
-    </section>
-
-    <table>
-        <thead>
-            <tr>
-                <th>תיאור הפעילות</th>
-                <th>כמות משלוחים מזוכים</th>
-                <th>תעריף ליחידה</th>
-                <th>סה"כ לפני מע"מ</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>משלוחים שבוצעו וטופלו בהצלחה החודש</td>
-                <td>{count_deliveries}</td>
-                <td>₪{price_per_unit:.2f}</td>
-                <td>₪{base_price:.2f}</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <div class="totals">
-        <div>סכום לפני מע"מ: <strong>₪{base_price:.2f}</strong></div>
-        {"" if is_exempt else f'<div>מע"מ (18%): <strong>₪{vat_amount:.2f}</strong></div>'}
-        <div class="final-amount">סכום סופי לתשלום: ₪{total_final:.2f}</div>
-    </div>
-
-    <div style="text-align: center;">
-        <button class="btn-print" onclick="window.print()">הדפס / שמור כ-PDF</button>
-    </div>
-
-    <div class="footer">
-        הופק אוטומטית ממערכת מקארט - Speedy Delivery.
-    </div>
-</div>
-</body>
-</html>"""
-    file_stream = BytesIO(html_content.encode("utf-8"))
-    file_stream.seek(0)
-    return file_stream
-
+# הגדרת עיצוב הדף (כיוון מימין לשמאל כברירת מחדל)
 st.set_page_config(page_title="Speedy Delivery - מערכת ניהול משלוחים", page_icon="🚚", layout="wide")
 
+# --- קבצי שמירה מקומיים למערכת ---
 CONTRACTS_FILE = "delivery_drivers_contracts.csv"
 USERS_FILE = "couriers_db.json"
-LOCATIONS_FILE = "couriers_live_locations.json"
+UPLOAD_DIR = "uploaded_documents"
 
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
+
+# טעינת משתמשים מקובץ
 def load_users_db():
-    default_users = {
-        "Admin": {"password": "Sma.srablove2028", "role": "מנהל מערכת ראשי (Super Admin)", "phone": ADMIN_PHONE, "company": "System", "contract_signed": True},
-        "mohammad": {"password": "123", "role": "שליח", "phone": "972502616375", "company": "Independent", "contract_signed": True}
-    }
     if os.path.exists(USERS_FILE):
         try:
             with open(USERS_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                if "Admin" not in data:
-                    data["Admin"] = default_users["Admin"]
-                else:
-                    data["Admin"]["password"] = "Sma.srablove2028"
-                    data["Admin"]["role"] = "מנהל מערכת ראשי (Super Admin)"
-                return data
+                return json.load(f)
         except Exception:
             pass
+    # ברירת מחדל ראשונית אם הקובץ לא קיים
+    default_users = {
+        "Admin": {"password": "Sma.srablove2028", "role": "מנהל מערכת ראשי (Super Admin)", "phone": ADMIN_PHONE, "company": "System"},
+        "mohammad": {"password": "123", "role": "שליח", "phone": "972502616375", "company": "Independent"}
+    }
     save_users_db(default_users)
     return default_users
 
@@ -222,110 +57,204 @@ def save_users_db(users_dict):
     with open(USERS_FILE, "w", encoding="utf-8") as f:
         json.dump(users_dict, f, ensure_ascii=False, indent=4)
 
-def load_locations_db():
-    if os.path.exists(LOCATIONS_FILE):
-        try:
-            with open(LOCATIONS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return {}
-
-def save_location_data(username, loc_text):
-    locs = load_locations_db()
-    locs[username] = {"location": loc_text, "updated_at": get_israel_time()}
-    with open(LOCATIONS_FILE, "w", encoding="utf-8") as f:
-        json.dump(locs, f, ensure_ascii=False, indent=4)
-
 def load_contracts_data():
     if os.path.exists(CONTRACTS_FILE):
         return pd.read_csv(CONTRACTS_FILE)
-    return pd.DataFrame(columns=["שם משתמש", "תפקיד", "חברה", "שם מלא", "ת.ז", "כתובת", "אימייל", "טלפון", "ח.פ / עוסק פטור", "תאריך רישום"])
+    return pd.DataFrame(columns=["שם פרטי", "שם משפחה", "תז", "חפ_או_עוסק", "מספר_חפ", "קובץ_חפ", "טלפון", "כתובת", "סוג עוסק", "רכב", "רישיון", "חתימה", "תאריך ושעה"])
 
 def save_contract_data(new_data):
     df = load_contracts_data()
     new_row = pd.DataFrame([new_data])
     df = pd.concat([df, new_row], ignore_index=True)
-    df.to_csv(CONTRACTS_FILE, index=False, encoding="utf-8-sig")
+    df.to_csv(CONTRACTS_FILE, index=False)
 
-def delete_contract_by_index(idx):
-    df = load_contracts_data()
-    if 0 <= idx < len(df):
-        df = df.drop(idx).reset_index(drop=True)
-        df.to_csv(CONTRACTS_FILE, index=False, encoding="utf-8-sig")
-
+# --- מילון תרגומים מלא למערכת (ערבית, עברית, אנגלית) ---
 TRANSLATIONS = {
-    "עברית (Hebrew)": {
-        "title": "🚚 מערכת ניהול וסידור משלוחים מהירה",
-        "login_title": "כניסת משתמשים ושליחים",
-        "username": "שם משתמש",
-        "password": "סיסמה",
-        "login_btn": "התחבר",
-        "login_error": "שם משתמש או סיסמה שגויים.",
-        "logout": "התנתק (Logout)",
-        "admin_menu": "תפריט ניהול",
-        "courier_menu": "תפריט שליח / מנהל חברה",
-        "main_sys": "מערכת משלוחים ראשית",
-        "smart_route": "🗺️ סידור מסלול משלוחים אוטומטי (מרחקי GPS)",
-        "add_delivery": "➕ הוספת משלוח חדש",
-        "add_courier": "הוספת שליח חדש",
-        "add_company_admin": "הוספת מנהל חברת משלוחים",
-        "manage_users": "ניהול ועריכת משתמשים",
-        "monthly_report": "📊 סיכום חודשי ודוחות",
-        "contract_menu": "📝 פנקס נרשמים וחוזים שמורים",
-        "live_tracking": "📍 מעקב מיקום שליחים בזמן אמת",
-        "verify_rejected": "🔍 אימות משלוחים שסורבו מול לקוחות",
-        "change_password": "🔐 החלפת סיסמה אישית",
-        "whatsapp_btn": "📲 שלח וואטסאפ ללקוח",
-        "waze_btn": "🧭 נווט ב-Waze",
-        "mark_delivered": "סמן כנמסר",
-        "delivered_success": "הסטטוס עודכן בהצלחה!"
-    },
     "العربية (Arabic)": {
         "title": "🚚 نظام إدارة وتوصيل الشحنات السريع",
         "login_title": "تسجيل دخول المستخدمين والمندوبين",
         "username": "اسم المستخدم",
         "password": "كلمة المرور",
         "login_btn": "تسجيل الدخول",
-        "login_error": "خطأ في اسم المستخدم أو كلمة المرور.",
-        "logout": "تسجيل الخروج",
+        "login_error": "اسم المستخدم أو كلمة المرور غير صحيحة. حاول مرة أخرى.",
+        "logout": "تسجيل الخروج (Logout)",
         "admin_menu": "قائمة الإدارة",
-        "courier_menu": "قائمة المندوب / مدير الشركة",
         "main_sys": "نظام الشحنات الرئيسي",
-        "smart_route": "🗺️ ترتيب مسار الشحنات تلقائياً",
-        "add_delivery": "➕ إضافة شحنة جديدة",
         "add_courier": "إضافة مندوب جديد",
         "add_company_admin": "إضافة مدير شركة توصيل",
         "manage_users": "إدارة وتعديل المستخدمين",
-        "monthly_report": "📊 تقرير الحسابات والعمولات",
-        "contract_menu": "📝 سجل العقود والبيانات المسجلة",
-        "live_tracking": "📍 متابعة مواقع الشليחים (GPS)",
-        "verify_rejected": "🔍 التحقق من الشحنات المرفوضة مع العملاء",
-        "change_password": "🔐 تغيير كلمة المرور الشخصية",
-        "whatsapp_btn": "📲 إرسال واتساب",
-        "waze_btn": "🧭 التنقل عبر Waze",
+        "monthly_report": "📊 تقرير الحسابات الشهري والعمولات",
+        "contract_menu": "📝 شروط وطريقة استخدام النظام",
+        "current_loc": "📍 موقعك الحالي / نقطة الانطلاق",
+        "loc_placeholder": "أدخل موقعك الحالي (بلدة / مدينة):",
+        "active_deliveries": "لديك حالياً",
+        "active_deliveries_end": "شحنات نشطة للتنفيذ اليوم.",
+        "current_time": "وقت إسرائيل الحالي:",
+        "start_point_label": "نقطة الانطلاق الحالية:",
+        "add_new_del": "➕ إضافة شحنة جديدة (تناسب القرى بدون شوارع)",
+        "barcode": "رقم التعقب / الباركود:",
+        "cust_name": "اسم الزبون:",
+        "company_name": "اسم الشركة (المتجر):",
+        "phone": "رقم هاتف الزبون (مثال: 0502616375):",
+        "city": "البلدة / المدينة:",
+        "street": "الشارع (اختياري - اتركه فارغاً إذا لم يوجد):",
+        "house": "رقم البيت (اختياري):",
+        "floor": "الطابق (اختياري):",
+        "notes": "ملاحظات خاصة بالشحنة:",
+        "save_del": "حفظ الشحنة في النظام",
+        "del_success": "تمت إضافة الشحنة بنجاح!",
+        "fill_required": "الرجاء تعبئة اسم الزبون والبلدة على الأقل.",
+        "list_title": "📋 قائمة شحنات اليوم والإدارة السريعة",
+        "sort_btn": "🔄 ترتيب المسار تلقائياً حسب البلدة، الشارع ورقم البيت",
+        "sort_success": "تم ترتيب المسار تلقائياً بدءاً من موقعك الحالي!",
+        "no_deliveries": "لا توجد شحنات في القائمة حالياً.",
+        "status_delivered": "تم التسليم",
+        "status_waiting": "قيد الانتظار",
+        "address": "العنوان:",
+        "added_at": "تاريخ الإضافة:",
+        "whatsapp_btn": "📲 إرسال رسالة واتساب للزبون",
+        "waze_btn": "🚗 التنقل من",
         "mark_delivered": "تحديد كـ تم التسليم",
-        "delivered_success": "تم تحديث الحالة بنجاح!"
+        "delivered_success": "تم تحديث الشحنة كـ تم التسليم!",
+        "edit_del": "✏️ تعديل تفاصيل الشحنة",
+        "save_changes": "حفظ التغييرات",
+        "edit_success": "تم تحديث الشحنة بنجاح!",
+        "welcome_admin": "مرحباً، المدير الرئيسي",
+        "welcome_company_admin": "مرحباً، مدير شركة التوصيل",
+        "welcome_courier": "مرحباً",
+        "language": "🌐 لغة التطبيق / Language"
+    },
+    "עברית (Hebrew)": {
+        "title": "🚚 מערכת ניהול וסידור משלוחים מהירה",
+        "login_title": "כניסת משתמשים ושליחים",
+        "username": "שם משתמש",
+        "password": "סיסמה",
+        "login_btn": "התחבר",
+        "login_error": "שם משתמש או סיסמה שגויים. נסה שוב.",
+        "logout": "התנתק (Logout)",
+        "admin_menu": "תפריט ניהול",
+        "main_sys": "מערכת משלוחים ראשית",
+        "add_courier": "הוספת שליח חדש",
+        "add_company_admin": "הוספת מנהל חברת משלוחים",
+        "manage_users": "ניהול ועריכת משתמשים",
+        "monthly_report": "📊 סיכום חודשי, חישוב עמלות ותשלומים למערכת",
+        "contract_menu": "📝 תנאי שימוש במערכת ואישור עמלות",
+        "current_loc": "📍 מיקום נוכחי ונקודת מוצא",
+        "loc_placeholder": "הכנס את המיקום הנוכחי שלך (עיר / כפר):",
+        "active_deliveries": "יש לך כרגע",
+        "active_deliveries_end": "משלוחים פעילים לביצוע להיום.",
+        "current_time": "שעון ישראל נוכחי במערכת:",
+        "start_point_label": "נקודת המוצא הנוכחית שלך:",
+        "add_new_del": "➕ הוספת משלוח חדש (מתאים גם לכפרים ללא רחובות)",
+        "barcode": "מספר מעקב / ברקוד:",
+        "cust_name": "שם הלקוח:",
+        "company_name": "שם החברה (החנות/העסק):",
+        "phone": "מספר טלפון של הלקוח (לדוגמה: 0502616375):",
+        "city": "ישוב / כפר:",
+        "street": "שם רחוב (אופציונלי - ניתן להשאיר ריק):",
+        "house": "מספר בית (אופציונלי):",
+        "floor": "קומה (אופציונלי):",
+        "notes": "הערות מיוחדות למשלוח:",
+        "save_del": "שמור משלוח במערכת",
+        "del_success": "המשלוח נוסף בהצלחה!",
+        "fill_required": "נא למלא לפחות שם לקוח וישוב / כפר.",
+        "list_title": "📋 רשימת המשלוחים להיום וניהול מהיר",
+        "sort_btn": "🔄 סדר מסלול אוטומטית לפי ישוב, רחוב ומספר בית",
+        "sort_success": "המסלול סודר אוטומטית החל מהמיקום שלך!",
+        "no_deliveries": "אין עדיין משלוחים לרשימה.",
+        "status_delivered": "נמסר",
+        "status_waiting": "ממתין",
+        "address": "כתובת:",
+        "added_at": "נוסף בתאריך ושעה:",
+        "whatsapp_btn": "📲 שלח הודעת וואטסאפ ללקוח",
+        "waze_btn": "🚗 נווט מ-",
+        "mark_delivered": "סמן כנמסר",
+        "delivered_success": "המשלוח עודכן כנמסר!",
+        "edit_del": "✏️ ערוך פרטי משלוח",
+        "save_changes": "שמור שינויים",
+        "edit_success": "המשלוח עודכן בהצלחה!",
+        "welcome_admin": "מנהל ראשי",
+        "welcome_company_admin": "מנהל חברת משלוחים",
+        "welcome_courier": "שלום",
+        "language": "🌐 שפת אפליקציה / Language"
+    },
+    "English": {
+        "title": "🚚 Fast Delivery Management System",
+        "login_title": "Courier & User Login",
+        "username": "Username",
+        "password": "Password",
+        "login_btn": "Login",
+        "login_error": "Invalid username or password. Please try again.",
+        "logout": "Logout",
+        "admin_menu": "Management Menu",
+        "main_sys": "Main Deliveries System",
+        "add_courier": "Add New Courier",
+        "add_company_admin": "Add Delivery Company Admin",
+        "manage_users": "Manage & Edit Users",
+        "monthly_report": "📊 Monthly System Fees & Reports",
+        "contract_menu": "📝 System Usage Terms & Fees",
+        "current_loc": "📍 Current Location & Origin",
+        "loc_placeholder": "Enter your current location (City/Village):",
+        "active_deliveries": "You currently have",
+        "active_deliveries_end": "active deliveries for today.",
+        "current_time": "Current Israel Time:",
+        "start_point_label": "Your Current Starting Point:",
+        "add_new_del": "➕ Add New Delivery (Works for villages without streets)",
+        "barcode": "Tracking Number / Barcode:",
+        "cust_name": "Customer Name:",
+        "company_name": "Company Name (Store):",
+        "phone": "Customer Phone Number (e.g., 0502616375):",
+        "city": "City / Village:",
+        "street": "Street Name (Optional - leave blank if none):",
+        "house": "House Number (Optional):",
+        "floor": "Floor (Optional):",
+        "notes": "Special Delivery Notes:",
+        "save_del": "Save Delivery to System",
+        "del_success": "Delivery added successfully!",
+        "fill_required": "Please fill in at least the customer name and city/village.",
+        "list_title": "📋 Today's Deliveries & Quick Management",
+        "sort_btn": "🔄 Auto-sort route by City, Street, and House Number",
+        "sort_success": "Route sorted automatically starting from your current location!",
+        "no_deliveries": "No deliveries in the list yet.",
+        "status_delivered": "Delivered",
+        "status_waiting": "Pending",
+        "address": "Address:",
+        "added_at": "Added at:",
+        "whatsapp_btn": "📲 Send WhatsApp to Customer",
+        "waze_btn": "🚗 Navigate from",
+        "mark_delivered": "Mark as Delivered",
+        "delivered_success": "Delivery updated as delivered!",
+        "edit_del": "✏️ Edit Delivery Details",
+        "save_changes": "Save Changes",
+        "edit_success": "Delivery updated successfully!",
+        "welcome_admin": "Super Admin",
+        "welcome_company_admin": "Delivery Company Admin",
+        "welcome_courier": "Hello",
+        "language": "🌐 App Language"
     }
 }
 
+# --- בחירת שפה בסיידבר ---
 st.sidebar.markdown("---")
-lang_choice = st.sidebar.selectbox("🌐 Language / שפה", ["עברית (Hebrew)", "العربية (Arabic)"], index=0)
+lang_choice = st.sidebar.selectbox("🌐 Language / لغة / שפה", ["العربية (Arabic)", "עברית (Hebrew)", "English"], index=1)
 t = TRANSLATIONS[lang_choice]
 
-st.sidebar.markdown("---")
-st.sidebar.subheader("📄 טופס התרשמות וחוזה")
-html_contract_file = generate_html_contract_form()
-st.sidebar.download_button(
-    label="📥 הורד טופס התרשמות וחוזה כללי (.html)",
-    data=html_contract_file,
-    file_name="delivery_contract_form.html",
-    mime="text/html"
-)
+is_rtl = lang_choice in ["العربية (Arabic)", "עברית (Hebrew)"]
+dir_style = "rtl" if is_rtl else "ltr"
 
+st.markdown(f"""
+<style>
+    div.block-container {{
+        direction: {dir_style};
+    }}
+</style>
+""", unsafe_allow_html=True)
+
+# --- טעינת מאגר משתמשים מתמיד ---
 if "couriers_db" not in st.session_state:
     st.session_state.couriers_db = load_users_db()
 
+# --- מנגנון שמירת חיבור גם אחרי רענון ---
 query_params = st.query_params
 
 if "logged_in" not in st.session_state:
@@ -340,13 +269,27 @@ if "logged_in" not in st.session_state:
         st.session_state.role = ""
         st.session_state.company = ""
 
+# מאגר משלוחים במערכת
 if "deliveries" not in st.session_state:
     current_time_il = get_israel_time()
-    st.session_state.deliveries = [{
-        "ברקוד": "TEST-001", "שם לקוח": "סמר שומרי", "שם חברה": "SHEIN", "טלפון": "972502616375",
-        "כביש": "רחוב ראשי", "מספר בית": "10", "קומה": "2", "עיר": "כסרא-סמיע", "הערות": "משלוח בדיקה", "status": "ממתין",
-        "courier": "mohammad", "company": "Independent", "date": current_time_il
-    }]
+    st.session_state.deliveries = [
+        {
+            "ברקוד": "TEST-001",
+            "שם לקוח": "סמר שומרי",
+            "שם חברה": "SHEIN",
+            "טלפון": "972502616375",
+            "כתובת מלאה": "כסרא-סמיע",
+            "רחוב": "",
+            "בית": "",
+            "קומה": "",
+            "עיר": "כסרא-סמיע",
+            "הערות": "משלוח בדיקה",
+            "status": "ממתין",
+            "courier": "mohammad",
+            "company": "Independent",
+            "date": current_time_il
+        }
+    ]
 
 def logout_user():
     st.session_state.logged_in = False
@@ -356,463 +299,601 @@ def logout_user():
     st.query_params.clear()
     st.rerun()
 
+# --- מסך התחברות ---
 if not st.session_state.logged_in:
     st.title(t["title"])
     st.subheader(t["login_title"])
+    
     with st.form("login_form"):
         username_input = st.text_input(t["username"])
         password_input = st.text_input(t["password"], type="password")
         submit_btn = st.form_submit_button(t["login_btn"])
+        
         if submit_btn:
             db = st.session_state.couriers_db
             if username_input in db and db[username_input]["password"] == password_input:
                 st.session_state.logged_in = True
                 st.session_state.username = username_input
                 st.session_state.role = db[username_input]["role"]
-                st.session_state.company = db[username_input].get("company", "Independent")
+                st.session_state.company = db[username_input].get("company", username_input if db[username_input]["role"] == "מנהל חברה (Company Admin)" else "Independent")
+                
                 st.query_params["logged_in"] = "true"
                 st.query_params["username"] = username_input
                 st.query_params["role"] = db[username_input]["role"]
                 st.query_params["company"] = st.session_state.company
+                
                 st.rerun()
             else:
                 st.error(t["login_error"])
 
-elif st.session_state.role != "מנהל מערכת ראשי (Super Admin)" and not st.session_state.couriers_db.get(st.session_state.username, {}).get("contract_signed", False):
-    st.title("📝 טופס התרשמות, רישום פרטים ותנאי שימוש במערכת")
-    with st.form("first_login_contract_form"):
-        f_full_name = st.text_input("שם מלא (חובה):")
-        f_id_num = st.text_input("תעודת זהות (חובה):")
-        f_address = st.text_input("כתובת מגורים מלאה (חובה):")
-        f_email = st.text_input("כתובת אימייל (חובה):")
-        f_phone = st.text_input("מספר טלפון נייד (חובה):", value=st.session_state.couriers_db.get(st.session_state.username, {}).get("phone", ""))
-        f_hp_or_exempt = st.text_input("מספר ח.פ / עוסק פטור (אם עוסק פטור - כתוב 'פטור' או מספר עוסק פטור):")
-        new_password_input = st.text_input("בחר סיסמה חדשה לחשבון שלך:", type="password")
-        agree_terms = st.checkbox("קראתי את החוזה בעיון רב, הבנתי ואני מאשר/ת ללא הסתייגות את תנאי השימוש, ההצהרה, הרשאת הבדיקה למפעיל ופטור האחריות.")
-        submit_contract = st.form_submit_button("אישור החוזה, עדכון סיסמה וסיום הרישום 🚀")
-        if submit_contract:
-            if agree_terms and f_full_name and f_id_num and f_address and f_email and f_phone:
-                reg_date = get_israel_time()
-                st.session_state.couriers_db[st.session_state.username]["contract_signed"] = True
-                st.session_state.couriers_db[st.session_state.username]["full_name"] = f_full_name
-                st.session_state.couriers_db[st.session_state.username]["id_number"] = f_id_num
-                st.session_state.couriers_db[st.session_state.username]["address"] = f_address
-                st.session_state.couriers_db[st.session_state.username]["email"] = f_email
-                st.session_state.couriers_db[st.session_state.username]["phone"] = format_whatsapp_phone(f_phone)
-                st.session_state.couriers_db[st.session_state.username]["hp_exempt"] = f_hp_or_exempt if f_hp_or_exempt else "אין"
-                st.session_state.couriers_db[st.session_state.username]["registration_date"] = reg_date
-                if new_password_input.strip():
-                    st.session_state.couriers_db[st.session_state.username]["password"] = new_password_input.strip()
-                save_users_db(st.session_state.couriers_db)
-                
-                save_contract_data({
-                    "שם משתמש": st.session_state.username, "תפקיד": st.session_state.role, "חברה": st.session_state.company,
-                    "שם מלא": f_full_name, "ת.ז": f_id_num, "כתובת": f_address, "אימייל": f_email,
-                    "טלפון": format_whatsapp_phone(f_phone), "ח.פ / עוסק פטור": f_hp_or_exempt if f_hp_or_exempt else "אין", "תאריך רישום": reg_date
-                })
-                st.success("הפרטים, החוזה והסיסמה החדשה נשמרו בהצלחה!")
-                st.rerun()
-            else:
-                st.error("נא למלא את כל שדות החובה ולסמן וי על אישור החוזה.")
-    if st.sidebar.button(t["logout"]):
-        logout_user()
-
+# --- אזור הניהול למנהל הראשי (Super Admin) ---
 elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
-    st.sidebar.title("מנהל ראשי")
+    st.sidebar.title(t["welcome_admin"])
     admin_menu = st.sidebar.radio(
         t["admin_menu"], 
         [
             t["main_sys"], 
-            t["smart_route"],
-            t["add_delivery"],
             t["add_company_admin"],
             t["add_courier"], 
             t["manage_users"],
             t["monthly_report"],
-            t["contract_menu"],
-            t["live_tracking"],
-            t["verify_rejected"],
-            t["change_password"]
+            t["contract_menu"]
         ]
     )
+    
     if st.sidebar.button(t["logout"]):
         logout_user()
 
+    # 1. מערכת משלוחים ראשית
     if admin_menu == t["main_sys"]:
         st.title(t["main_sys"])
+        
+        st.markdown(f"### {t['current_loc']}")
+        start_location = st.text_input(t["loc_placeholder"], value="כסרא-סמיע")
+        
         admin_deliveries = st.session_state.deliveries
+        
+        completed_count = len([d for d in admin_deliveries if d["status"] == "נמסר"])
+        pending_count = len([d for d in admin_deliveries if d["status"] == "ממתין"])
+        
         col1, col2, col3 = st.columns(3)
-        col1.metric("סך הכל משלוחים במערכת", len(admin_deliveries))
-        col2.metric("פעילים / ממתינים / נדחו", len([d for d in admin_deliveries if d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]))
-        col3.metric("נמסרו בהצלחה", len([d for d in admin_deliveries if d.get("status") == "נמסר"]))
+        col1.metric("סך הכל משלוחים", len(admin_deliveries))
+        col2.metric("ממתינים לביצוע", pending_count)
+        col3.metric("נמסרו בהצלחה", completed_count)
+        
         st.divider()
-        for idx, item in enumerate(admin_deliveries):
-            status_color = "🟢" if item.get("status") == "נמסר" else ("🔴" if "סורב" in item.get("status", "") else ("🔵" if "נדחה" in item.get("status", "") else "🟠"))
-            full_address_str = f"כביש/רחוב: {item.get('כביש', '-')}, בית: {item.get('מספר בית', '-')}, קומה: {item.get('קומה', '-')}, יישוב/כפר: {item.get('עיר', '-')}"
-            
-            with st.expander(f"{status_color} 📦 {item.get('שם לקוח', '')} | {item.get('עיר', '')} | סטטוס: {item.get('status', '')}"):
-                st.write(f"**ברקוד:** {item.get('ברקוד', '')} | **טלפון:** {item.get('טלפון', '')} | **כתובת:** {full_address_str} | **הערות:** {item.get('הערות', 'אין')}")
-                
-                c_phone = format_whatsapp_phone(item.get('טלפון', ''))
-                wa_msg = urllib.parse.quote(f"שלום {item.get('שם לקוח', '')}, אני השליח בדרך אליך! יש לי משלוח מ{item.get('שם חברה', '')}.")
-                wa_link = f"https://wa.me/{c_phone}?text={wa_msg}"
-                waze_query = urllib.parse.quote(f"{item.get('כביש', '')} {item.get('מספר בית', '')}, {item.get('עיר', '')}")
-                waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
-                
-                b1, b2, b3, b4, b5 = st.columns(5)
-                with b1:
-                    st.markdown(f'<a href="{wa_link}" target="_blank"><button style="background-color:#25d366; color:white; border:none; padding:8px 12px; border-radius:5px; width:100%; cursor:pointer;">{t["whatsapp_btn"]}</button></a>', unsafe_allow_html=True)
-                with b2:
-                    st.markdown(f'<a href="{waze_link}" target="_blank"><button style="background-color:#33ccff; color:white; border:none; padding:8px 12px; border-radius:5px; width:100%; cursor:pointer;">{t["waze_btn"]}</button></a>', unsafe_allow_html=True)
-                with b3:
-                    if st.button(t["mark_delivered"], key=f"adm_m_{idx}"):
-                        item["status"] = "נמסר"
-                        st.success(t["delivered_success"])
-                        st.rerun()
-                with b4:
-                    if st.button("🔄 דחה למחר", key=f"adm_p_{idx}"):
-                        item["status"] = "נדחה למחר על ידי הלקוח"
-                        st.success("עודכן כנדחה למחר!")
-                        st.rerun()
-                with b5:
-                    if st.button("❌ סורב", key=f"adm_r_{idx}"):
-                        item["status"] = "סורב על ידי הלקוח"
-                        st.warning("עודכן כסורב ולא ייחשב בתשלום.")
-                        st.rerun()
 
-                st.markdown("---")
-                with st.form(f"edit_del_form_{idx}"):
-                    st.subheader("✏️ עריכת פרטי משלוח")
-                    e_client = st.text_input("שם לקוח:", value=item.get("שם לקוח", ""), key=f"ec_{idx}")
-                    e_phone = st.text_input("טלפון לקוח:", value=item.get("טלפון", ""), key=f"ep_{idx}")
-                    e_street = st.text_input("שם כביש / רחוב (או שם הכפר בלבד אם אין רחוב):", value=item.get("כביש", ""), key=f"est_{idx}")
-                    e_house = st.text_input("מספר בית (אם יש):", value=item.get("מספר בית", ""), key=f"eh_{idx}")
-                    e_floor = st.text_input("קומה (אם יש):", value=item.get("קומה", ""), key=f"ef_{idx}")
-                    e_city = st.text_input("עיר / יישוב / כפר:", value=item.get("עיר", ""), key=f"eci_{idx}")
-                    e_notes = st.text_area("הערות:", value=item.get("הערות", ""), key=f"en_{idx}")
-                    
-                    if st.form_submit_button("שמור שינויים במשלוח 💾"):
-                        item["שם לקוח"] = e_client
-                        item["טלפון"] = format_whatsapp_phone(e_phone)
-                        item["כביש"] = e_street
-                        item["מספר בית"] = e_house
-                        item["קומה"] = e_floor
-                        item["עיר"] = e_city
-                        item["הערות"] = e_notes
-                        st.success("פרטי המשלוח עודכנו בהצלחה!")
+        with st.expander(t["add_new_del"], expanded=False):
+            with st.form("admin_add_delivery_form"):
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    new_barcode = st.text_input(t["barcode"], value=f"DEL-{len(admin_deliveries)+101}")
+                    new_cust_name = st.text_input(t["cust_name"])
+                    new_company_name = st.text_input(t["company_name"], value="Shop")
+                    new_phone = st.text_input(t["phone"], value="050")
+                with col_b:
+                    new_city = st.text_input(t["city"])
+                    new_street = st.text_input(t["street"])
+                    new_house = st.text_input(t["house"])
+                    new_floor = st.text_input(t["floor"])
+                
+                new_notes = st.text_area(t["notes"])
+                
+                company_list = list(set([info.get("company", "Independent") for usr, info in st.session_state.couriers_db.items()]))
+                assigned_company = st.selectbox("שייך לחברת משלוחים / עצמאי:", company_list)
+                
+                submit_new_del = st.form_submit_button(t["save_del"])
+                if submit_new_del:
+                    if new_cust_name and new_city:
+                        current_time_il = get_israel_time()
+                        new_item = {
+                            "ברקוד": new_barcode,
+                            "שם לקוח": new_cust_name,
+                            "שם חברה": new_company_name,
+                            "טלפון": format_whatsapp_phone(new_phone),
+                            "כתובת מלאה": f"{new_city}, {new_street} {new_house}".strip(),
+                            "רחוב": new_street,
+                            "בית": new_house,
+                            "קומה": new_floor,
+                            "עיר": new_city,
+                            "הערות": new_notes,
+                            "status": "ממתין",
+                            "courier": "Admin",
+                            "company": assigned_company,
+                            "date": current_time_il
+                        }
+                        st.session_state.deliveries.append(new_item)
+                        st.success(t["del_success"])
                         st.rerun()
+                    else:
+                        st.warning(t["fill_required"])
 
-    elif admin_menu == t["smart_route"]:
-        st.title(t["smart_route"])
-        st.write("בחר שליח ונקודת התחלה (יישוב/עיר מוצא), והמערכת תסדר אוטומטית את כל המסלול לפי קרבה גיאוגרפית מהנקודה הראשונה!")
-        
-        couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
-        selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", couriers_list if couriers_list else ["אין שליחים"])
-        
-        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
-        
-        if not courier_deliveries:
-            st.info("אין משלוחים פעילים לשליח זה.")
+        st.divider()
+        st.subheader(t["list_title"])
+
+        if st.button(t["sort_btn"]):
+            st.success(t["sort_success"])
+
+        if not admin_deliveries:
+            st.info(t["no_deliveries"])
         else:
-            all_cities = list(set([d.get("עיר", "אחר") for d in courier_deliveries]))
-            start_location = st.selectbox("📍 בחר מיקום התחלה (נקודת מוצא של השליח):", all_cities)
-            
-            if st.button("🚀 הפעל סידור אוטומטי של המסלול"):
-                remaining = list(courier_deliveries)
-                sorted_route = []
-                current_point = start_location
-                
-                while remaining:
-                    next_item = min(remaining, key=lambda x: 0 if x.get("עיר") == current_point else len(str(x.get("עיר"))))
-                    sorted_route.append(next_item)
-                    current_point = next_item.get("עיר")
-                    remaining.remove(next_item)
-                
-                st.success("✅ המסלול סודר בהצלחה לפי סדר אוטומטי מהיעד הקרוב לרחוק!")
-                
-                for s_idx, s_item in enumerate(sorted_route, 1):
-                    st.markdown(f"**{s_idx}. 📦 לקוח: {s_item.get('שם לקוח', '')} | יישוב: {s_item.get('עיר', '')} | כתובת: {s_item.get('כביש', '')} {s_item.get('מספר בית', '')}**")
-                    waze_query = urllib.parse.quote(f"{s_item.get('כביש', '')} {s_item.get('מספר בית', '')}, {s_item.get('עיר', '')}")
-                    waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
-                    st.markdown(f'<a href="{waze_link}" target="_blank"><button style="background-color:#33ccff; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">🧭 נווט לתחנה זו ב-Waze</button></a>', unsafe_allow_html=True)
-                    st.divider()
+            for idx, item in enumerate(admin_deliveries):
+                status_color = "🟢" if item["status"] == "נמסר" else "🟠"
+                with st.expander(f"{status_color} 📦 {item['שם לקוח']} | {item['עיר']} | חברה/שליח: {item.get('company', 'Independent')} | סטטוס: {item['status']}"):
+                    st.write(f"**{t['barcode']}** {item['ברקוד']}")
+                    st.write(f"**{t['company_name']}** {item['שם חברה']}")
+                    st.write(f"**{t['phone']}** {item['טלפון']}")
+                    st.write(f"**{t['address']}** {item['עיר']}, {item.get('רחוב', '')} {item.get('בית', '')}")
+                    st.write(f"**הערות:** {item.get('הערות', 'אין')}")
+                    
+                    col_btn1, col_btn2 = st.columns(2)
+                    with col_btn1:
+                        if item["status"] == "ממתין":
+                            if st.button(t["mark_delivered"], key=f"admin_mark_{idx}"):
+                                item["status"] = "נמסר"
+                                st.success(t["delivered_success"])
+                                st.rerun()
+                    with col_btn2:
+                        phone_clean = format_whatsapp_phone(item['טלפון'])
+                        cust_n = item['שם לקוח']
+                        comp_n = item['שם חברה']
+                        wa_text = f"שלום {cust_n}, שליח בדרך אליך עם משלוח מ-{comp_n}."
+                        whatsapp_link = f"https://wa.me/{phone_clean}?text={urllib.parse.quote(wa_text)}"
+                        st.markdown(f"[{t['whatsapp_btn']}]({whatsapp_link})", unsafe_allow_html=True)
 
-    elif admin_menu == t["add_delivery"]:
-        st.title(t["add_delivery"])
-        with st.form("add_delivery_form"):
-            d_barcode = st.text_input("ברקוד משלוח / מספר מעקב (QR):", value=f"DEL-{int(datetime.now().timestamp())}")
-            d_client = st.text_input("שם הלקוח:")
-            d_company = st.text_input("שם חברה / מותג ששולח (למשל: SHEIN):")
-            d_phone = st.text_input("טלפון הלקוח:")
-            d_street = st.text_input("שם כביש / רחוב (לפי QR או כפר בלבד):")
-            d_house = st.text_input("מספר בית (השאר ריק בכפרים שאין בהם מספר בית):")
-            d_floor = st.text_input("קומה (השאר ריק אם אין):")
-            d_city = st.text_input("עיר / יישוב / כפר:")
-            d_notes = st.text_area("הערות למשלוח:")
-            
-            couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
-            assigned_courier = st.selectbox("שיוך שליח:", couriers_list if couriers_list else ["אין שליחים"])
-            
-            submit_new_del = st.form_submit_button("הוסף משלוח למערכת 🚀")
-            if submit_new_del and d_client and d_phone and d_city:
-                new_item = {
-                    "ברקוד": d_barcode, "שם לקוח": d_client, "שם חברה": d_company if d_company else "General",
-                    "טלפון": format_whatsapp_phone(d_phone), "כביש": d_street, "מספר בית": d_house, "קומה": d_floor, "עיר": d_city,
-                    "הערות": d_notes, "status": "ממתין", "courier": assigned_courier, "company": "System",
-                    "date": get_israel_time()
-                }
-                st.session_state.deliveries.append(new_item)
-                st.success("המשלוח נוסף בהצלחה למערכת!")
-
+    # 2. הוספת מנהל חברת משלוחים
     elif admin_menu == t["add_company_admin"]:
         st.title(t["add_company_admin"])
-        with st.form("add_comp_form"):
-            cu = st.text_input("שם משתמש מנהל:")
-            cp = st.text_input("סיסמה ראשונית:", type="password")
-            cn = st.text_input("שם חברה:")
-            cph = st.text_input("טלפון:")
-            if st.form_submit_button("הוסף מנהל חברה") and cu and cp and cn and cph:
-                st.session_state.couriers_db[cu] = {"password": cp, "role": "מנהל חברה (Company Admin)", "phone": format_whatsapp_phone(cph), "company": cn, "contract_signed": False}
-                save_users_db(st.session_state.couriers_db)
-                st.success("מנהל החברה נוסף בהצלחה!")
+        with st.form("add_comp_admin_form"):
+            new_comp_username = st.text_input("שם משתמש למנהל החברה:")
+            new_comp_password = st.text_input("סיסמה:", type="password")
+            new_comp_name = st.text_input("שם חברת המשלוחים / עסק:")
+            new_comp_phone = st.text_input("מספר טלפון ליצירת קשר (למשל: 0500000000):")
+            
+            submit_comp = st.form_submit_button("הוסף מנהל חברה חדש")
+            if submit_comp:
+                if new_comp_username and new_comp_password and new_comp_name:
+                    if new_comp_username in st.session_state.couriers_db:
+                        st.error("שם המשתמש כבר קיים במערכת!")
+                    else:
+                        formatted_phone = format_whatsapp_phone(new_comp_phone)
+                        st.session_state.couriers_db[new_comp_username] = {
+                            "password": new_comp_password,
+                            "role": "מנהל חברה (Company Admin)",
+                            "phone": formatted_phone,
+                            "company": new_comp_name
+                        }
+                        save_users_db(st.session_state.couriers_db)
+                        st.success(f"מנהל החברה '{new_comp_username}' נוסף בהצלחה!")
+                        
+                        if formatted_phone:
+                            app_url = "https://speedy-delivery-app.streamlit.app/"
+                            msg = (f"שלום {new_comp_name},\n\nנוצר לך חשבון מנהל חברה במערכת ניהול המשלוחים Speed Delivery.\n"
+                                   f"שם משתמש: {new_comp_username}\nסיסמה: {new_comp_password}\n\n"
+                                   f"קישור לכניסה למערכת:\n{app_url}\n\n"
+                                   f"נא לאשר את תנאי השימוש ואישור העמלות בקישור המערכת.")
+                            wa_link = f"https://wa.me/{formatted_phone}?text={urllib.parse.quote(msg)}"
+                            st.markdown(f"### 📲 [לחץ כאן לשליחת פרטי ההתחברות והחוזה בוואטסאפ למנהל החברה]({wa_link})" , unsafe_allow_html=True)
+                else:
+                    st.warning("נא למלא את כל השדות החובה.")
 
+    # 3. הוספת שליח חדש (פרטי או שייך לחברה)
     elif admin_menu == t["add_courier"]:
         st.title(t["add_courier"])
-        with st.form("add_cour_form"):
-            cu = st.text_input("שם משתמש שליח / עובד:")
-            cp = st.text_input("סיסמה ראשונית:", type="password")
-            cph = st.text_input("טלפון:")
-            comp_list = ["Independent"] + list(set([i.get("company") for u, i in st.session_state.couriers_db.items() if i.get("company") not in ["Independent", "System"]]))
-            ccomp = st.selectbox("שיוך חברה:", comp_list)
-            if st.form_submit_button("הוסף שליח / עובד") and cu and cp and cph:
-                st.session_state.couriers_db[cu] = {"password": cp, "role": "שליח", "phone": format_whatsapp_phone(cph), "company": ccomp, "contract_signed": False}
-                save_users_db(st.session_state.couriers_db)
-                st.success("השליח/העובד נוסף בהצלחה!")
+        with st.form("add_courier_form"):
+            c_username = st.text_input("שם משתמש לשליח:")
+            c_password = st.text_input("סיסמה:", type="password")
+            c_phone = st.text_input("מספר טלפון של השליח (למשל: 0500000000):")
+            
+            company_list = ["Independent (שליח פרטי/עצמאי)"] + list(set([info.get("company", "Independent") for usr, info in st.session_state.couriers_db.items() if info.get("company") != "Independent" and info.get("company") != "System"]))
+            c_company_choice = st.selectbox("שיוך שליח:", company_list)
+            
+            c_company = "Independent" if "Independent" in c_company_choice else c_company_choice
+            
+            submit_courier = st.form_submit_button("הוסף שליח חדש")
+            if submit_courier:
+                if c_username and c_password:
+                    if c_username in st.session_state.couriers_db:
+                        st.error("שם המשתמש כבר קיים!")
+                    else:
+                        formatted_phone = format_whatsapp_phone(c_phone)
+                        st.session_state.couriers_db[c_username] = {
+                            "password": c_password,
+                            "role": "שליח",
+                            "phone": formatted_phone,
+                            "company": c_company
+                        }
+                        save_users_db(st.session_state.couriers_db)
+                        st.success(f"השליח '{c_username}' נוסף בהצלחה!")
+                        
+                        if formatted_phone:
+                            app_url = "https://speedy-delivery-app.streamlit.app/"
+                            msg = (f"שלום {c_username},\n\nנוצר לך חשבון שליח במערכת ניהול המשלוחים Speed Delivery.\n"
+                                   f"שם משתמש: {c_username}\nסיסמה: {c_password}\n"
+                                   f"שיוך: {c_company}\n\n"
+                                   f"קישור לכניסה למערכת:\n{app_url}\n\n"
+                                   f"נא להיכנס למערכת כדי לצפות במשלוחים ולאשר את תנאי העבודה והחוזה.")
+                            wa_link = f"https://wa.me/{formatted_phone}?text={urllib.parse.quote(msg)}"
+                            st.markdown(f"### 📲 [לחץ כאן לשליחת פרטי ההתחברות, החוזה והקישור בוואטסאפ לשליח]({wa_link})" , unsafe_allow_html=True)
+                else:
+                    st.warning("נא למלא שם משתמש וסיסמה.")
 
+    # 4. ניהול ועריכת משתמשים קיימים
     elif admin_menu == t["manage_users"]:
         st.title(t["manage_users"])
-        st.write("כאן תוכל לנהל את המשתמשים, לאפס או לשנות סיסמאות ישירות, או למחוק משתמשים שלא צריכים גישה.")
-        for usr, info in list(st.session_state.couriers_db.items()):
-            if usr == "Admin": continue
-            with st.expander(f"👤 משתמש: {usr} ({info.get('role')}) - חברה: {info.get('company')}"):
-                st.write(f"**שם מלא:** {info.get('full_name', 'לא צוין')} | **טלפון:** {info.get('phone', '-')} | **ח.פ / עוסק פטור:** {info.get('hp_exempt', 'לא צוין')}")
-                
-                with st.form(f"change_pwd_form_{usr}"):
-                    new_admin_pwd = st.text_input("שנה סיסמה למשתמש זה:", type="password", key=f"npwd_{usr}")
-                    if st.form_submit_button("עדכן סיסמה חדשה למשתמש") and new_admin_pwd.strip():
-                        info["password"] = new_admin_pwd.strip()
-                        save_users_db(st.session_state.couriers_db)
-                        st.success("הסיסמה עודכנה בהצלחה!")
+        st.write("כאן ניתן לצפות בכל המשתמשים הרשומים במערכת, לעדכן סיסמאות או למחוק משתמשים.")
+        
+        users_db = st.session_state.couriers_db
+        for usr, info in list(users_db.items()):
+            if usr == "Admin":
+                continue
+            with st.expander(f"👤 משתמש: {usr} | תפקיד: {info.get('role')} | חברה/שליח: {info.get('company', 'N/A')}"):
+                with st.form(f"edit_user_{usr}"):
+                    new_pass = st.text_input("עדכן סיסמה חדשה:", value=info.get("password", ""))
+                    new_ph = st.text_input("עדכן טלפון:", value=info.get("phone", ""))
+                    
+                    col_u1, col_u2 = st.columns(2)
+                    with col_u1:
+                        update_btn = st.form_submit_button("שמור שינויים")
+                    with col_u2:
+                        delete_btn = st.form_submit_button("מחק משתמש זה ❌")
+                    
+                    if update_btn:
+                        users_db[usr]["password"] = new_pass
+                        users_db[usr]["phone"] = format_whatsapp_phone(new_ph)
+                        save_users_db(users_db)
+                        st.success(f"הפרטים של {usr} עודכנו בהצלחה!")
+                        st.rerun()
+                    
+                    if delete_btn:
+                        del users_db[usr]
+                        save_users_db(users_db)
+                        st.success(f"המשתמש {usr} נמחק מהמערכת.")
                         st.rerun()
 
-                if st.button(f"🗑️ מחק משתמש {usr}", key=f"del_user_{usr}"):
-                    del st.session_state.couriers_db[usr]
-                    save_users_db(st.session_state.couriers_db)
-                    st.success("המשתמש נמחק בהצלחה!")
-                    st.rerun()
-
+    # 5. דוח חודשי (כולל מנהלי חברות ושליחים פרטיים/עצמאיים)
     elif admin_menu == t["monthly_report"]:
         st.title(t["monthly_report"])
-        st.write("📊 דוח חודשי וחישוב שכר/עמלות לשליחים ולחياس")
+        st.info("💡 החיוב וההתחשבנות החודשית מתבצעים מול מנהלי חברות המשלוחים וגם מול השליחים הפרטיים/העצמאיים עבור המשלוחים שלהם.")
         
-        couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
-        rep_courier = st.selectbox("בחר שליח להפקת דוח / חשבונית חודשית:", couriers_list if couriers_list else ["אין שליחים"])
-        
-        if rep_courier and rep_courier != "אין שליחים":
-            delivered_count = len([d for d in st.session_state.deliveries if d.get("courier") == rep_courier and d.get("status") == "נמסר"])
-            user_info = st.session_state.couriers_db.get(rep_courier, {})
-            u_name = user_info.get("full_name", rep_courier)
-            u_hp = user_info.get("hp_exempt", "אין")
-            is_exempt = "פטור" in str(u_hp) or u_hp == "אין"
-            
-            st.metric("כמות משלוחים שנמסרו החודש", delivered_count)
-            price_per_del = st.number_input("תעריף לכל משלוח (₪):", value=1.0, step=0.5)
-            
-            invoice_stream = generate_monthly_invoice_html(u_name, u_hp, is_exempt, delivered_count, price_per_del)
-            st.download_button(
-                label="📥 הורד חשבונית / דוח חודשי כקובץ HTML",
-                data=invoice_stream,
-                file_name=f"Monthly_Report_{rep_courier}.html",
-                mime="text/html"
-            )
+        current_month_str = get_current_date().strftime("%Y-%m")
+        st.subheader(f"📅 סיכום חודש נוכחי: {current_month_str}")
 
+        accounting_targets = []
+        for usr, info in st.session_state.couriers_db.items():
+            if usr == "Admin":
+                continue
+            role = info.get("role")
+            company_val = info.get("company", "Independent")
+            
+            if role == "מנהל חברה (Company Admin)" or (role == "שליח" and company_val == "Independent"):
+                accounting_targets.append((usr, info))
+
+        report_data = []
+        total_system_deliveries = 0
+
+        for usr, info in accounting_targets:
+            role = info.get("role")
+            comp_name = info.get("company", usr)
+            
+            if role == "מנהל חברה (Company Admin)":
+                comp_deliveries = [d for d in st.session_state.deliveries if d.get("company") == comp_name]
+            else:
+                comp_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == usr or d.get("company") == usr]
+
+            count_del = len(comp_deliveries)
+            total_system_deliveries += count_del
+            
+            report_data.append({
+                "שם משתמש / גורם": usr,
+                "סוג / תפקיד": role,
+                "שם עסק / חברה": comp_name,
+                "טלפון": info.get("phone", ""),
+                "כמות משלוחים החודש": count_del
+            })
+
+        if report_data:
+            df_report = pd.DataFrame(report_data)
+            st.dataframe(df_report, use_container_width=True)
+            st.metric("סך הכל משלוחים במערכת החודש", total_system_deliveries)
+        else:
+            st.info("אין נתונים זמינים להצגה בדוח החודשי.")
+
+    # 6. תנאי שימוש
     elif admin_menu == t["contract_menu"]:
         st.title(t["contract_menu"])
-        st.write("רשימת כל הנרשמים שחתמו דיגיטלית על החוזה ותנאי השימוש במערכת:")
+        st.write("כאן ניתן לראות את תנאי השימוש ואישורי העמלות של המערכת.")
         contracts_df = load_contracts_data()
-        if contracts_df.empty:
-        # السطر المعدل بدقة لضمان مطابقة الأقواس وإصلاح الابتور:
-            st.info("אין עדיין חוזים רשומים במערכת.")
-        else:
+        if not contracts_df.empty:
             st.dataframe(contracts_df, use_container_width=True)
-            for i, row in contracts_df.iterrows():
-                if st.button(f"📥 הורד חוזה אישי - {row.get('שם מלא', '')}", key=f"dl_contract_{i}"):
-                    file_stream = generate_personal_html_contract(row.to_dict())
-                    st.download_button(
-                        label=f"לחץ כאן להורדת החוזה של {row.get('שם מלא', '')}",
-                        data=file_stream,
-                        file_name=f"contract_{row.get('שם משתמש', 'user')}.html",
-                        mime="text/html",
-                        key=f"real_dl_{i}"
-                    )
-                if st.button(f"🗑️ מחק חוזה - {row.get('שם מלא', '')}", key=f"del_contract_{i}"):
-                    delete_contract_by_index(i)
-                    st.success("החוזה נמחק בהצלחה!")
-                    st.rerun()
-
-    elif admin_menu == t["live_tracking"]:
-        st.title(t["live_tracking"])
-        st.write("📍 מעקב אחר מיקום השליחים בזמן אמת:")
-        locs = load_locations_db()
-        if not locs:
-            st.info("עדיין אין נתוני מיקום מעודכנים מהשליחים.")
         else:
-            for usr, data in locs.items():
-                st.info(f"**שליח:** {usr} | **מיקום אחרון:** {data.get('location')} | **עודכן בתאריך/שעה:** {data.get('updated_at')}")
+            st.info("אין עדיין חוזים או אישורי תנאים רשומים במערכת.")
 
-    elif admin_menu == t["verify_rejected"]:
-        st.title(t["verify_rejected"])
-        st.write("🔍 אימות משלוחים שדווחו כסורבים או נדחו מול הלקוחות ישירות:")
-        rejected_deliveries = [d for d in st.session_state.deliveries if "סורב" in d.get("status", "") or "נדחה" in d.get("status", "")]
-        if not rejected_deliveries:
-            st.info("אין משלוחים שסורבו או נדחו לאחרונה.")
-        else:
-            for r_idx, r_item in enumerate(rejected_deliveries):
-                st.warning(f"📦 לקוח: {r_item.get('שם לקוח', '')} | טלפון: {r_item.get('טלפון', '')} | סטטוס: {r_item.get('status', '')}")
-                c_phone = format_whatsapp_phone(r_item.get('טלפון', ''))
-                wa_msg = urllib.parse.quote(f"שלום {r_item.get('שם לקוח', '')}, ראינו שדווח שהמשלוח שלך מ{r_item.get('שם חברה', '')} סורב/נדחה. האם יש בעיה כלשהי שנוכל לעזור בה?")
-                wa_link = f"https://wa.me/{c_phone}?text={wa_msg}"
-                st.markdown(f'<a href="{wa_link}" target="_blank"><button style="background-color:#25d366; color:white; border:none; padding:8px 12px; border-radius:5px; cursor:pointer;">📲 פנה ישירות ללקוח בוואטסאפ לאימות</button></a>', unsafe_allow_html=True)
-                st.divider()
-
-    elif admin_menu == t["change_password"]:
-        st.title(t["change_password"])
-        with st.form("change_admin_pwd_form"):
-            old_p = st.text_input("סיסма נוכחית:", type="password")
-            new_p = st.text_input("סיסמה חדשה:", type="password")
-            conf_p = st.text_input("אימות סיסמה חדשה:", type="password")
-            if st.form_submit_button("שدכן סיסמה אישית 🔐"):
-                admin_info = st.session_state.couriers_db.get("Admin", {})
-                if old_p == admin_info.get("password"):
-                    if new_p == conf_p and new_p.strip():
-                        admin_info["password"] = new_p.strip()
-                        save_users_db(st.session_state.couriers_db)
-                        st.success("הסיסמה שונתה בהצלחה!")
-                    else:
-                        st.error("הסיסמאות החדשות אינן תואמות או ריקות.")
-                else:
-                    st.error("הסיסמה הנוכחית שגויה.")
-
-elif st.session_state.role in ["שליח", "מנהל חברה (Company Admin)"]:
-    st.sidebar.title(t["courier_menu"])
-    courier_menu = st.sidebar.radio(
-        t["courier_menu"],
-        [
-            t["main_sys"],
-            t["smart_route"],
-            "📍 עדכן את המיקום החי שלי (GPS)",
-            t["change_password"]
-        ]
-    )
+# --- אזור מנהל חברת משלוחים ---
+elif st.session_state.role == "מנהל חברה (Company Admin)":
+    company_name = st.session_state.company
+    st.title(f"🏢 מנהל חברה: {company_name}")
+    
     if st.sidebar.button(t["logout"]):
         logout_user()
+        
+    company_menu = st.sidebar.radio(
+        "תפריט מנהל חברה",
+        [
+            "📦 ניהול והוספת משלוחים",
+            "👥 הוספה וניהול שליחי החברה",
+            "📊 סיכומי כמויות (יומי, שבועי, חודשי)"
+        ]
+    )
 
-    if courier_menu == t["main_sys"]:
-        st.title(f"🚚 רשימת המשלוחים שלי ({st.session_state.username})")
-        
-        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username or (st.session_state.role == "מנהל חברה (Company Admin)" and d.get("company") == st.session_state.company)]
-        
-        if not my_deliveries:
-            st.info("אין לך משלוחים מוקצים כרגע.")
-        else:
-            for idx, item in enumerate(my_deliveries):
-                status_color = "🟢" if item.get("status") == "נמסר" else ("🔴" if "סורב" in item.get("status", "") else ("🔵" if "נדחה" in item.get("status", "") else "🟠"))
-                full_address_str = f"כביש/רחוב: {item.get('כביש', '-')}, בית: {item.get('מספר בית', '-')}, קומה: {item.get('קומה', '-')}, יישוב/כפר: {item.get('עיר', '-')}"
+    # 1. ניהול והוספת משלוחים לחברה
+    if company_menu == "📦 ניהול והוספת משלוחים":
+        st.subheader("➕ הוספת משלוח חדש מטעם החברה")
+        with st.expander(t["add_new_del"], expanded=True):
+            with st.form("company_add_delivery_form"):
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    new_barcode = st.text_input(t["barcode"], value=f"DEL-{len(st.session_state.deliveries)+101}")
+                    new_cust_name = st.text_input(t["cust_name"])
+                    new_phone = st.text_input(t["phone"], value="050")
+                with col_b:
+                    new_city = st.text_input(t["city"])
+                    new_street = st.text_input(t["street"])
+                    new_house = st.text_input(t["house"])
+                    new_floor = st.text_input(t["floor"])
                 
-                with st.expander(f"{status_color} 📦 {item.get('שם לקוח', '')} | {item.get('עיר', '')} | סטטוס: {item.get('status', '')}"):
-                    st.write(f"**ברקוד:** {item.get('ברקוד', '')} | **טלפון:** {item.get('טלפון', '')} | **כתובת:** {full_address_str} | **הערות:** {item.get('הערות', 'אין')}")
+                new_notes = st.text_area(t["notes"])
+                
+                # בחירת שליח מתוך השליחים של החברה הזו
+                company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role") == "שליח"]
+                courier_options = [st.session_state.username] + company_couriers
+                assigned_courier = st.selectbox("שייך לשליח בחברה:", courier_options)
+                
+                submit_comp_del = st.form_submit_button(t["save_del"])
+                if submit_comp_del:
+                    if new_cust_name and new_city:
+                        current_time_il = get_israel_time()
+                        new_item = {
+                            "ברקוד": new_barcode,
+                            "שם לקוח": new_cust_name,
+                            "שם חברה": company_name,
+                            "טלפון": format_whatsapp_phone(new_phone),
+                            "כתובת מלאה": f"{new_city}, {new_street} {new_house}".strip(),
+                            "רחוב": new_street,
+                            "בית": new_house,
+                            "קומה": new_floor,
+                            "עיר": new_city,
+                            "הערות": new_notes,
+                            "status": "ממתין",
+                            "courier": assigned_courier,
+                            "company": company_name,
+                            "date": current_time_il
+                        }
+                        st.session_state.deliveries.append(new_item)
+                        st.success(t["del_success"])
+                        st.rerun()
+                    else:
+                        st.warning(t["fill_required"])
+
+        st.divider()
+        st.subheader("📋 רשימת משלוחי החברה והשליחים תחתיה")
+        
+        comp_deliveries = [d for d in st.session_state.deliveries if d.get("company") == company_name]
+        if not comp_deliveries:
+            st.info(t["no_deliveries"])
+        else:
+            for idx, item in enumerate(comp_deliveries):
+                status_color = "🟢" if item["status"] == "נמסר" else "🟠"
+                with st.expander(f"{status_color} 📦 {item['שם לקוח']} | עיר: {item['עיר']} | שליח: {item.get('courier')} | סטטוס: {item['status']}"):
+                    st.write(f"**{t['barcode']}** {item['ברקוד']}")
+                    st.write(f"**{t['phone']}** {item['טלפון']}")
+                    st.write(f"**{t['address']}** {item['עיר']}, {item.get('רחוב', '')} {item.get('בית', '')}")
+                    st.write(f"**הערות:** {item.get('הערות', 'אין')}")
                     
-                    c_phone = format_whatsapp_phone(item.get('טלפון', ''))
-                    wa_msg = urllib.parse.quote(f"שלום {item.get('שם לקוח', '')}, אני השליח בדרך אליך! יש לי משלוח מ{item.get('שם חברה', '')}.")
-                    wa_link = f"https://wa.me/{c_phone}?text={wa_msg}"
-                    waze_query = urllib.parse.quote(f"{item.get('כביש', '')} {item.get('מספר בית', '')}, {item.get('עיר', '')}")
-                    waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
-                    
-                    b1, b2, b3, b4, b5 = st.columns(5)
-                    with b1:
-                        st.markdown(f'<a href="{wa_link}" target="_blank"><button style="background-color:#25d366; color:white; border:none; padding:8px 12px; border-radius:5px; width:100%; cursor:pointer;">{t["whatsapp_btn"]}</button></a>', unsafe_allow_html=True)
-                    with b2:
-                        st.markdown(f'<a href="{waze_link}" target="_blank"><button style="background-color:#33ccff; color:white; border:none; padding:8px 12px; border-radius:5px; width:100%; cursor:pointer;">{t["waze_btn"]}</button></a>', unsafe_allow_html=True)
-                    with b3:
-                        if st.button(t["mark_delivered"], key=f"courier_m_{idx}"):
+                    if item["status"] == "ממתין":
+                        if st.button(t["mark_delivered"], key=f"comp_mark_{idx}"):
                             item["status"] = "נמסר"
                             st.success(t["delivered_success"])
                             st.rerun()
-                    with b4:
-                        if st.button("🔄 דחה למחר", key=f"courier_p_{idx}"):
-                            item["status"] = "נדחה למחר על ידי הלקוח"
-                            st.success("עודכן כנדחה למחר!")
-                            st.rerun()
-                    with b5:
-                        if st.button("❌ סורב", key=f"courier_r_{idx}"):
-                            item["status"] = "סורב על ידי הלקוח"
-                            st.warning("עודכן כסורב.")
-                            st.rerun()
 
-    elif courier_menu == t["smart_route"]:
-        st.title(t["smart_route"])
-        st.write("סידור אוטומטי של מסלול המשלוחים שלך לפי קרבה יחסית:")
-        
-        my_active_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
-        
-        if not my_active_deliveries:
-            st.info("אין לך משלוחים פעילים לסידור כרגע.")
-        else:
-            all_cities = list(set([d.get("עיר", "אחר") for d in my_active_deliveries]))
-            start_location = st.selectbox("📍 בחר את נקודת המוצא שלך (היישוב שבו אתה נמצא כעת):", all_cities)
+    # 2. הוספה וניהול שליחי החברה
+    elif company_menu == "👥 הוספה וניהול שליחי החברה":
+        st.subheader("➕ הוספת שליח חדש תחת החברה שלך")
+        with st.form("add_my_courier_form"):
+            c_username = st.text_input("שם משתמש לשליח החדש:")
+            c_password = st.text_input("סיסמה:", type="password")
+            c_phone = st.text_input("מספר טלפון של השליח (למשל: 0500000000):")
             
-            # تم تصحيح شروط الاستعلام هنا لمنع أي أخطاء في تداخل الأقواس
-            if st.button("🚀 סדר את המסלול שלי אוטומטית"):
-                remaining = list(my_active_deliveries)
-                sorted_route = []
-                current_point = start_location
-                
-                while remaining:
-                    next_item = min(remaining, key=lambda x: 0 if x.get("עיר") == current_point else len(str(x.get("עיר"))))
-                    sorted_route.append(next_item)
-                    current_point = next_item.get("עיר")
-                    remaining.remove(next_item)
-                
-                st.success("✅ המסלול שלך סודר בהצלחה!")
-                for s_idx, s_item in enumerate(sorted_route, 1):
-                    st.markdown(f"**{s_idx}. 📦 לקוח: {s_item.get('שם לקוח', '')} | יישוב: {s_item.get('עיר', '')} | כתובת: {s_item.get('כביש', '')} {s_item.get('מספר בית', '')}**")
-                    waze_query = urllib.parse.quote(f"{s_item.get('כביש', '')} {s_item.get('מספר בית', '')}, {s_item.get('עיר', '')}")
-                    waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
-                    st.markdown(f'<a href="{waze_link}" target="_blank"><button style="background-color:#33ccff; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">🧭 נווט לתחנה זו ב-Waze</button></a>', unsafe_allow_html=True)
-                    st.divider()
-
-    elif courier_menu == "📍 עדכן את המיקום החי שלי (GPS)":
-        st.title("📍 עדכון מיקום חי למנהל")
-        with st.form("update_loc_form"):
-            user_loc_text = st.text_input("הכנס את המיקום הנוכחי שלך (לדוגמה: כסרא-סמיע - רחוב ראשי / ליד כיכר מרכזית):")
-            if st.form_submit_button("שלח מיקום למערכת 📡") and user_loc_text:
-                save_location_data(st.session_state.username, user_loc_text)
-                st.success("המיקום עודכן בהצלחה למנהל המערכת!")
-
-    elif courier_menu == t["change_password"]:
-        st.title(t["change_password"])
-        with st.form("change_courier_pwd_form"):
-            old_p = st.text_input("סיסמה נוכחית:", type="password")
-            new_p = st.text_input("סיסמה חדשה:", type="password")
-            conf_p = st.text_input("אימות סיסמה חדשה:", type="password")
-            if st.form_submit_button("עדכן סיסמה אישית 🔐"):
-                user_info = st.session_state.couriers_db.get(st.session_state.username, {})
-                if old_p == user_info.get("password"):
-                    if new_p == conf_p and new_p.strip():
-                        user_info["password"] = new_p.strip()
-                        save_users_db(st.session_state.couriers_db)
-                        st.success("הסיסמה שונתה בהצלחה!")
+            submit_my_courier = st.form_submit_button("הוסף שליח לחברה שלי")
+            if submit_my_courier:
+                if c_username and c_password:
+                    if c_username in st.session_state.couriers_db:
+                        st.error("שם המשתמש כבר קיים במערכת!")
                     else:
-                        st.error("הסיסמאות החדשות אינן תואמות או ריקות.")
+                        formatted_phone = format_whatsapp_phone(c_phone)
+                        st.session_state.couriers_db[c_username] = {
+                            "password": c_password,
+                            "role": "שליח",
+                            "phone": formatted_phone,
+                            "company": company_name
+                        }
+                        save_users_db(st.session_state.couriers_db)
+                        st.success(f"השליח '{c_username}' נוסף בהצלחה לחברה שלך!")
+                        
+                        if formatted_phone:
+                            app_url = "https://speedy-delivery-app.streamlit.app/"
+                            msg = (f"שלום {c_username},\n\nנוצר לך חשבון שליח תחת חברת {company_name} במערכת Speed Delivery.\n"
+                                   f"שם משתמש: {c_username}\nסיסמה: {c_password}\n\n"
+                                   f"קישור לכניסה:\n{app_url}")
+                            wa_link = f"https://wa.me/{formatted_phone}?text={urllib.parse.quote(msg)}"
+                            st.markdown(f"### 📲 [לחץ כאן לשליחת פרטי ההתחברות בוואטסאפ לשליח החדש]({wa_link})" , unsafe_allow_html=True)
                 else:
-                    st.error("הסיסמה הנוכחית שגויה.")
+                    st.warning("נא למלא את כל שדות החובה.")
+
+        st.divider()
+        st.subheader("👤 רשימת השליחים הרשומים בחברה שלך")
+        company_couriers_dict = {usr: info for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role") == "שליח"}
+        
+        if not company_couriers_dict:
+            st.info("אין עדיין שליחים רשומים תחת החברה שלך.")
+        else:
+            for usr, info in company_couriers_dict.items():
+                with st.expander(f"שליח: {usr} | טלפון: {info.get('phone', 'אין')}"):
+                    with st.form(f"edit_my_courier_{usr}"):
+                        new_pass = st.text_input("סיסמה חדשה:", value=info.get("password", ""))
+                        new_phone = st.text_input("טלפון חדש:", value=info.get("phone", ""))
+                        
+                        col_s1, col_s2 = st.columns(2)
+                        with col_s1:
+                            update_courier_btn = st.form_submit_button("עדכן פרטי שליח")
+                        with col_s2:
+                            delete_courier_btn = st.form_submit_button("הסר שליח מהחברה ❌")
+                        
+                        if update_courier_btn:
+                            st.session_state.couriers_db[usr]["password"] = new_pass
+                            st.session_state.couriers_db[usr]["phone"] = format_whatsapp_phone(new_phone)
+                            save_users_db(st.session_state.couriers_db)
+                            st.success("פרטי השליח עודכנו בהצלחה!")
+                            st.rerun()
+                        
+                        if delete_courier_btn:
+                            del st.session_state.couriers_db[usr]
+                            save_users_db(st.session_state.couriers_db)
+                            st.success("השליח הוסר בהצלחה.")
+                            st.rerun()
+
+    # 3. סיכומי כמויות (יומי, שבועי, חודשי) - בהפרדה מלאה ממנהל החברה עצמו
+    elif company_menu == "📊 סיכומי כמויות (יומי, שבועי, חודשי)":
+        st.subheader("📊 דוחות וסיכומי פעילות (יומי, שבועי, חודשי)")
+        
+        now_dt = get_current_date()
+        today_str = now_dt.strftime("%Y-%m-%d")
+        
+        # חישוב תאריך תחילת שבוע וחודש לצורך סינון
+        start_of_week = (now_dt - timedelta(days=now_dt.weekday())).strftime("%Y-%m-%d")
+        start_of_month = now_dt.strftime("%Y-%m")
+
+        comp_deliveries = [d for d in st.session_state.deliveries if d.get("company") == company_name]
+
+        # 1. המשלוחים של מנהל החברה עצמו בלבד (אינו קשור לשליחים שלו)
+        admin_self_deliv = [d for d in comp_deliveries if d.get("courier") == st.session_state.username or d.get("courier") == "Admin"]
+        
+        st.markdown("### 📌 סיכום אישי שלך (מנהל החברה)")
+        m_today = len([d for d in admin_self_deliv if d.get("date", "").startswith(today_str)])
+        m_month = len([d for d in admin_self_deliv if d.get("date", "").startswith(start_of_month)])
+        
+        col_m1, col_m2 = st.columns(2)
+        col_m1.metric("המשלוחים שלך היום", m_today)
+        col_m2.metric("המשלוחים שלך החודש", m_month)
+
+        st.divider()
+
+        # 2. סיכום לכל שליح בנפרד ולכל החברה
+        st.markdown("### 📈 סיכום כמויות לפי שליחי החברה שלך")
+        
+        company_couriers = [usr for usr, info in st.session_state.couriers_db.items() if info.get("company") == company_name and info.get("role"] == "שליח")
+        
+        summary_rows = []
+        for c_usr in company_couriers:
+            c_deliv = [d for d in comp_deliveries if d.get("courier") == c_usr]
+            
+            c_daily = len([d for d in c_deliv if d.get("date", "").startswith(today_str)])
+            c_monthly = len([d for d in c_deliv if d.get("date", "").startswith(start_of_month)])
+            c_total = len(c_deliv)
+            
+            summary_rows.append({
+                "שם השליח": c_usr,
+                "משלוחים היום": c_daily,
+                "משלוחים החודש": c_monthly,
+                "סך הכל משלוחים": c_total
+            })
+
+        if summary_rows:
+            df_summary = pd.DataFrame(summary_rows)
+            st.dataframe(df_summary, use_container_width=True)
+            st.metric("סך הכל משלוחים שבוצעו על ידי כלל שליחי החברה החודש", sum([r["משלוחים החודש"] for r in summary_rows]))
+        else:
+            st.info("אין עדיין שליחים או משלוחים משויכים לשליחי החברה.")
+
+# --- אזור שליח רגיל ---
+else:
+    st.title(f"{t['welcome_courier']} {st.session_state.username}")
+    if st.sidebar.button(t["logout"]):
+        logout_user()
+    
+    st.write(f"הנך מחובר כחלק מ-{st.session_state.company}")
+    
+    # אפשרות להוספת משלוח חדש גם לשליחים
+    with st.expander(t["add_new_del"], expanded=False):
+        with st.form("courier_add_delivery_form"):
+            col_a, col_b = st.columns(2)
+            with col_a:
+                new_barcode = st.text_input(t["barcode"], value=f"DEL-{len(st.session_state.deliveries)+101}")
+                new_cust_name = st.text_input(t["cust_name"])
+                new_company_name = st.text_input(t["company_name"], value=st.session_state.company)
+                new_phone = st.text_input(t["phone"], value="050")
+            with col_b:
+                new_city = st.text_input(t["city"])
+                new_street = st.text_input(t["street"])
+                new_house = st.text_input(t["house"])
+                new_floor = st.text_input(t["floor"])
+            
+            new_notes = st.text_area(t["notes"])
+            
+            submit_courier_del = st.form_submit_button(t["save_del"])
+            if submit_courier_del:
+                if new_cust_name and new_city:
+                    current_time_il = get_israel_time()
+                    new_item = {
+                        "ברקוד": new_barcode,
+                        "שם לקוח": new_cust_name,
+                        "שם חברה": new_company_name,
+                        "טלפון": format_whatsapp_phone(new_phone),
+                        "כתובת מלאה": f"{new_city}, {new_street} {new_house}".strip(),
+                        "רחוב": new_street,
+                        "בית": new_house,
+                        "קומה": new_floor,
+                        "עיר": new_city,
+                        "הערות": new_notes,
+                        "status": "ממתין",
+                        "courier": st.session_state.username,
+                        "company": st.session_state.company,
+                        "date": current_time_il
+                    }
+                    st.session_state.deliveries.append(new_item)
+                    st.success(t["del_success"])
+                    st.rerun()
+                else:
+                    st.warning(t["fill_required"])
+
+    st.divider()
+    st.subheader(t["list_title"])
+    
+    filtered_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username]
+    
+    if not filtered_deliveries:
+        st.info(t["no_deliveries"])
+    else:
+        for idx, item in enumerate(filtered_deliveries):
+            status_color = "🟢" if item["status"] == "נמסר" else "🟠"
+            with st.expander(f"{status_color} 📦 {item['שם לקוח']} | {item['עיר']} | סטטוס: {item['status']}"):
+                st.write(f"**{t['barcode']}** {item['ברקוד']}")
+                st.write(f"**{t['company_name']}** {item['שם חברה']}")
+                st.write(f"**{t['phone']}** {item['טלפון']}")
+                st.write(f"**{t['address']}** {item['עיר']}, {item.get('רחוב', '')} {item.get('בית', '')}")
+                st.write(f"**הערות:** {item.get('הערות', 'אין')}")
+                
+                col_btn1, col_btn2 = st.columns(2)
+                with col_btn1:
+                    if item["status"] == "ממתין":
+                        if st.button(t["mark_delivered"], key=f"mark_{idx}"):
+                            item["status"] = "נמסר"
+                            st.success(t["delivered_success"])
+                            st.rerun()
+                with col_btn2:
+                    phone_clean = format_whatsapp_phone(item['טלפון'])
+                    cust_n = item['שם לקוח']
+                    comp_n = item['שם חברה']
+                    wa_text = f"שלום {cust_n}, שליח בדרך אליך עם משלוח מ-{comp_n}."
+                    whatsapp_link = f"https://wa.me/{phone_clean}?text={urllib.parse.quote(wa_text)}"
+                    st.markdown(f"[{t['whatsapp_btn']}]({whatsapp_link})", unsafe_allow_html=True)
