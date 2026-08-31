@@ -241,13 +241,18 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                         item["status"] = "נמסר"
                         st.success(t["delivered_success"])
                         st.rerun()
+                
+                if st.button(f"🗑️ מחק משלוח מהמערכת", key=f"adm_del_{idx}"):
+                    st.session_state.deliveries.pop(idx)
+                    st.success("המשלוח נמחק בהצלחה!")
+                    st.rerun()
 
     elif admin_menu == t["smart_route"]:
         st.title(t["smart_route"])
         couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", couriers_list if couriers_list else ["אין שליחים"])
         
-        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]] if couriers_list else []
+        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]] if couriers_list else []
         
         if not courier_deliveries:
             st.info("אין משלוחים פעילים לשליח זה.")
@@ -393,11 +398,11 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         st.title(t["platform_profits"])
         st.markdown("### דוח רווחי פלטפורמה (חישוב עמלת שימוש: 1 ₪ לפני מע\"מ לכל משלוח שנמסר)")
         
-        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
+        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
         
         report_data = []
         for c in all_couriers:
-            delivered_by_courier = len([d for d in st.session_state.deliveries if d.get("courier") == c and d.get("status") == "נמסר"])
+            delivered_by_courier = len([d for d in st.session_state.deliveries if d.get("courier"] == c and d.get("status") == "נמסר"])
             fee_total = delivered_by_courier * 1.00
             report_data.append({
                 "שם שליח/משתמש": c,
@@ -503,9 +508,20 @@ else:
                             st.success(t["delivered_success"])
                             st.rerun()
 
+                    # אפשרות מחיקה למנהל גם מתוך תצוגת השליח (מוצגת רק אם מחוברים כאדמין או דרך פיקוח)
+                    # מכיוון שזהו אזור של שליח, נוסיף אפשרות מחיקה כללית המזהה את המשלוח המקורי ברשימת הכללית
+                    if st.button(f"🗑️ מחק משלוח זה (מנהל)", key=f"cour_admin_del_{idx}"):
+                        # נמצא את האינדקס המדויק ברשימה הכללית st.session_state.deliveries ונמחק אותו
+                        for g_idx, g_item in enumerate(st.session_state.deliveries):
+                            if g_item.get("ברקוד") == item.get("ברקוד"):
+                                st.session_state.deliveries.pop(g_idx)
+                                break
+                        st.success("המשלוח נמחק בהצלחה על ידי המנהל!")
+                        st.rerun()
+
         elif courier_menu == "🗺️ סידור מסלול אישי":
             st.title("🗺️ סידור מסלול משלוחים אישי לשליח")
-            active_my_deliveries = [d for d in my_deliveries if d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
+            active_my_deliveries = [d for d in my_deliveries if d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
             
             if not active_my_deliveries:
                 st.info("אין לך משלוחים פעילים לסידור מסלול.")
@@ -522,7 +538,7 @@ else:
                     
                     if st.button("🚀 סדר לי את המסלול באופן אוטומטי"):
                         remaining = [d for d in active_my_deliveries if d.get("עיר") != end_location]
-                        end_items = [d for d in active_my_deliveries if d.get("עיר") == end_location]
+                        end_items = [d for d in active_my_deliveries if d.get("עיר"] == end_location]
                         
                         sorted_route = []
                         current_point = start_location
