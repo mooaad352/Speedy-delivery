@@ -575,7 +575,7 @@ elif str_lit.session_state.role == "מנהל חברה (Company Admin)":
     
     if comp_menu == "📦 משלוחי חברה":
         str_lit.subheader("משלוחים פעילים לחברה שלך:")
-        comp_deliveries = [d for d in str_lit.session_state.deliveries if d.get("company") == company_name or d.get("שם חברה"] == company_name]
+        comp_deliveries = [d for d in str_lit.session_state.deliveries if d.get("company") == company_name or d.get("שם חברה") == company_name]
         for idx, item in enumerate(comp_deliveries):
             status_color = "🟢" if item["status"] == "נמסר" else ("🔴" if "סורב" in item["status"] else ("🔵" if "נדחה" in item["status"] else "🟠"))
             with str_lit.expander(f"{status_color} 📦 לקוח: {item['שם לקוח']} | עיר: {item['עיר']} | סטטוס: {item['status']}"):
@@ -681,7 +681,7 @@ elif str_lit.session_state.role == "שליח":
 
     elif courier_menu == "📋 רשימת המשלוחים שלי":
         str_lit.subheader(t["list_title"])
-        courier_deliveries = [d for d in str_lit.session_state.deliveries if d.get("courier") == str_lit.session_state.username or d.get("company"] == str_lit.session_state.company]
+        courier_deliveries = [d for d in str_lit.session_state.deliveries if d.get("courier") == str_lit.session_state.username or d.get("company") == str_lit.session_state.company]
         if not courier_deliveries:
             str_lit.info("אין משלוחים ברשימה.")
         else:
