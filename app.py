@@ -221,11 +221,12 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             full_address_str = f"כביש/רחוב: {item.get('כביש', '-')}, בית: {item.get('מספר בית', '-')}, קומה: {item.get('קומה', '-')}, יישוב: {item.get('עיר', '-')}"
             
             with st.expander(f"{status_color} 📦 {item.get('שם לקוח', '')} | {item.get('עיר', '')} | סטטוס: {item.get('status', '')}"):
-                st.write(f"**ברקוד:** {item.get('ברקוד', '')} | **טלפון:** {item.get('טלפון', '')} | **כתובת:** {full_address_str}")
+                st.write(f"**ברקוד:** {item.get('ברקוד', '')} | **חברה/מותג:** {item.get('שם חברה', 'General')} | **טלפון:** {item.get('טלפון', '')}")
+                st.write(f"**כתובת:** {full_address_str}")
                 
                 c_phone = format_whatsapp_phone(item.get('טלפון', ''))
                 company_name = item.get('שם חברה', 'General')
-                wa_msg = urllib.parse.quote(f"שלום לך, השליח של {company_name} בדרך אליך! אנא הישאר זמין לקבל את המשלוח.")
+                wa_msg = urllib.parse.quote(f"שלום לך, השליח של חברת {company_name} בדרך אליך! אנא הישאר זמין לקבל את המשלוח.")
                 wa_link = f"https://wa.me/{c_phone}?text={wa_msg}"
                 waze_query = urllib.parse.quote(f"{item.get('כביש', '')} {item.get('מספר בית', '')}, {item.get('עיר', '')}")
                 waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
@@ -246,7 +247,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", couriers_list if couriers_list else ["אין שליחים"])
         
-        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]] if couriers_list else []
+        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]] if couriers_list else []
         
         if not courier_deliveries:
             st.info("אין משלוחים פעילים לשליח זה.")
@@ -276,7 +277,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                 st.success("✅ המסלול סודר ונשמר בהצלחה!")
                 
                 for s_idx, s_item in enumerate(sorted_route, 1):
-                    st.markdown(f"**{s_idx}. 📦 לקוח: {s_item.get('שם לקוח', '')} | יישוב: {s_item.get('עיר', '')}**")
+                    st.markdown(f"**{s_idx}. 📦 לקוח: {s_item.get('שם לקוח', '')} | מותג: {s_item.get('שם חברה', '')} | יישוב: {s_item.get('עיר', '')}**")
                     waze_query = urllib.parse.quote(f"{s_item.get('כביש', '')} {s_item.get('מספר בית', '')}, {s_item.get('עיר', '')}")
                     waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
                     st.markdown(f'<a href="{waze_link}" target="_blank"><button style="background-color:#33ccff; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">🧭 נווט לתחנה ב-Waze</button></a>', unsafe_allow_html=True)
@@ -287,7 +288,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         with st.form("add_delivery_form"):
             d_barcode = st.text_input("ברקוד משלוח:", value=f"DEL-{int(datetime.now().timestamp())}")
             d_client = st.text_input("שם הלקוח:")
-            d_company = st.text_input("שם חברה / מותג (לדוגמה: SHEIN, Amazon):")
+            d_company = st.text_input("שם חברה / מותג (לדוגמה: SHEIN, AliExpress, Amazon):", value="SHEIN")
             d_phone = st.text_input("טלפון הלקוח:")
             d_street = st.text_input("כביש / רחוב:")
             d_house = st.text_input("מספר בית:")
@@ -360,7 +361,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         st.title(t["platform_profits"])
         st.markdown("### דוח רווחי פלטפורמה (חישוב עמלת שימוש: 1 ₪ לפני מע\"מ לכל משלוח שנמסר)")
         
-        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
+        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         
         report_data = []
         for c in all_couriers:
@@ -447,13 +448,13 @@ else:
                 st.info("אין לך משלוחים מוקצים כרגע.")
             for idx, item in enumerate(my_deliveries):
                 status_color = "🟢" if item.get("status") == "נמסר" else "🟠"
-                with st.expander(f"{status_color} 📦 לקוח: {item.get('שם לקוח', '')} | עיר: {item.get('עיר', '')} | סטטוס: {item.get('status', '')}"):
-                    st.write(f"**ברקוד:** {item.get('ברקוד', '')} | **טלפון:** {item.get('טלפון', '')}")
+                with st.expander(f"{status_color} 📦 לקוח: {item.get('שם לקוח', '')} | מותג: {item.get('שם חברה', '')} | עיר: {item.get('עיר', '')} | סטטוס: {item.get('status', '')}"):
+                    st.write(f"**ברקוד:** {item.get('ברקוד', '')} | **חברה/מותג:** {item.get('שם חברה', 'General')} | **טלפון:** {item.get('טלפון', '')}")
                     st.write(f"**כתובת:** {item.get('כביש', '')} {item.get('מספר בית', '')}, קומה {item.get('קומה', '-')}, {item.get('עיר', '')}")
                     
                     c_phone = format_whatsapp_phone(item.get('טלפון', ''))
                     company_name = item.get('שם חברה', 'General')
-                    wa_msg = urllib.parse.quote(f"שלום לך, השליח בדרך אליך! אנא הישאר זמין לקבל את המשלוח.")
+                    wa_msg = urllib.parse.quote(f"שלום לך, השליח של חברת {company_name} בדרך אליך! אנא הישאר זמין לקבל את המשלוח.")
                     wa_link = f"https://wa.me/{c_phone}?text={wa_msg}"
                     
                     waze_query = urllib.parse.quote(f"{item.get('כביש', '')} {item.get('מספר בית', '')}, {item.get('עיר', '')}")
@@ -472,7 +473,7 @@ else:
 
         elif courier_menu == "🗺️ סידור מסלול אישי":
             st.title("🗺️ סידור מסלול משלוחים אישי לשליח")
-            active_my_deliveries = [d for d in my_deliveries if d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
+            active_my_deliveries = [d for d in my_deliveries if d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
             
             if not active_my_deliveries:
                 st.info("אין לך משלוחים פעילים לסידור מסלול.")
@@ -504,7 +505,7 @@ else:
                 current_saved_route = st.session_state.saved_routes.get(my_username, active_my_deliveries)
                 st.markdown("### המסלול שלך לפי סדר תחנות:")
                 for s_idx, s_item in enumerate(current_saved_route, 1):
-                    st.markdown(f"**תחנה {s_idx}. 📦 לקוח: {s_item.get('שם לקוח', '')} | יישוב: {s_item.get('עיר', '')}**")
+                    st.markdown(f"**תחנה {s_idx}. 📦 לקוח: {s_item.get('שם לקוח', '')} | מותג: {s_item.get('שם חברה', '')} | יישוב: {s_item.get('עיר', '')}**")
                     waze_query = urllib.parse.quote(f"{s_item.get('כביש', '')} {s_item.get('מספר בית', '')}, {s_item.get('עיר', '')}")
                     waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
                     st.markdown(f'<a href="{waze_link}" target="_blank"><button style="background-color:#33ccff; color:white; border:none; padding:6px 12px; border-radius:5px; cursor:pointer;">🧭 נווט לתחנה זו ב-Waze</button></a>', unsafe_allow_html=True)
@@ -514,13 +515,14 @@ else:
             st.title("➕ הוספת משלוח חדש")
             with st.form("cour_add"):
                 d_client = st.text_input("שם לקוח")
+                d_company = st.text_input("שם חברה / מותג (לדוגמה: SHEIN, ALIEXPRESS)", value=my_company)
                 d_phone = st.text_input("טלפון")
                 d_street = st.text_input("כביש / רחוב")
                 d_house = st.text_input("מספר בית")
                 d_city = st.text_input("עיר")
                 if st.form_submit_button("הוסף משלוח") and d_client and d_phone and d_city:
                     st.session_state.deliveries.append({
-                        "ברקוד": f"DEL-{int(datetime.now().timestamp())}", "שם לקוח": d_client, "שם חברה": my_company,
+                        "ברקוד": f"DEL-{int(datetime.now().timestamp())}", "שם לקוח": d_client, "שם חברה": d_company if d_company else my_company,
                         "טלפון": format_whatsapp_phone(d_phone), "כביש": d_street, "מספר בית": d_house, "עיר": d_city, "status": "ממתין", "courier": my_username, "company": my_company, "date": get_israel_time()
                     })
                     st.success("המשלוח נוסף בהצלחה!")
