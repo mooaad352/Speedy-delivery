@@ -570,7 +570,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
 
     if comp_menu == t["main_sys"]:
         st.title(f"📦 ניהול משלוחי חברה: {current_company}")
-        comp_deliveries = [d for d in st.session_state.deliveries if d.get("company") == current_company or d.get("courier"] in company_couriers] # type: ignore
+        comp_deliveries = [d for d in st.session_state.deliveries if d.get("company") == current_company or d.get("courier") in company_couriers]
         
         col1, col2, col3 = st.columns(3)
         col1.metric("סך משלוחי חברה", len(comp_deliveries))
@@ -606,7 +606,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
     elif comp_menu == t["smart_route"]:
         st.title(t["smart_route"])
         selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", company_couriers if company_couriers else ["אין שליחים"])
-        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]] # type: ignore
+        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
         
         if not courier_deliveries:
             st.info("אין משלוחים פעילים לשליח זה.")
@@ -722,7 +722,7 @@ elif st.session_state.role == "שליח":
         col1, col2, col3 = st.columns(3)
         col1.metric("סך הכל משלוחים", len(my_deliveries))
         col2.metric("ממתינים לביצוע", len([d for d in my_deliveries if d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]))
-        col3.metric("נמסרו בהצלחה", len([d for d in my_deliveries if d.get("status"] == "נמסר"])) # type: ignore
+        col3.metric("נמסרו בהצלחה", len([d for d in my_deliveries if d.get("status") == "נמסר"]))
         st.divider()
 
         for idx, item in enumerate(my_deliveries):
