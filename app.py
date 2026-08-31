@@ -357,20 +357,20 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         admin_deliveries = st.session_state.deliveries
         col1, col2, col3 = st.columns(3)
         col1.metric("סך הכל משלוחים במערכת", len(admin_deliveries))
-        col2.metric("פעילים / ממתינים / נדחו", len([d for d in admin_deliveries if d["status"] not in ["נמסר", "סורב על ידי הלקוח"]]))
-        col3.metric("נמסרו בהצלחה", len([d for d in admin_deliveries if d["status"] == "נמסר"]))
+        col2.metric("פעילים / ממתינים / נדחו", len([d for d in admin_deliveries if d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]))
+        col3.metric("נמסרו בהצלחה", len([d for d in admin_deliveries if d.get("status") == "נמסר"]))
         st.divider()
         for idx, item in enumerate(admin_deliveries):
-            status_color = "🟢" if item["status"] == "נמסר" else ("🔴" if "סורב" in item["status"] else ("🔵" if "נדחה" in item["status"] else "🟠"))
+            status_color = "🟢" if item.get("status") == "נמסר" else ("🔴" if "סורב" in item.get("status", "") else ("🔵" if "נדחה" in item.get("status", "") else "🟠"))
             full_address_str = f"כביש/רחוב: {item.get('כביש', '-')}, בית: {item.get('מספר בית', '-')}, קומה: {item.get('קומה', '-')}, יישוב/כפר: {item.get('עיר', '-')}"
             
-            with st.expander(f"{status_color} 📦 {item['שם לקוח']} | {item['עיר']} | סטטוס: {item['status']}"):
-                st.write(f"**ברקוד:** {item['ברקוד']} | **טלפון:** {item['טלפון']} | **כתובת:** {full_address_str} | **הערות:** {item.get('הערות', 'אין')}")
+            with st.expander(f"{status_color} 📦 {item.get('שם לקוח', '')} | {item.get('עיר', '')} | סטטוס: {item.get('status', '')}"):
+                st.write(f"**ברקוד:** {item.get('ברקוד', '')} | **טלפון:** {item.get('טלפון', '')} | **כתובת:** {full_address_str} | **הערות:** {item.get('הערות', 'אין')}")
                 
-                c_phone = format_whatsapp_phone(item['טלפון'])
-                wa_msg = urllib.parse.quote(f"שלום {item['שם לקוח']}, אני השליח בדרך אליך! יש לי משלוח מ{item['שם חברה']}.")
+                c_phone = format_whatsapp_phone(item.get('טלפון', ''))
+                wa_msg = urllib.parse.quote(f"שלום {item.get('שם לקוח', '')}, אני השליח בדרך אליך! יש לי משלוח מ{item.get('שם חברה', '')}.")
                 wa_link = f"https://wa.me/{c_phone}?text={wa_msg}"
-                waze_query = urllib.parse.quote(f"{item.get('כביש', '')} {item.get('מספר בית', '')}, {item['עיר']}")
+                waze_query = urllib.parse.quote(f"{item.get('כביש', '')} {item.get('מספר בית', '')}, {item.get('עיר', '')}")
                 waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
                 
                 b1, b2, b3, b4, b5 = st.columns(5)
@@ -423,7 +423,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", couriers_list if couriers_list else ["אין שליחים"])
         
-        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
+        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
         
         if not courier_deliveries:
             st.info("אין משלוחים פעילים לשליח זה.")
@@ -445,8 +445,8 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                 st.success("✅ המסלול סודר בהצלחה לפי סדר אוטומטי מהיעד הקרוב לרחוק!")
                 
                 for s_idx, s_item in enumerate(sorted_route, 1):
-                    st.markdown(f"**{s_idx}. 📦 לקוח: {s_item['שם לקוח']} | יישוב: {s_item['עיר']} | כתובת: {s_item.get('כביש', '')} {s_item.get('מספר בית', '')}**")
-                    waze_query = urllib.parse.quote(f"{s_item.get('כביש', '')} {s_item.get('מספר בית', '')}, {s_item['עיר']}")
+                    st.markdown(f"**{s_idx}. 📦 לקוח: {s_item.get('שם לקוח', '')} | יישוב: {s_item.get('עיר', '')} | כתובת: {s_item.get('כביש', '')} {s_item.get('מספר בית', '')}**")
+                    waze_query = urllib.parse.quote(f"{s_item.get('כביש', '')} {s_item.get('מספר בית', '')}, {s_item.get('עיר', '')}")
                     waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
                     st.markdown(f'<a href="{waze_link}" target="_blank"><button style="background-color:#33ccff; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">🧭 נווט לתחנה זו ב-Waze</button></a>', unsafe_allow_html=True)
                     st.divider()
@@ -612,15 +612,15 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         st.title("🔍 אימות משלוחים שסורבו מול לקוחות (בקרת מנהל ראשי)")
         st.write("כאן תוכל לצפות בכל המשלוחים שדווחו כ'סורב על ידי הלקוח' על ידי השליחים או מנהלי החברות, ולבדוק ישירות מול הלקוח בטלפון או בוואטסאפ.")
         
-        rejected_deliveries = [d for d in st.session_state.deliveries if d.get("status"] == "סורב על ידי הלקוח"]
+        rejected_deliveries = [d for d in st.session_state.deliveries if d.get("status") == "סורב על ידי הלקוח"]
         
         if not rejected_deliveries:
             st.info("אין כרגע משלוחים שסומנו כסורבו על ידי הלקוחות.")
         else:
             for r_idx, r_item in enumerate(rejected_deliveries):
                 full_address_str = f"כביש/רחוב: {r_item.get('כביש', '-')}, בית: {r_item.get('מספר בית', '-')}, קומה: {r_item.get('קומה', '-')}, יישוב/כפר: {r_item.get('עיר', '-')}"
-                with st.expander(f"❌ לקוח: {r_item['שם לקוח']} | עיר: {r_item['עיר']} | ברקוד: {r_item['ברקוד']}"):
-                    st.write(f"**טלפון הלקוח:** {r_item['טלפון']} | **כתובת:** {full_address_str} | **שליח מטפל:** {r_item.get('courier', 'לא צוין')}")
+                with st.expander(f"❌ לקוח: {r_item.get('שם לקוח', '')} | עיר: {r_item.get('עיר', '')} | ברקוד: {r_item.get('ברקוד', '')}"):
+                    st.write(f"**טלפון הלקוח:** {r_item.get('טלפון', '')} | **כתובת:** {full_address_str} | **שליח מטפל:** {r_item.get('courier', 'לא צוין')}")
 
     elif admin_menu == t["change_password"]:
         st.title(t["change_password"])
@@ -647,19 +647,19 @@ else:
 
     if courier_menu_choice == t["main_sys"]:
         st.title("📦 המשלוחים שלי")
-        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username or d.get("company"] == st.session_state.company]
+        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == st.session_state.username or d.get("company") == st.session_state.company]
         
         for idx, item in enumerate(my_deliveries):
-            status_color = "🟢" if item["status"] == "נמסר" else ("🔴" if "סורב" in item["status"] else ("🔵" if "נדחה" in item["status"] else "🟠"))
+            status_color = "🟢" if item.get("status") == "נמסר" else ("🔴" if "סורב" in item.get("status", "") else ("🔵" if "נדחה" in item.get("status", "") else "🟠"))
             full_address_str = f"כביש/רחוב: {item.get('כביש', '-')}, בית: {item.get('מספר בית', '-')}, קומה: {item.get('קומה', '-')}, יישוב/כפר: {item.get('עיר', '-')}"
             
-            with st.expander(f"{status_color} 📦 {item['שם לקוח']} | {item['עיר']} | סטטוס: {item['status']}"):
-                st.write(f"**ברקוד:** {item['ברקוד']} | **טלפון:** {item['טלפון']} | **כתובת:** {full_address_str} | **הערות:** {item.get('הערות', 'אין')}")
+            with st.expander(f"{status_color} 📦 {item.get('שם לקוח', '')} | {item.get('עיר', '')} | סטטוס: {item.get('status', '')}"):
+                st.write(f"**ברקוד:** {item.get('ברקוד', '')} | **טלפון:** {item.get('טלפון', '')} | **כתובת:** {full_address_str} | **הערות:** {item.get('הערות', 'אין')}")
                 
-                c_phone = format_whatsapp_phone(item['טלפון'])
-                wa_msg = urllib.parse.quote(f"שלום {item['שם לקוח']}, אני השליח בדרך אליך! יש לי משלוח מ{item['שם חברה']}.")
+                c_phone = format_whatsapp_phone(item.get('טלפון', ''))
+                wa_msg = urllib.parse.quote(f"שלום {item.get('שם לקוח', '')}, אני השליח בדרך אליך! יש לי משלוח מ{item.get('שם חברה', '')}.")
                 wa_link = f"https://wa.me/{c_phone}?text={wa_msg}"
-                waze_query = urllib.parse.quote(f"{item.get('כביש', '')} {item.get('מספר בית', '')}, {item['עיר']}")
+                waze_query = urllib.parse.quote(f"{item.get('כביש', '')} {item.get('מספר בית', '')}, {item.get('עיר', '')}")
                 waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
                 
                 b1, b2, b3, b4, b5 = st.columns(5)
@@ -709,7 +709,7 @@ else:
         st.title(t["smart_route"])
         st.write("בחר את נקודת ההתחלה שלך, והמערכת תסדר אוטומטית את כל המסלול עבורך מהקרוב ביותר לרחוק!")
         
-        my_deliveries = [d for d in st.session_state.deliveries if (d.get("courier") == st.session_state.username or d.get("company"] == st.session_state.company) and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]]
+        my_deliveries = [d for d in st.session_state.deliveries if (d.get("courier") == st.session_state.username or d.get("company") == st.session_state.company) and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]]
         
         if not my_deliveries:
             st.info("אין לך משלוחים פעילים כרגע.")
@@ -731,8 +731,8 @@ else:
                 st.success("✅ המסלול שלך סודר בהצלחה!")
                 
                 for s_idx, s_item in enumerate(sorted_route, 1):
-                    st.markdown(f"**{s_idx}. 📦 לקוח: {s_item['שם לקוח']} | יישוב: {s_item['עיר']} | כתובת: {s_item.get('כביש', '')} {s_item.get('מספר בית', '')}**")
-                    waze_query = urllib.parse.quote(f"{s_item.get('כביש', '')} {s_item.get('מספר בית', '')}, {s_item['עיר']}")
+                    st.markdown(f"**{s_idx}. 📦 לקוח: {s_item.get('שם לקוח', '')} | יישוב: {s_item.get('עיר', '')} | כתובת: {s_item.get('כביש', '')} {s_item.get('מספר בית', '')}**")
+                    waze_query = urllib.parse.quote(f"{s_item.get('כביש', '')} {s_item.get('מספר בית', '')}, {s_item.get('עיר', '')}")
                     waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
                     st.markdown(f'<a href="{waze_link}" target="_blank"><button style="background-color:#33ccff; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">🧭 נווט לתחנה זו ב-Waze</button></a>', unsafe_allow_html=True)
                     st.divider()
