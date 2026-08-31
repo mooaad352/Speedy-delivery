@@ -30,15 +30,25 @@ DEFAULT_USERS = {
 }
 
 def load_users_db():
+    users = DEFAULT_USERS.copy()
     if os.path.exists(USERS_FILE):
         try:
             with open(USERS_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                if isinstance(data, dict) and "Admin" in data:
-                    return data
+                if isinstance(data, dict):
+                    users.update(data)
         except Exception:
             pass
-    return DEFAULT_USERS
+    
+    # איסוף הכרחי: תמיד נוודא שלמנהל הראשי יש את הסיסמה והתפקיד הנכונים
+    users["Admin"] = {
+        "password": "Sma.srablove2028", 
+        "role": "מנהל מערכת ראשי (Super Admin)", 
+        "phone": ADMIN_PHONE, 
+        "company": "System", 
+        "contract_signed": True
+    }
+    return users
 
 def save_users_db(users_dict):
     try:
@@ -66,6 +76,10 @@ def save_contracts_data(df):
 # אתחול ה-Session State
 if "couriers_db" not in st.session_state:
     st.session_state.couriers_db = load_users_db()
+else:
+    # וידוא שגם בזיכרון הסיסמה מעודכנת
+    st.session_state.couriers_db["Admin"]["password"] = "Sma.srablove2028"
+    st.session_state.couriers_db["Admin"]["role"] = "מנהל מערכת ראשי (Super Admin)"
 
 if "saved_routes" not in st.session_state:
     st.session_state.saved_routes = {}
@@ -90,7 +104,7 @@ TRANSLATIONS = {
         "username": "שם משתמש",
         "password": "סיסמה",
         "login_btn": "התחבר למערכת",
-        "login_error": "שם משתמש או סיסמה שגויים. (נסה Admin / Sma.srablove2028)",
+        "login_error": "שם משתמש או סיסמה שגויים. השתמש ב- Admin / Sma.srablove2028",
         "logout": "התנתק (Logout)",
         "admin_menu": "תפריט ניהול ראשי",
         "main_sys": "מערכת משלוחים ראשית",
@@ -158,11 +172,18 @@ if not st.session_state.logged_in:
             
             if submit_btn:
                 db = st.session_state.couriers_db
-                if username_input in db and str(db[username_input].get("password", "")) == str(password_input):
+                # בדיקה מותאמת רישיות (Case-insensitive) עבור שם המשתמש
+                matched_user = None
+                for u_key in db.keys():
+                    if u_key.lower() == username_input.strip().lower():
+                        matched_user = u_key
+                        break
+                
+                if matched_user and str(db[matched_user].get("password", "")) == str(password_input.strip()):
                     st.session_state.logged_in = True
-                    st.session_state.username = username_input
-                    st.session_state.role = db[username_input].get("role", "שליח")
-                    st.session_state.company = db[username_input].get("company", "Independent")
+                    st.session_state.username = matched_user
+                    st.session_state.role = db[matched_user].get("role", "שליח")
+                    st.session_state.company = db[matched_user].get("company", "Independent")
                     st.rerun()
                 else:
                     st.error(t["login_error"])
@@ -425,7 +446,7 @@ else:
         if st.sidebar.button(t["logout"]):
             logout_user()
 
-        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == my_username]
+        my_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == my_username]
 
         if courier_menu == "📦 המשלוחים שלי":
             st.title("📦 המשלוחים המוקצים אליך")
