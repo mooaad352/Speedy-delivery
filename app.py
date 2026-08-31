@@ -253,7 +253,8 @@ if "deliveries" not in str_lit.session_state:
     str_lit.session_state.deliveries = [{
         "ברקוד": "TEST-001", "שם לקוח": "סמר שומרי", "שם חברה": "SHEIN", "טלפון": "972502616375",
         "כתובת מלאה": "כסרא-סמיע", "עיר": "כסרא-סמיע", "הערות": "משלוח בדיקה", "status": "ממתין",
-        "courier": "mohammad", "company": "Independent", "date": current_time_il
+        "courier": "mohammad", "company": "Independent", "date": current_time_il,
+        "rating": 0, "feedback": ""
     }]
 
 def logout_user():
@@ -354,8 +355,11 @@ elif str_lit.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         str_lit.divider()
         for idx, item in enumerate(admin_deliveries):
             status_color = "🟢" if item["status"] == "נמסר" else ("🔴" if "סורב" in item["status"] else ("🔵" if "נדחה" in item["status"] else "🟠"))
-            with str_lit.expander(f"{status_color} 📦 {item['שם לקוח']} | {item['עיר']} | סטטוס: {item['status']}"):
+            rating_stars = "⭐️" * int(item.get("rating", 0)) if item.get("rating", 0) > 0 else "טרם דורג"
+            with str_lit.expander(f"{status_color} 📦 {item['שם לקוח']} | {item['עיר']} | סטטוס: {item['status']} | דירוג: {rating_stars}"):
                 str_lit.write(f"**ברקוד:** {item['ברקוד']} | **טלפון:** {item['טלפון']} | **כתובת:** {item['כתובת מלאה']} | **הערות:** {item.get('הערות', 'אין')}")
+                if item.get("rating", 0) > 0:
+                    str_lit.info(f"⭐️ **דירוג הלקוח:** {item['rating']} מתוך 5 כוכבים | **משוב:** {item.get('feedback', 'אין הערות')}")
                 
                 c_phone = format_whatsapp_phone(item['טלפון'])
                 wa_msg = urllib.parse.quote(f"שלום {item['שם לקוח']}, אני השליח בדרך אליך! יש לי משלוח מ{item['שם חברה']}.")
@@ -404,7 +408,7 @@ elif str_lit.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                     "ברקוד": d_barcode, "שם לקוח": d_client, "שם חברה": d_company if d_company else "General",
                     "טלפון": format_whatsapp_phone(d_phone), "כתובת מלאה": d_address, "עיר": d_city,
                     "הערות": d_notes, "status": "ממתין", "courier": assigned_courier, "company": "System",
-                    "date": get_israel_time()
+                    "date": get_israel_time(), "rating": 0, "feedback": ""
                 }
                 str_lit.session_state.deliveries.append(new_item)
                 str_lit.success("המשלוח נוסף בהצלחה למערכת!")
@@ -466,7 +470,7 @@ elif str_lit.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             user_company = info.get("company", "Independent")
             valid_user_items = [
                 d for d in str_lit.session_state.deliveries 
-                if (d.get("courier") == usr or d.get("company") == user_company) and d.get("status") != "סורב על ידי הלקוח"
+                if (d.get("courier") == usr or d.get("company") == user_company) and d.get("status"] != "סורב על ידי הלקוח"
             ]
             
             count_valid_deliveries = len(valid_user_items)
@@ -587,19 +591,25 @@ elif str_lit.session_state.role == "שליח":
 
     if courier_menu == "📦 המשלוחים שלי":
         str_lit.title("📦 המשלוחים שלי לביצוע")
-        my_deliveries = [d for d in str_lit.session_state.deliveries if d.get("courier") == courier_username]
+        my_deliveries = [d for d in str_lit.session_state.deliveries if d.get("courier"] == courier_username]
         
         if not my_deliveries:
             str_lit.info("אין לך כרגע משלוחים משויכים. באפשרותך להוסיף משלוח חדש דרך התפריט בצד.")
         else:
             for idx, item in enumerate(my_deliveries):
                 status_color = "🟢" if item["status"] == "נמסר" else ("🔴" if "סורב" in item["status"] else ("🔵" if "נדחה" in item["status"] else "🟠"))
-                with str_lit.expander(f"{status_color} 📦 {item['שם לקוח']} | {item['עיר']} | סטטוס: {item['status']}"):
+                rating_stars = "⭐️" * int(item.get("rating", 0)) if item.get("rating", 0) > 0 else "טרם דורג"
+                with str_lit.expander(f"{status_color} 📦 {item['שם לקוח']} | {item['עיר']} | סטטוס: {item['status']} | דירוג: {rating_stars}"):
                     str_lit.write(f"**ברקוד:** {item['ברקוד']} | **טלפון:** {item['טלפון']} | **כתובת:** {item['כתובת מלאה']} | **חברה שולחת:** {item['שם חברה']} | **הערות:** {item.get('הערות', 'אין')}")
                     
                     c_phone = format_whatsapp_phone(item['טלפון'])
                     wa_msg = urllib.parse.quote(f"שלום {item['שם לקוח']}, אני השליח בדרך אליך! יש לי משלוח מ-{item['שם חברה']}. נא להיות זמין.")
                     wa_link = f"https://wa.me/{c_phone}?text={wa_msg}"
+                    
+                    # וואטסאפ לבקשת הערכת משלוח
+                    wa_rating_msg = urllib.parse.quote(f"תודה רבה שבחרת בנו! נשמח מאוד אם תוכל/י לדרג את שירות המשלוח מ-{item['שם חברה']} מ-1 עד 5 כוכבים, ולשלוח לנו את דעתך. (Speedy Delivery)")
+                    wa_rating_link = f"https://wa.me/{c_phone}?text={wa_rating_msg}"
+                    
                     waze_query = urllib.parse.quote(f"{item['כתובת מלאה']}, {item['עיר']}")
                     waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
                     
@@ -623,6 +633,27 @@ elif str_lit.session_state.role == "שליח":
                             item["status"] = "סורב על ידי הלקוח"
                             str_lit.warning("עודכן כסורב.")
                             str_lit.rerun()
+                    
+                    str_lit.markdown("---")
+                    str_lit.subheader("⭐ הערכת משלוח ומשוב לקוח")
+                    with str_lit.form(f"rating_form_{idx}"):
+                        current_r = int(item.get("rating", 5))
+                        if current_r < 1 or current_r > 5:
+                            current_r = 5
+                        assigned_rating = str_lit.slider("בחר דירוג כוכבים (1 עד 5):", 1, 5, value=current_r, key=f"slider_rat_{idx}")
+                        assigned_feedback = str_lit.text_input("הערת לקוח / משוב על המשלוח:", value=item.get("feedback", ""), key=f"feed_txt_{idx}")
+                        
+                        col_r1, col_r2 = str_lit.columns(2)
+                        with col_r1:
+                            submit_rating = str_lit.form_submit_button("שמור הערכת משלוח ⭐")
+                        with col_r2:
+                            str_lit.markdown(f'<a href="{wa_rating_link}" target="_blank"><button style="background-color:#128c7e; color:white; border:none; padding:8px 12px; border-radius:5px; width:100%; cursor:pointer; margin-top:2px;">📲 שלח בקשת דירוג בוואטסאפ</button></a>', unsafe_allow_html=True)
+                        
+                        if submit_rating:
+                            item["rating"] = assigned_rating
+                            item["feedback"] = assigned_feedback
+                            str_lit.success("הערכת המשלוח והמשוב נשמרו בהצלחה!")
+                            str_lit.rerun()
 
     elif courier_menu == "➕ הוספת משלוח חדש":
         str_lit.title("➕ הוספת משלוח חדש על ידי שליח")
@@ -641,7 +672,7 @@ elif str_lit.session_state.role == "שליח":
                     "ברקוד": d_barcode, "שם לקוח": d_client, "שם חברה": d_company if d_company else "General",
                     "טלפון": format_whatsapp_phone(d_phone), "כתובת מלאה": d_address, "עיר": d_city,
                     "הערות": d_notes, "status": "ממתין", "courier": courier_username, "company": str_lit.session_state.company,
-                    "date": get_israel_time()
+                    "date": get_israel_time(), "rating": 0, "feedback": ""
                 }
                 str_lit.session_state.deliveries.append(new_item)
                 str_lit.success("המשלוח נוסף בהצלחה למערכת ושויך אליך!")
@@ -663,7 +694,7 @@ elif str_lit.session_state.role == "מנהל חברה (Company Admin)":
     comp_menu = str_lit.sidebar.radio("תפריט", ["📦 משלוחי חברה", "➕ הוספת משלוח לחברה", "📍 עדכון ומעקב מיקום שליחי החברה"])
     
     if comp_menu == "📦 משלוחי חברה":
-        str_lit.subheader("משלוחים פעילים לחברה שלך:")
+        str_lit.subheader("משלוחי פעילים לחברה שלך:")
         comp_deliveries = [d for d in str_lit.session_state.deliveries if d.get("company") == company_name or d.get("שם חברה") == company_name]
         for idx, item in enumerate(comp_deliveries):
             status_color = "🟢" if item["status"] == "נמסר" else "🟠"
