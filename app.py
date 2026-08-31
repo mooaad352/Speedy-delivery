@@ -111,6 +111,7 @@ TRANSLATIONS = {
         "add_company_admin": "הוספת מנהל חברת משלוחים",
         "manage_users": "ניהול סיסמאות ומשתמשים",
         "platform_profits": "💰 דוח עמדות והכנסות פלטפורמה (1 ₪ למשלוח)",
+        "courier_workload": "📊 סטטוס משלוחים לפי שליח",
         "contract_menu": "📝 פנקס נרשמים וחוזים שמורים",
         "change_password": "🔐 החלפת סיסמה אישית",
         "whatsapp_btn": "📲 שלח וואטסאפ ללקוח",
@@ -134,6 +135,7 @@ TRANSLATIONS = {
         "add_company_admin": "إضافة مدير شركة توصيل",
         "manage_users": "إدارة كلمات المرور والمستخدمين",
         "platform_profits": "💰 تقرير أرباح المنصة (1 شيكل لكل شحنة)",
+        "courier_workload": "📊 حالة الشحنات لكل مندوب",
         "contract_menu": "📝 سجل العقود والبيانات المسجلة",
         "change_password": "🔐 تغيير كلمة المرور الشخصية",
         "whatsapp_btn": "📲 إرسال واتساب",
@@ -195,6 +197,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             t["add_courier"], 
             t["manage_users"],
             t["platform_profits"],
+            t["courier_workload"],
             t["contract_menu"],
             t["change_password"]
         ]
@@ -430,6 +433,47 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             )
         else:
             st.info("אין עדיין נתונים להצגה.")
+
+    elif admin_menu == t["courier_workload"]:
+        st.title(t["courier_workload"])
+        st.markdown("### מעקב אחר כמות המשלוחים לכל שליח במערכת")
+        
+        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
+        
+        if not all_couriers:
+            st.info("אין שליחים רשומים במערכת כרגע.")
+        else:
+            workload_data = []
+            for c in all_couriers:
+                courier_all = [d for d in st.session_state.deliveries if d.get("courier") == c]
+                active_count = len([d for d in courier_all if d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]])
+                delivered_count = len([d for d in courier_all if d.get("status") == "נמסר"])
+                total_count = len(courier_all)
+                
+                workload_data.append({
+                    "שם השליח": c,
+                    "חברה שייכת": st.session_state.couriers_db[c].get("company", "Independent"),
+                    "משלוחים פעילים / ממתינים": active_count,
+                    "משלוחים שנמסרו": delivered_count,
+                    "סך הכל משלוחים": total_count
+                })
+            
+            df_workload = pd.DataFrame(workload_data)
+            st.dataframe(df_workload, use_container_width=True)
+            
+            st.divider()
+            st.subheader("🔍 פירוט משלוחים לפי שליח נבחר")
+            selected_inspect_courier = st.selectbox("בחר שליח לצפייה מפורטת במשלוחים שעליו:", all_couriers)
+            
+            inspect_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_inspect_courier]
+            if not inspect_deliveries:
+                st.info(f"לשליח {selected_inspect_courier} אין משלוחים מוקצים.")
+            else:
+                for idx, item in enumerate(inspect_deliveries):
+                    s_color = "🟢" if item.get("status") == "נמסר" else "🟠"
+                    with st.expander(f"{s_color} ברקוד: {item.get('ברקוד')} | לקוח: {item.get('שם לקוח')} | יישוב: {item.get('עיר')} | סטטוס: {item.get('status')}"):
+                        st.write(f"**מותג/חברה:** {item.get('שם חברה')} | **טלפון:** {item.get('טלפון')} | **כתובת:** {item.get('כביש')} {item.get('מספר בית')}, {item.get('עיר')}")
+                        st.write(f"**הערות:** {item.get('הערות', 'אין')}")
 
     elif admin_menu == t["contract_menu"]:
         st.title(t["contract_menu"])
