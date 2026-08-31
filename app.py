@@ -55,6 +55,12 @@ def load_contracts_data():
             pass
     return pd.DataFrame(columns=["שם משתמש", "תפקיד", "חברה", "שם מלא", "ת.ז", "כתובת", "אימייל", "טלפון", "ח.פ / עוסק פטור", "תאריך רישום"])
 
+def save_contracts_data(df):
+    try:
+        df.to_csv(CONTRACTS_FILE, index=False, encoding="utf-8-sig")
+    except Exception:
+        pass
+
 # אתחול ה-Session State
 if "couriers_db" not in st.session_state:
     st.session_state.couriers_db = load_users_db()
@@ -211,7 +217,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         st.title(t["smart_route"])
         couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", couriers_list if couriers_list else ["אין שליחים"])
-        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]] if couriers_list else []
+        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]] if couriers_list else []
         
         if not courier_deliveries:
             st.info("אין משלוחים פעילים לשליח זה.")
@@ -323,10 +329,10 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["monthly_report"]:
         st.title(t["monthly_report"])
-        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
+        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
         selected_c_rep = st.selectbox("בחר שליח לדוח:", all_couriers if all_couriers else ["אין שליחים"])
         if selected_c_rep:
-            delivered_count = len([d for d in st.session_state.deliveries if d.get("courier") == selected_c_rep and d.get("status") == "נמסר"])
+            delivered_count = len([d for d in st.session_state.deliveries if d.get("courier"] == selected_c_rep and d.get("status") == "נמסר"])
             
             html_invoice = f"<h1>דוח חודשי - {selected_c_rep}</h1><p>סהכ משלוחים שבוצעו: {delivered_count}</p>"
             invoice_stream = BytesIO(html_invoice.encode("utf-8"))
@@ -346,6 +352,24 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             st.info("אין כרגע נרשמים שמורים במערכת.")
         else:
             st.dataframe(contracts_df)
+            st.divider()
+            st.subheader("🗑️ מחיקת נרשם או חוזה שמור")
+            
+            # יצירת אפשרות לבחירת נרשם למחיקה לפי שם משתמש או טלפון
+            contract_options = []
+            for idx, row in contracts_df.iterrows():
+                display_label = f"שם: {row.get('שם מלא', 'לא ידוע')} | משתמש: {row.get('שם משתמש', '')} | טלפון: {row.get('טלפון', '')}"
+                contract_options.append((idx, display_label))
+            
+            selected_to_delete = st.selectbox("בחר נרשם להסרה מהפנקס:", options=contract_options, format_func=lambda x: x[1])
+            
+            if st.button("🗑️ מחק נרשם נבחר לצמיתות", type="primary"):
+                if selected_to_delete:
+                    row_idx_to_drop = selected_to_delete[0]
+                    contracts_df = contracts_df.drop(row_idx_to_drop).reset_index(drop=True)
+                    save_contracts_data(contracts_df)
+                    st.success("הנרשם נמחק בהצלחה מהפנקס!")
+                    st.rerun()
 
     elif admin_menu == t["change_password"]:
         st.title(t["change_password"])
