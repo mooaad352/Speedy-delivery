@@ -349,7 +349,6 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             c_info = st.session_state.couriers_db[c_usr]
             c_name = c_info.get("company", c_usr)
             
-            # ספירת משלוחים ששייכים לחברה זו
             comp_deliveries = [d for d in st.session_state.deliveries if d.get("company") == c_name]
             count_del = len(comp_deliveries)
             total_system_deliveries += count_del
@@ -366,7 +365,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             st.dataframe(df_report, use_container_width=True)
             st.metric("סך הכל משלוחים במערכת החודש", total_system_deliveries)
         else:
-            st.info("אין נתוני חברות זמינים להצגה בדו"ח החודשי.")
+            st.info("אין נתוני חברות זמינים להצגה בדוח החודשי.")
 
     elif admin_menu == t["contract_menu"]:
         st.title(t["contract_menu"])
@@ -377,7 +376,6 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         else:
             st.info("אין עדיין חוזים או אישורי תנאים רשומים במערכת.")
 
-    # (שאר תפריטי הניהול ממשיכים כרגיל...)
     else:
         st.title(t["main_sys"])
         st.write("ברוך הבא למערכת הניהול הראשית. בחר אפשרות מהתפריט הצדדי.")
@@ -390,7 +388,6 @@ else:
     
     st.write(f"הנך מחובר כחלק מ-{st.session_state.company}")
     
-    # תצוגת רשימת המשלוחים לשליח / מנהל חברה
     st.subheader(t["list_title"])
     filtered_deliveries = [d for d in st.session_state.deliveries if st.session_state.role == "מנהל מערכת ראשי (Super Admin)" or d.get("company") == st.session_state.company or d.get("courier") == st.session_state.username]
     
