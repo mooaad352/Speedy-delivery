@@ -252,7 +252,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["smart_route"]:
         st.title(t["smart_route"])
-        couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
+        couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
         selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", couriers_list if couriers_list else ["אין שליחים"])
         
         courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]] if couriers_list else []
@@ -401,7 +401,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         st.title(t["platform_profits"])
         st.markdown("### דוח רווחי פלטפורמה (חישוב עמלת שימוש: 1 ₪ לפני מע\"מ לכל משלוח שנמסר)")
         
-        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
+        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
         
         report_data = []
         for c in all_couriers:
@@ -436,44 +436,67 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["courier_workload"]:
         st.title(t["courier_workload"])
-        st.markdown("### מעקב אחר כמות המשלוחים לכל שליח במערכת")
+        st.markdown("### 🛵 שליחים פרטיים (Independent)")
         
-        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
+        independent_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח" and i.get("company") == "Independent"]
         
-        if not all_couriers:
-            st.info("אין שליחים רשומים במערכת כרגע.")
+        if not independent_couriers:
+            st.info("אין שליחים פרטיים רשומים כרגע.")
         else:
-            workload_data = []
-            for c in all_couriers:
-                courier_all = [d for d in st.session_state.deliveries if d.get("courier") == c]
-                active_count = len([d for d in courier_all if d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]])
-                delivered_count = len([d for d in courier_all if d.get("status") == "נמסר"])
-                total_count = len(courier_all)
+            for ind_c in independent_couriers:
+                c_deliveries = [d for d in st.session_state.deliveries if d.get("courier"] == ind_c]
+                active_c = len([d for d in c_deliveries if d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]])
+                delivered_c = len([d for d in c_deliveries if d.get("status"] == "נמסר"])
                 
-                workload_data.append({
-                    "שם השליח": c,
-                    "חברה שייכת": st.session_state.couriers_db[c].get("company", "Independent"),
-                    "משלוחים פעילים / ממתינים": active_count,
-                    "משלוחים שנמסרו": delivered_count,
-                    "סך הכל משלוחים": total_count
-                })
-            
-            df_workload = pd.DataFrame(workload_data)
-            st.dataframe(df_workload, use_container_width=True)
-            
-            st.divider()
-            st.subheader("🔍 פירוט משלוחים לפי שליח נבחר")
-            selected_inspect_courier = st.selectbox("בחר שליח לצפייה מפורטת במשלוחים שעליו:", all_couriers)
-            
-            inspect_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_inspect_courier]
-            if not inspect_deliveries:
-                st.info(f"לשליח {selected_inspect_courier} אין משלוחים מוקצים.")
-            else:
-                for idx, item in enumerate(inspect_deliveries):
-                    s_color = "🟢" if item.get("status") == "נמסר" else "🟠"
-                    with st.expander(f"{s_color} ברקוד: {item.get('ברקוד')} | לקוח: {item.get('שם לקוח')} | יישוב: {item.get('עיר')} | סטטוס: {item.get('status')}"):
-                        st.write(f"**מותג/חברה:** {item.get('שם חברה')} | **טלפון:** {item.get('טלפון')} | **כתובת:** {item.get('כביש')} {item.get('מספר בית')}, {item.get('עיר')}")
-                        st.write(f"**הערות:** {item.get('הערות', 'אין')}")
+                with st.expander(f"👤 שליח פרטי: {ind_c} | פעילים: {active_c} | נמסרו: {delivered_c} | סה\"כ: {len(c_deliveries)}"):
+                    if not c_deliveries:
+                        st.info("אין משלוחים מוקצים לשליח זה.")
+                    else:
+                        for d_idx, d_item in enumerate(c_deliveries):
+                            st_col = "🟢" if d_item.get("status") == "נמסר" else "🟠"
+                            st.markdown(f"{st_col} **ברקוד:** `{d_item.get('ברקוד')}` | **לקוח:** {d_item.get('שם לקוח')} | **עיר:** {d_item.get('עיר')} | **סטטוס:** {d_item.get('status')}")
+                            st.write(f"כתובת: {d_item.get('כביש')} {d_item.get('מספר בית')}, {d_item.get('עיר')} | טלפון: {d_item.get('טלפון')}")
+                            st.divider()
+
+        st.markdown("---")
+        st.markdown("### 🏢 חברות משלוחים ומנהליהן")
+        
+        # Find unique companies (excluding Independent and System)
+        all_companies = list(set([i.get("company") for u, i in st.session_state.couriers_db.items() if i.get("company") not in ["Independent", "System"]]))
+        
+        if not all_companies:
+            st.info("אין חברות משלוחים רשומות במערכת כרגע.")
+        else:
+            for comp in all_companies:
+                st.subheader(f"🏢 חברה: {comp}")
+                
+                # Find managers for this company
+                comp_admins = [u for u, i in st.session_state.couriers_db.items() if i.get("company") == comp and i.get("role") == "מנהל חברה (Company Admin)"]
+                comp_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("company") == comp and i.get("role"] == "שליח"]
+                
+                if comp_admins:
+                    st.markdown(f"**מנהלי החברה:** {', '.join(comp_admins)}")
+                else:
+                    st.markdown("**מנהלי החברה:** אין מנהל רשום לחברה זו.")
+                
+                if not comp_couriers:
+                    st.info(f"אין שליחים רשומים תחת חברת {comp}.")
+                else:
+                    for c_user in comp_couriers:
+                        c_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == c_user]
+                        active_c = len([d for d in c_deliveries if d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]])
+                        delivered_c = len([d for d in c_deliveries if d.get("status") == "נמסר"])
+                        
+                        with st.expander(f"🛵 שליח חברה: {c_user} | פעילים: {active_c} | נמסרו: {delivered_c} | סה\"כ: {len(c_deliveries)}"):
+                            if not c_deliveries:
+                                st.info("אין משלוחים מוקצים לשליח זה.")
+                            else:
+                                for d_idx, d_item in enumerate(c_deliveries):
+                                    st_col = "🟢" if d_item.get("status") == "נמסר" else "🟠"
+                                    st.markdown(f"{st_col} **ברקוד:** `{d_item.get('ברקוד')}` | **לקוח:** {d_item.get('שם לקוח')} | **עיר:** {d_item.get('עיר')} | **סטטוס:** {d_item.get('status')}")
+                                    st.write(f"כתובת: {d_item.get('כביש')} {d_item.get('מספר בית')}, {d_item.get('עיר')} | טלפון: {d_item.get('טלפון')}")
+                                    st.divider()
+                st.markdown("---")
 
     elif admin_menu == t["contract_menu"]:
         st.title(t["contract_menu"])
