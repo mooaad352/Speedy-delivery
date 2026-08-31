@@ -10,7 +10,6 @@ st.set_page_config(page_title="Speedy Delivery - מערכת ניהול משלו�
 
 ISRAEL_OFFSET = timedelta(hours=2)
 ADMIN_PHONE = "972502616375"
-VAT_RATE = 0.18
 CONTRACTS_FILE = "delivery_drivers_contracts.csv"
 USERS_FILE = "couriers_db.json"
 
@@ -25,23 +24,26 @@ def format_whatsapp_phone(phone_str):
         clean_phone = "972" + clean_phone
     return clean_phone
 
-def load_users_db():
-    default_users = {
+def get_default_users():
+    return {
         "Admin": {"password": "Sma.srablove2028", "role": "מנהל מערכת ראשי (Super Admin)", "phone": ADMIN_PHONE, "company": "System", "contract_signed": True},
         "mohammad": {"password": "123", "role": "שליח", "phone": "972502616375", "company": "Independent", "contract_signed": True}
     }
+
+def load_users_db():
+    default_users = get_default_users()
     if os.path.exists(USERS_FILE):
         try:
             with open(USERS_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                if "Admin" not in data:
-                    data["Admin"] = default_users["Admin"]
-                else:
+                if isinstance(data, dict) and "Admin" in data:
                     data["Admin"]["password"] = "Sma.srablove2028"
                     data["Admin"]["role"] = "מנהל מערכת ראשי (Super Admin)"
-                return data
+                    return data
         except Exception:
             pass
+    # אם קובץ הנתונים פגום או לא קיים, ניצור אותו מחדש ונחזיר ברירת מחדל
+    save_users_db(default_users)
     return default_users
 
 def save_users_db(users_dict):
@@ -59,14 +61,8 @@ def load_contracts_data():
             pass
     return pd.DataFrame(columns=["שם משתמש", "תפקיד", "חברה", "שם מלא", "ת.ז", "כתובת", "אימייל", "טלפון", "ח.פ / עוסק פטור", "תאריך רישום"])
 
-def save_contract_data(new_data):
-    df = load_contracts_data()
-    new_row = pd.DataFrame([new_data])
-    df = pd.concat([df, new_row], ignore_index=True)
-    df.to_csv(CONTRACTS_FILE, index=False, encoding="utf-8-sig")
-
-# אתחול בטוח של Session State למניעת מסך לבן
-if "couriers_db" not in st.session_state:
+# אתחול בטוח לחלוטין של ה-Session State
+if "couriers_db" not in st.session_state or not isinstance(st.session_state.couriers_db, dict):
     st.session_state.couriers_db = load_users_db()
 
 if "saved_routes" not in st.session_state:
@@ -95,7 +91,6 @@ TRANSLATIONS = {
         "login_error": "שם משתמש או סיסמה שגויים.",
         "logout": "התנתק (Logout)",
         "admin_menu": "תפריט ניהול ראשי",
-        "courier_menu": "תפריט מנהל חברה",
         "main_sys": "מערכת משלוחים ראשית",
         "smart_route": "🗺️ סידור מסלול משלוחים אוטומטי",
         "add_delivery": "➕ הוספת משלוח חדש",
@@ -119,7 +114,6 @@ TRANSLATIONS = {
         "login_error": "خطأ في اسم المستخدم أو كلمة المرور.",
         "logout": "تسجيل الخروج",
         "admin_menu": "قائمة الإدارة الرئيسية",
-        "courier_menu": "قائمة مدير الشركة",
         "main_sys": "نظام الشحنات الرئيسي",
         "smart_route": "🗺️ ترتيب مسار الشحنات تلقائياً",
         "add_delivery": "➕ إضافة شحنة جديدة",
@@ -145,26 +139,31 @@ def logout_user():
     st.session_state.username = ""
     st.session_state.role = ""
     st.session_state.company = ""
-    try:
-        st.query_params.clear()
-    except Exception:
-        pass
     st.rerun()
 
 # מסך התחברות
 if not st.session_state.logged_in:
     st.title(t["title"])
     st.subheader(t["login_title"])
+    
+    # כפתור עזר למקרה של תקיעה
+    if st.sidebar.button("🔄 איפוס נתוני התחברות למערכת"):
+        if os.path.exists(USERS_FILE):
+            os.remove(USERS_FILE)
+        st.session_state.couriers_db = get_default_users()
+        st.success("הנתונים אופסו בהצלחה! השתמש ב- Admin / Sma.srablove2028")
+        st.rerun()
+
     with st.form("login_form"):
         username_input = st.text_input(t["username"])
         password_input = st.text_input(t["password"], type="password")
         submit_btn = st.form_submit_button(t["login_btn"])
         if submit_btn:
             db = st.session_state.couriers_db
-            if username_input in db and db[username_input]["password"] == password_input:
+            if username_input in db and db[username_input].get("password") == password_input:
                 st.session_state.logged_in = True
                 st.session_state.username = username_input
-                st.session_state.role = db[username_input]["role"]
+                st.session_state.role = db[username_input].get("role", "שליח")
                 st.session_state.company = db[username_input].get("company", "Independent")
                 st.rerun()
             else:
@@ -227,7 +226,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         st.title(t["smart_route"])
         couriers_list = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         selected_courier_route = st.selectbox("בחר שליח לסידור מסלול:", couriers_list if couriers_list else ["אין שליחים"])
-        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]] if couriers_list else []
+        courier_deliveries = [d for d in st.session_state.deliveries if d.get("courier") == selected_courier_route and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]] if couriers_list else []
         
         if not courier_deliveries:
             st.info("אין משלוחים פעילים לשליח זה.")
@@ -339,14 +338,11 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
     elif admin_menu == t["monthly_report"]:
         st.title(t["monthly_report"])
-        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role"] == "שליח"]
+        all_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
         selected_c_rep = st.selectbox("בחר שליח לדוח:", all_couriers if all_couriers else ["אין שליחים"])
         if selected_c_rep:
             delivered_count = len([d for d in st.session_state.deliveries if d.get("courier") == selected_c_rep and d.get("status") == "נמסר"])
-            c_info = st.session_state.couriers_db.get(selected_c_rep, {})
-            is_exempt = "פטור" in str(c_info.get("hp_exempt", ""))
             
-            # יצירת דוח פשוט ובטוח להורדה
             html_invoice = f"<h1>דוח חודשי - {selected_c_rep}</h1><p>סהכ משלוחים שבוצעו: {delivered_count}</p>"
             invoice_stream = BytesIO(html_invoice.encode("utf-8"))
             invoice_stream.seek(0)
