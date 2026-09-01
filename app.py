@@ -839,6 +839,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
         [
             "📦 ניהול משלוחי החברה והשליחים",
             "➕ הוספת משלוח ושיוך לשליח",
+            "➕ הוספת שליח חדש לחברה",
             "👥 השליחים שלי בחברה",
             "🔐 החלפת סיסמה אישית",
         ]
@@ -867,7 +868,6 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
                 with st.expander(f"{status_color} 📦 לקוח: {item.get('שם לקוח', '')} | שליח מוקצה: `{item.get('courier', '')}` | סטטוס: {item.get('status', '')}"):
                     st.write(f"**ברקוד:** {item.get('ברקוד', '')} | **טלפון:** {item.get('טלפון', '')} | **כתובת:** {item.get('כביש', '')} {item.get('מספר בית', '')}, {item.get('עיר', '')}")
                     
-                    # אפשרות לשנות את השיוך לשליח אחר מתוך השליחים של החברה בלבד
                     if company_couriers:
                         current_c = item.get("courier", "")
                         new_c = st.selectbox(
@@ -893,7 +893,7 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
     elif comp_menu == "➕ הוספת משלוח ושיוך לשליח":
         st.title("➕ הוספת משלוח חדש ושיוך לשליח מהחברה")
         if not company_couriers:
-            warning_msg = "אין לך שליחים רשומים תחת החברה שלך כרגע. אנא בקש מהם להירשם ולבחור את שם החברה שלך."
+            warning_msg = "אין לך שליחים רשומים תחת החברה שלך כרגע. אנא הוסף שליחים חדשים דרך הלשונית 'הוספת שליח חדש לחברה'."
             st.warning(warning_msg)
         else:
             with st.form("company_add_delivery_form"):
@@ -926,6 +926,29 @@ elif st.session_state.role == "מנהל חברה (Company Admin)":
                     st.session_state.deliveries.append(new_item)
                     save_deliveries_db(st.session_state.deliveries)
                     st.success("המשלוח נוסף בהצלחה ושויך לשליח המבוקש!")
+
+    elif comp_menu == "➕ הוספת שליח חדש לחברה":
+        st.title("➕ הוספת שליח חדש תחת החברה שלי")
+        with st.form("company_add_courier_form"):
+            new_c_user = st.text_input("שם משתמש לשליח:*")
+            new_c_pwd = st.text_input("סיסמה לשליח:*", type="password")
+            new_c_phone = st.text_input("טלפון נייד לשליח:*")
+
+            if st.form_submit_button("הוסף שליח לחברה 🚀") and new_c_user and new_c_pwd and new_c_phone:
+                if new_c_user in st.session_state.couriers_db:
+                    st.error("שם המשתמש כבר קיים במערכת, בחר שם משתמש אחר.")
+                else:
+                    formatted_phone = format_whatsapp_phone(new_c_phone)
+                    st.session_state.couriers_db[new_c_user] = {
+                        "password": new_c_pwd,
+                        "role": "שליח",
+                        "phone": formatted_phone,
+                        "company": my_company_name,
+                        "contract_signed": True,
+                    }
+                    save_users_db(st.session_state.couriers_db)
+                    st.success(f"השליח `{new_c_user}` נוסף בהצלחה תחת חברת {my_company_name}!")
+                    st.rerun()
 
     elif comp_menu == "👥 השליחים שלי בחברה":
         st.title("👥 השליחים המשוייכים לחברה שלי")
