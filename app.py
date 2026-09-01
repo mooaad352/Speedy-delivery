@@ -7,7 +7,7 @@ import pandas as pd
 import streamlit as st
 
 st.set_page_config(
-    page_config="Speedy Delivery - מערכת ניהול משלוחים",
+    page_title="Speedy Delivery - מערכת ניהול משלוחים",
     page_icon="🚚",
     layout="wide",
 )
