@@ -316,14 +316,41 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
 
       with st.expander(
           f"{status_color} 📦 {item.get('שם לקוח', '')} |"
-          f" {item.get('עיר', '')} | סטטוס: {item.get('status', '')}"
+          f" {item.get('עיר', '')} | שיוך לשליח:"
+          f" `{item.get('courier', 'לא ידוע')}` | סטטוס:"
+          f" {item.get('status', '')}"
       ):
         st.write(
-            f"**ברקוד:** {item.get('ברקוד', '')} | **חברה/מותג:**"
+            f"**ברקוד:** {item.get('ברקוד', '')} | **שליח מוקצה:**"
+            f" `{item.get('courier', '')}` | **חברה/מותג:**"
             f" {item.get('שם חברה', 'General')} | **טלפון:**"
             f" {item.get('טלפון', '')}"
         )
         st.write(f"**כתובת:** {full_address_str}")
+
+        # אפשרות לשנות שליח ישירות מהמנהל אם שויך בטעות לשליח אחר
+        all_couriers_list = [
+            u
+            for u, i in st.session_state.couriers_db.items()
+            if i.get("role") == "שליח"
+        ]
+        current_assigned = item.get("courier", "")
+        new_assigned_courier = st.selectbox(
+            "שנה שיוך שליח למשלוח זה:",
+            all_couriers_list,
+            index=(
+                all_couriers_list.index(current_assigned)
+                if current_assigned in all_couriers_list
+                else 0
+            ),
+            key=f"reassign_{idx}",
+        )
+        if new_assigned_courier != current_assigned:
+          if st.button("שמור שיוך שליח מעודכן", key=f"btn_reassign_{idx}"):
+            item["courier"] = new_assigned_courier
+            save_deliveries_db(st.session_state.deliveries)
+            st.success("שליח עודכן בהצלחה!")
+            st.rerun()
 
         c_phone = format_whatsapp_phone(item.get("טלפון", ""))
         company_name = item.get("שם חברה", "General")
@@ -382,7 +409,8 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         [
             d
             for d in st.session_state.deliveries
-            if d.get("courier") == selected_courier_route
+            if str(d.get("courier")).strip().lower()
+            == str(selected_courier_route).strip().lower()
             and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]
         ]
         if couriers_list
@@ -657,7 +685,8 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
       delivered_by_courier = len([
           d
           for d in st.session_state.deliveries
-          if d.get("courier") == c and d.get("status") == "נמסר"
+          if str(d.get("courier")).strip().lower() == str(c).strip().lower()
+          and d.get("status") == "נמסר"
       ])
       fee_total = delivered_by_courier * 1.00
       report_data.append({
@@ -711,7 +740,10 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
     else:
       for ind_c in independent_couriers:
         c_deliveries = [
-            d for d in st.session_state.deliveries if d.get("courier") == ind_c
+            d
+            for d in st.session_state.deliveries
+            if str(d.get("courier")).strip().lower()
+            == str(ind_c).strip().lower()
         ]
         active_c = len([
             d
@@ -785,7 +817,8 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             c_deliveries = [
                 d
                 for d in st.session_state.deliveries
-                if d.get("courier") == c_user
+                if str(d.get("courier")).strip().lower()
+                == str(c_user).strip().lower()
             ]
             active_c = len([
                 d
@@ -884,14 +917,28 @@ else:
     if st.sidebar.button(t["logout"]):
       logout_user()
 
+    # שליפה מדויקת שמתעלמת מאותיות גדולות/קטנות
     my_deliveries = [
-        d for d in st.session_state.deliveries if d.get("courier") == my_username
+        d
+        for d in st.session_state.deliveries
+        if str(d.get("courier")).strip().lower()
+        == str(my_username).strip().lower()
     ]
 
     if courier_menu == "📦 המשלוחים שלי":
       st.title("📦 המשלוחים המוקצים אליך")
+
       if not my_deliveries:
-        st.info("אין לך משלוחים מוקצים כרגע.")
+        st.warning(
+            f"⚠️ אין לך משלוחים מוקצים כרגע תחת שם המשתמש `{my_username}`."
+        )
+        st.info(
+            "💡 טיפ למנהל: היכנס כ-Admin לדף הבית הראשי של המשלוחים, וודא"
+            f" שהמשלוחים משוייכים לשליח `{my_username}`."
+        )
+      else:
+        st.success(מצאו {len(my_deliveries)} משלוחים המוקצים אליך במערכת!")
+
       for idx, item in enumerate(my_deliveries):
         status_color = "🟢" if item.get("status") == "נמסר" else "🟠"
         with st.expander(
