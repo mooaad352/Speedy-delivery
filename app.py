@@ -328,7 +328,6 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         )
         st.write(f"**כתובת:** {full_address_str}")
 
-        # אפשרות לשנות שליח ישירות מהמנהל אם שויך בטעות לשליח אחר
         all_couriers_list = [
             u
             for u, i in st.session_state.couriers_db.items()
@@ -917,7 +916,6 @@ else:
     if st.sidebar.button(t["logout"]):
       logout_user()
 
-    # שליפה מדויקת שמתעלמת מאותיות גדולות/קטנות
     my_deliveries = [
         d
         for d in st.session_state.deliveries
@@ -937,7 +935,7 @@ else:
             f" שהמשלוחים משוייכים לשליח `{my_username}`."
         )
       else:
-        st.success(מצאו {len(my_deliveries)} משלוחים המוקצים אליך במערכת!")
+        st.success(f"מצאו {len(my_deliveries)} משלוחים המוקצים אליך במערכת!")
 
       for idx, item in enumerate(my_deliveries):
         status_color = "🟢" if item.get("status") == "נמסר" else "🟠"
