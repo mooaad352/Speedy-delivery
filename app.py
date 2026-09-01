@@ -881,6 +881,13 @@ else:
                             st.success("הסטטוס עודכן בהצלחה!")
                             st.rerun()
 
+                    if st.button(f"🗑️ מחק משלוח מהרשימה שלי", key=f"courier_del_{idx}"):
+                        real_idx = st.session_state.deliveries.index(item)
+                        st.session_state.deliveries.pop(real_idx)
+                        save_deliveries_db(st.session_state.deliveries)
+                        st.success("המשלוח הוסר בהצלחה!")
+                        st.rerun()
+
     elif courier_menu == t["smart_route"]:
         st.title(t["smart_route"])
         current_courier_username = st.session_state.username
