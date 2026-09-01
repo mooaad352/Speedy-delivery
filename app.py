@@ -808,7 +808,9 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
     elif admin_menu == t["financial_reports"]:
         st.title("📊 דוחות כספיים וביצועים (יומי, שבועי, חודשי)")
         
-        rate_per_delivery = st.number_input("הגדר תעריף משלוח ליחידה (₪):", min_value=0.0, value=30.0, step=5.0)
+        # תעריף משלוח קבוע מראש על סך 1 ₪ לפני מע״מ
+        rate_per_delivery = 1.0
+        st.info("ℹ️ תעריף המשלוח מוגדר אוטומטית על סך **1.00 ₪** (לפני מע״מ).")
         vat_rate = 0.18 # 18% מע״מ
 
         report_type = st.radio("בחר חתך זמן לדוח:", ["יומי", "שבועי (מתעדכן בשבת)", "חודשי (מתעדכן בראשון לחודש)"], horizontal=True)
