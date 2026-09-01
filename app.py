@@ -194,6 +194,7 @@ TRANSLATIONS = {
         "add_company_admin": "הוספת מנהל חברת משלוחים",
         "manage_users": "ניהול סיסמאות ומשתמשים",
         "platform_profits": "💰 דוח עמדות והכנסות פלטפורמה (1 ₪ למשלוח)",
+        "financial_reports": "📊 דוחות כספיים לפי תאריכים (יומי, שבועי, חודשי)",
         "courier_workload": "📊 סטטוס משלוחים לפי שליח",
         "contract_menu": "📝 פנקס נרשמים וחוזים שמורים",
         "change_password": "🔐 החלפת סיסמה אישית",
@@ -220,6 +221,7 @@ TRANSLATIONS = {
         "add_company_admin": "إضافة مدير شركة توصيل",
         "manage_users": "إدارة كلمات المرور والمستخدمين",
         "platform_profits": "💰 تقرير أرباح المنصة (1 شيكل لكل شحنة)",
+        "financial_reports": "📊 التقارير المالية (يومي، أسبوعي، شهري)",
         "courier_workload": "📊 حالة الشحنات لكل مندوب",
         "contract_menu": "📝 سجل العقود والبيانات المسجلة",
         "change_password": "🔐 تغيير كلمة المرور الشخصية",
@@ -409,6 +411,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
             t["add_courier"],
             t["manage_users"],
             t["platform_profits"],
+            t["financial_reports"],
             t["courier_workload"],
             t["contract_menu"],
             t["change_password"],
@@ -546,7 +549,7 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                 for d in st.session_state.deliveries
                 if str(d.get("courier")).strip().lower()
                 == str(selected_courier_route).strip().lower()
-                and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]
+                and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]
             ]
             if couriers_list
             else []
@@ -802,6 +805,102 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
         st.metric("סך משלוחים שנמסרו בפועל", total_d)
         st.metric("הכנסות כוללות לפלטפורמה (1 ₪ למשלוח)", f"{total_d * 1.00:,.2f} ₪")
 
+    elif admin_menu == t["financial_reports"]:
+        st.title("📊 דוחות כספיים וביצועים (יומי, שבועי, חודשי)")
+        
+        rate_per_delivery = st.number_input("הגדר תעריף משלוח ליחידה (₪):", min_value=0.0, value=30.0, step=5.0)
+        vat_rate = 0.18 # 18% מע״מ
+
+        report_type = st.radio("בחר חתך זמן לדוח:", ["יומי", "שבועי (מתעדכן בשבת)", "חודשי (מתעדכן בראשון לחודש)"], horizontal=True)
+        
+        all_deliveries = st.session_state.deliveries
+        
+        # איסוף רשימת שליחים פרטיים ומנהלי חברות
+        independent_couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח" and (i.get("company") == "Independent" or not i.get("company"))]
+        company_admins = [i.get("company") for u, i in st.session_state.couriers_db.items() if i.get("role") == "מנהל חברה (Company Admin)"]
+        company_admins = list(set(company_admins))
+
+        st.markdown("### 👤 דוח עבור שליחים פרטיים")
+        if not independent_couriers:
+            st.info("אין שליחים פרטיים רשומים כרגע.")
+        else:
+            for ic in independent_couriers:
+                with st.expander(f"שליח פרטי: `{ic}`"):
+                    filtered_items = []
+                    for d in all_deliveries:
+                        if str(d.get("courier", "")).strip().lower() == str(ic).strip().lower():
+                            d_date_str = d.get("date", get_israel_time())
+                            try:
+                                d_dt = datetime.strptime(d_date_str[:10], "%Y-%m-%d")
+                            except:
+                                continue
+                            
+                            now_dt = datetime.now()
+                            if report_type == "יומי":
+                                if d_dt.date() == now_dt.date():
+                                    filtered_items.append(d)
+                            elif report_type == "שבועי (מתעדכן בשבת)":
+                                # שבועי: מתחיל מיום ראשון או השבת האחרונה
+                                days_since_saturday = (now_dt.weekday() + 2) % 7 # שבת כבסיס
+                                sat_date = now_dt - timedelta(days=days_since_saturday)
+                                if d_dt.date() >= sat_date.date():
+                                    filtered_items.append(d)
+                            elif report_type == "חודשי (מתעדכן בראשון לחודש)":
+                                if d_dt.year == now_dt.year and d_dt.month == now_dt.month:
+                                    filtered_items.append(d)
+
+                    delivered_list = [d for d in filtered_items if d.get("status") == "נמסר"]
+                    count_del = len(delivered_list)
+                    subtotal = count_del * rate_per_delivery
+                    vat_amount = subtotal * vat_rate
+                    total_inc_vat = subtotal + vat_amount
+
+                    col_a, col_b, col_c, col_d = st.columns(4)
+                    col_a.metric("סך משלוחים שבוצעו", count_del)
+                    col_b.metric("עלות לפני מע״מ", f"{subtotal:,.2f} ₪")
+                    col_c.metric("מע״מ (18%)", f"{vat_amount:,.2f} ₪")
+                    col_d.metric("סכום כולל אחרי מע״מ", f"{total_inc_vat:,.2f} ₪")
+
+        st.markdown("### 🏢 דוח עבור חברות משלוחים (מנהלי חברות)")
+        if not company_admins:
+            st.info("אין חברות משלוחים רשומות כרגע.")
+        else:
+            for comp in company_admins:
+                with st.expander(f"חברת משלוחים: `{comp}`"):
+                    filtered_comp_items = []
+                    for d in all_deliveries:
+                        if str(d.get("company", "")).strip().lower() == str(comp).strip().lower():
+                            d_date_str = d.get("date", get_israel_time())
+                            try:
+                                d_dt = datetime.strptime(d_date_str[:10], "%Y-%m-%d")
+                            except:
+                                continue
+                            
+                            now_dt = datetime.now()
+                            if report_type == "יומי":
+                                if d_dt.date() == now_dt.date():
+                                    filtered_comp_items.append(d)
+                            elif report_type == "שבועי (מתעדכן בשבת)":
+                                days_since_saturday = (now_dt.weekday() + 2) % 7
+                                sat_date = now_dt - timedelta(days=days_since_saturday)
+                                if d_dt.date() >= sat_date.date():
+                                    filtered_comp_items.append(d)
+                            elif report_type == "חודשי (מתעדכן בראשון לחודש)":
+                                if d_dt.year == now_dt.year and d_dt.month == now_dt.month:
+                                    filtered_comp_items.append(d)
+
+                    comp_delivered_list = [d for d in filtered_comp_items if d.get("status") == "נמסר"]
+                    c_count_del = len(comp_delivered_list)
+                    c_subtotal = c_count_del * rate_per_delivery
+                    c_vat_amount = c_subtotal * vat_rate
+                    c_total_inc_vat = c_subtotal + c_vat_amount
+
+                    col_aa, col_bb, col_cc, col_dd = st.columns(4)
+                    col_aa.metric("סך משלוחי חברה שבוצעו", c_count_del)
+                    col_bb.metric("עלות לפני מע״מ", f"{c_subtotal:,.2f} ₪")
+                    col_cc.metric("מע״מ (18%)", f"{c_vat_amount:,.2f} ₪")
+                    col_dd.metric("סכום כולל אחרי מע״מ", f"{c_total_inc_vat:,.2f} ₪")
+
     elif admin_menu == t["courier_workload"]:
         st.title(t["courier_workload"])
         couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
@@ -1043,7 +1142,7 @@ else:
         courier_deliveries = [
             d for d in st.session_state.deliveries
             if str(d.get("courier", "")).strip().lower() == str(current_courier_username).strip().lower()
-            and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]
+            and d.get("status"] not in ["נמסר", "סורב על ידי הלקוח"]
         ]
 
         if not courier_deliveries:
