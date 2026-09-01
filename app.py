@@ -157,7 +157,6 @@ if "saved_routes" not in st.session_state:
 if "deliveries" not in st.session_state:
     st.session_state.deliveries = load_deliveries_db()
 
-# אתחול מצב התחברות (Session State) עם בדיקה מול query_params לשמירת מצב ברענון או סגירת מסך
 if "logged_in" not in st.session_state:
     query_params = st.query_params
     saved_user = query_params.get("user", "")
@@ -796,7 +795,43 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                             save_users_db(st.session_state.couriers_db)
                             st.success(f"הסיסמה של {usr} עודכנה בהצלחה!")
 
-# במקרה שהמשתמש הוא שליח רגיל (או מנהל חברה)
+    elif admin_menu == t["platform_profits"]:
+        st.title(t["platform_profits"])
+        all_d = st.session_state.deliveries
+        total_d = len([d for d in all_d if d.get("status") == "נמסר"])
+        st.metric("סך משלוחים שנמסרו בפועל", total_d)
+        st.metric("הכנסות כוללות לפלטפורמה (1 ₪ למשלוח)", f"{total_d * 1.00:,.2f} ₪")
+
+    elif admin_menu == t["courier_workload"]:
+        st.title(t["courier_workload"])
+        couriers = [u for u, i in st.session_state.couriers_db.items() if i.get("role") == "שליח"]
+        for c in couriers:
+            c_items = [d for d in st.session_state.deliveries if str(d.get("courier")) == c]
+            delivered = len([d for d in c_items if d.get("status") == "נמסר"])
+            st.write(f"שליח: `{c}` | סך משלוחים: {len(c_items)} | נמסרו: {delivered}")
+
+    elif admin_menu == t["contract_menu"]:
+        st.title(t["contract_menu"])
+        contracts_df = load_contracts_data()
+        st.dataframe(contracts_df, use_container_width=True)
+
+    elif admin_menu == t["change_password"]:
+        st.title(t["change_password"])
+        with st.form("admin_change_my_pwd"):
+            old_p = st.text_input("סיסמה נוכחית:", type="password")
+            new_p = st.text_input("סיסמה חדשה:", type="password")
+            confirm_p = st.text_input("אימות סיסמה חדשה:", type="password")
+            if st.form_submit_button("עדכן סיסמה"):
+                current_pwd = st.session_state.couriers_db["Admin"].get("password", "")
+                if old_p != current_pwd:
+                    st.error("הסיסמה הנוכחית שגויה.")
+                elif not new_p or new_p != confirm_p:
+                    st.error("הסיסמאות החדשות אינן תואמות או ריקות.")
+                else:
+                    st.session_state.couriers_db["Admin"]["password"] = new_p
+                    save_users_db(st.session_state.couriers_db)
+                    st.success("הסיסמה עודכנה בהצלחה!")
+
 else:
     st.sidebar.title(f"שלום, {st.session_state.username} 🚚")
     courier_menu = st.sidebar.radio(
@@ -866,7 +901,7 @@ else:
                     "עיר": d_city,
                     "הערות": d_notes,
                     "status": "ממתין",
-                    "courier": st.session_state.username,  # שיוך אוטומטי לשליח המחובר
+                    "courier": st.session_state.username,
                     "company": st.session_state.company,
                     "date": get_israel_time(),
                 }
@@ -885,7 +920,7 @@ else:
                 current_user = st.session_state.username
                 stored_pwd = st.session_state.couriers_db[current_user].get("password", "")
                 if old_p != stored_pwd:
-                    st.error("הסיסמה הנוכחית שגוי.")
+                    st.error("הסיסמה הנוכחית שגויה.")
                 elif not new_p or new_p != confirm_p:
                     st.error("הסיסמאות החדשות אינן תואמות או ריקות.")
                 else:
