@@ -244,7 +244,6 @@ def logout_user():
     st.session_state.role = ""
     st.session_state.company = ""
     st.session_state.contract_signed = True
-    # איפוס נתוני הזיכרון בדפדפן (Query Params) בעת התנתקות יזומה
     st.query_params.clear()
     st.rerun()
 
@@ -287,7 +286,6 @@ if not st.session_state.logged_in:
                             "contract_signed", True
                         )
                         
-                        # אם השליח סימן "זכור אותי", נשמור את שם המשתמש בכתובת הדפדפן כדי שלא יצטרך להתחבר מחדש ברענון
                         if remember_me_checkbox:
                             st.query_params["user"] = matched_user
                         else:
@@ -797,323 +795,100 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                             )
                             save_users_db(st.session_state.couriers_db)
                             st.success(f"הסיסמה של {usr} עודכנה בהצלחה!")
+
+# במקרה שהמשתמש הוא שליח רגיל (או מנהל חברה)
+else:
+    st.sidebar.title(f"שלום, {st.session_state.username} 🚚")
+    courier_menu = st.sidebar.radio(
+        "תפריט שליח",
+        ["📦 המשלוחים שלי", "➕ הוספת משלוח חדש", "🔐 החלפת סיסמה אישית"]
+    )
+    if st.sidebar.button(t["logout"]):
+        logout_user()
+
+    if courier_menu == "📦 המשלוחים שלי":
+        st.title("📦 המשלוחים שלי")
+        my_deliveries = [
+            d for d in st.session_state.deliveries
+            if str(d.get("courier", "")).strip().lower() == str(st.session_state.username).strip().lower()
+        ]
+
+        if not my_deliveries:
+            st.info("אין לך משלוחים משוייכים כרגע.")
+        else:
+            for idx, item in enumerate(my_deliveries):
+                status_color = "🟢" if item.get("status") == "נמסר" else "🟠"
+                with st.expander(f"{status_color} 📦 לקוח: {item.get('שם לקוח', '')} | יישוב: {item.get('עיר', '')} | סטטוס: {item.get('status', '')}"):
+                    st.write(f"**ברקוד:** {item.get('ברקוד', '')} | **טלפון:** {item.get('טלפון', '')}")
+                    st.write(f"**כתובת:** כביש/רחוב: {item.get('כביש', '-')}, בית: {item.get('מספר בית', '-')}, קומה: {item.get('קומה', '-')}, יישוב: {item.get('עיר', '-')}")
+                    st.write(f"**הערות:** {item.get('הערות', 'אין')}")
+
+                    c_phone = format_whatsapp_phone(item.get("טלפון", ""))
+                    wa_msg = urllib.parse.quote(f"שלום לך, השליח בדרך אליך! אנא הישאר זמין לקבל את המשלוח.")
+                    wa_link = f"https://wa.me/{c_phone}?text={wa_msg}"
+                    waze_query = urllib.parse.quote(f"{item.get('כביש', '')} {item.get('מספר בית', '')}, {item.get('עיר', '')}")
+                    waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
+
+                    b1, b2, b3 = st.columns(3)
+                    with b1:
+                        st.markdown(f'<a href="{wa_link}" target="_blank"><button style="background-color:#25d366; color:white; border:none; padding:8px 12px; border-radius:5px; width:100%; cursor:pointer;">{t["whatsapp_btn"]}</button></a>', unsafe_allow_html=True)
+                    with b2:
+                        st.markdown(f'<a href="{waze_link}" target="_blank"><button style="background-color:#33ccff; color:white; border:none; padding:8px 12px; border-radius:5px; width:100%; cursor:pointer;">{t["waze_btn"]}</button></a>', unsafe_allow_html=True)
+                    with b3:
+                        if st.button("סמן כנמסר", key=f"courier_delivered_{idx}"):
+                            item["status"] = "נמסר"
+                            save_deliveries_db(st.session_state.deliveries)
+                            st.success("הסטטוס עודכן בהצלחה!")
                             st.rerun()
 
-                if st.button(f"🗑️ מחק משתמש {usr}", key=f"del_usr_{usr}"):
-                    del st.session_state.couriers_db[usr]
-                    save_users_db(st.session_state.couriers_db)
-                    st.warning("המשתמש נמחק.")
-                    st.rerun()
+    elif courier_menu == "➕ הוספת משלוח חדש":
+        st.title("➕ הוספת משלוח חדש למערכת")
+        with st.form("courier_add_delivery_form"):
+            d_barcode = st.text_input("ברקוד משלוח:", value=f"DEL-{int(datetime.now().timestamp())}")
+            d_client = st.text_input("שם הלקוח:*")
+            d_company = st.text_input("שם חברה / מותג (לדוגמה: SHEIN, AliExpress):", value="SHEIN")
+            d_phone = st.text_input("טלפון הלקוח:*")
+            d_street = st.text_input("כביש / רחוב:")
+            d_house = st.text_input("מספר בית:")
+            d_floor = st.text_input("קומה:")
+            d_city = st.text_input("עיר / יישוב:*")
+            d_notes = st.text_area("הערות:")
 
-    elif admin_menu == t["platform_profits"]:
-        st.title(t["platform_profits"])
-        st.markdown(
-            "### דוח רווחי פלטפורמה (חישוב עמלת שימוש: 1 ₪ לפני מע\"מ לכל משלוח"
-            " שנמסר)"
-        )
+            if st.form_submit_button("הוסף משלוח ושייך אליי 🚀") and d_client and d_phone and d_city:
+                new_item = {
+                    "ברקוד": d_barcode,
+                    "שם לקוח": d_client,
+                    "שם חברה": d_company if d_company else "General",
+                    "טלפון": format_whatsapp_phone(d_phone),
+                    "כביש": d_street,
+                    "מספר בית": d_house,
+                    "קומה": d_floor,
+                    "עיר": d_city,
+                    "הערות": d_notes,
+                    "status": "ממתין",
+                    "courier": st.session_state.username,  # שיוך אוטומטי לשליח המחובר
+                    "company": st.session_state.company,
+                    "date": get_israel_time(),
+                }
+                st.session_state.deliveries.append(new_item)
+                save_deliveries_db(st.session_state.deliveries)
+                st.success("המשלוח נוסף בהצלחה ושויך אליך!")
 
-        all_couriers = [
-            u
-            for u, i in st.session_state.couriers_db.items()
-            if i.get("role") == "שליח"
-        ]
-
-        report_data = []
-        for c in all_couriers:
-            delivered_by_courier = len([
-                d
-                for d in st.session_state.deliveries
-                if str(d.get("courier")).strip().lower() == str(c).strip().lower()
-                and d.get("status") == "נמסר"
-            ])
-            fee_total = delivered_by_courier * 1.00
-            report_data.append({
-                "שם שליח/משתמש": c,
-                "משלוחים שנמסרו": delivered_by_courier,
-                "עמלה מגיעה לך (₪ לפני מע״מ)": f"{fee_total:,.2f} ₪",
-            })
-
-        if report_data:
-            df_report = pd.DataFrame(report_data)
-            st.table(df_report)
-
-            total_all_delivered = sum(
-                [int(str(d.get("משלוחים שנמסרו", 0))) for d in report_data]
-            )
-            total_all_revenue = total_all_delivered * 1.00
-            st.metric(
-                "סך הכל הכנסות עמלות לך מכל השליחים (לפני מע״מ)",
-                f"{total_all_revenue:,.2f} ₪",
-            )
-
-            html_invoice = (
-                f"<h1>דוח עמדות פלטפורמה</h1><h3>סך הכל הכנסות:"
-                f" {total_all_revenue:,.2f} ₪ לפני מע״מ</h3>"
-                + df_report.to_html(index=False)
-            )
-            invoice_stream = BytesIO(html_invoice.encode("utf-8"))
-            invoice_stream.seek(0)
-
-            st.download_button(
-                label="📥 הורד דוח הכנסות פלטפורמה (.html)",
-                data=invoice_stream,
-                file_name="platform_commission_report.html",
-                mime="text/html",
-            )
-        else:
-            st.info("אין עדיין נתונים להצגה.")
-
-    elif admin_menu == t["courier_workload"]:
-        st.title(t["courier_workload"])
-        st.markdown("### 🛵 שליחים פרטיים (Independent)")
-
-        independent_couriers = [
-            u
-            for u, i in st.session_state.couriers_db.items()
-            if i.get("role") == "שליח" and i.get("company") == "Independent"
-        ]
-
-        if not independent_couriers:
-            st.info("אין שליחים פרטיים רשומים כרגע.")
-        else:
-            for ind_c in independent_couriers:
-                c_deliveries = [
-                    d
-                    for d in st.session_state.deliveries
-                    if str(d.get("courier")).strip().lower()
-                    == str(ind_c).strip().lower()
-                ]
-                active_c = len([
-                    d
-                    for d in c_deliveries
-                    if d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]
-                ])
-                delivered_c = len(
-                    [d for d in c_deliveries if d.get("status") == "נמסר"]
-                )
-
-                with st.expander(
-                    f"👤 שליח פרטי: {ind_c} | פעילים: {active_c} | נמסרו:"
-                    f" {delivered_c} | סה\"כ: {len(c_deliveries)}"
-                ):
-                    if not c_deliveries:
-                        st.info("אין משלוחים מוקצים לשליח זה.")
-                    else:
-                        for d_idx, d_item in enumerate(c_deliveries):
-                            st_col = "🟢" if d_item.get("status") == "נמסר" else "🟠"
-                            st.markdown(
-                                f"{st_col} **ברקוד:** `{d_item.get('ברקוד')}` | **לקוח:**"
-                                f" {d_item.get('שם לקוח')} | **עיר:** {d_item.get('עיר')} |"
-                                f" **סטטוס:** {d_item.get('status')}"
-                            )
-                            st.write(
-                                f"כתובת: {d_item.get('כביש')} {d_item.get('מספר בית')},"
-                                f" {d_item.get('עיר')} | טלפון: {d_item.get('טלפון')}"
-                            )
-                            st.divider()
-
-        st.markdown("---")
-        st.markdown("### 🏢 חברות משלוחים ומנהליהן")
-
-        all_companies = list(
-            set([
-                i.get("company")
-                for u, i in st.session_state.couriers_db.items()
-                if i.get("company") not in ["Independent", "System"]
-            ])
-        )
-
-        if not all_companies:
-            st.info("אין חברות משלוחים רשומות במערכת כרגע.")
-        else:
-            for comp in all_companies:
-                st.subheader(f"🏢 חברה: {comp}")
-
-                comp_admins = [
-                    u
-                    for u, i in st.session_state.couriers_db.items()
-                    if i.get("company") == comp
-                    and i.get("role") == "מנהל חברה (Company Admin)"
-                ]
-                comp_couriers = [
-                    u
-                    for u, i in st.session_state.couriers_db.items()
-                    if i.get("company") == comp and i.get("role") == "שליח"
-                ]
-
-                if comp_admins:
-                    st.markdown(f"**מנהלי החברה:** {', '.join(comp_admins)}")
-                else:
-                    st.markdown(
-                        "**מנהלי החברה:** אין מנהל רשום לחברה זו."
-                    )
-
-                if not comp_couriers:
-                    st.info(f"אין שליחים רשומים תחת חברת {comp}.")
-                else:
-                    for c_user in comp_couriers:
-                        c_deliveries = [
-                            d
-                            for d in st.session_state.deliveries
-                            if str(d.get("courier")).strip().lower()
-                            == str(c_user).strip().lower()
-                        ]
-                        active_c = len([
-                            d
-                            for d in c_deliveries
-                            if d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]
-                        ])
-                        delivered_c = len(
-                            [d for d in c_deliveries if d.get("status") == "נמסר"]
-                        )
-                        with st.expander(
-                            f"👤 שליח: {c_user} | פעילים: {active_c} | נמסרו: {delivered_c}"
-                        ):
-                            for d_item in c_deliveries:
-                                st_col = "🟢" if d_item.get("status") == "נמסר" else "🟠"
-                                st.markdown(f"{st_col} **לקוח:** {d_item.get('שם לקוח')} | **עיר:** {d_item.get('עיר')} | **סטטוס:** {d_item.get('status')}")
-
-    elif admin_menu == t["contract_menu"]:
-        st.title(t["contract_menu"])
-        contracts_df = load_contracts_data()
-        if contracts_df.empty:
-            st.info("אין עדיין חוזים או נרשמים שמורים בפנקס.")
-        else:
-            st.dataframe(contracts_df, use_container_width=True)
-            
-            html_contracts = contracts_df.to_html(index=False)
-            contracts_stream = BytesIO(html_contracts.encode("utf-8"))
-            contracts_stream.seek(0)
-            st.download_button(
-                label="📥 הורד פנקס חוזים (.html)",
-                data=contracts_stream,
-                file_name="contracts_registry.html",
-                mime="text/html",
-            )
-
-    elif admin_menu == t["change_password"]:
-        st.title(t["change_password"])
-        with st.form("change_admin_pwd_form"):
-            current_p = st.text_input("סיסמה נוכחית:", type="password")
+    elif courier_menu == "🔐 החלפת סיסמה אישית":
+        st.title("🔐 החלפת סיסמה אישית")
+        with st.form("change_my_pwd"):
+            old_p = st.text_input("סיסמה נוכחית:", type="password")
             new_p = st.text_input("סיסמה חדשה:", type="password")
             confirm_p = st.text_input("אימות סיסמה חדשה:", type="password")
-            if st.form_submit_button("עדכן סיסמה אישית"):
-                uname = st.session_state.username
-                real_pass = st.session_state.couriers_db[uname].get("password", "")
-                if current_p != real_pass:
+
+            if st.form_submit_button("עדכן סיסמה"):
+                current_user = st.session_state.username
+                stored_pwd = st.session_state.couriers_db[current_user].get("password", "")
+                if old_p != stored_pwd:
                     st.error("הסיסמה הנוכחית שגוי.")
                 elif not new_p or new_p != confirm_p:
                     st.error("הסיסמאות החדשות אינן תואמות או ריקות.")
                 else:
-                    st.session_state.couriers_db[uname]["password"] = new_p
-                    save_users_db(st.session_state.couriers_db)
-                    st.success("הסיסמה עודכנה בהצלחה!")
-
-# במידה והמשתמש מחובר כשליח רגיל או מנהל חברה (ולא מנהל ראשי)
-elif st.session_state.role in ["שליח", "מנהל חברה (Company Admin)"]:
-    st.sidebar.title(f"שלום, {st.session_state.username}")
-    st.sidebar.markdown(f"**תפקיד:** {st.session_state.role}")
-    st.sidebar.markdown(f"**חברה:** {st.session_state.company}")
-    
-    courier_menu = st.sidebar.radio(
-        "תפריט שליח/חברה",
-        ["📦 המשלוחים שלי", "🗺️ סידור מסלול אישי", "🔐 החלפת סיסמה אישית"]
-    )
-    
-    if st.sidebar.button(t["logout"]):
-        logout_user()
-        
-    if courier_menu == "📦 המשלוחים שלי":
-        st.title("📦 המשלוחים המוקצים אליך")
-        my_deliveries = [
-            d for d in st.session_state.deliveries
-            if str(d.get("courier")).strip().lower() == str(st.session_state.username).strip().lower()
-        ]
-        
-        if not my_deliveries:
-            st.info("אין לך משלוחים מוקצים כרגע.")
-        else:
-            for idx, item in enumerate(my_deliveries):
-                status_color = "🟢" if item.get("status") == "נמסר" else "🟠"
-                with st.expander(f"{status_color} ברקוד: {item.get('ברקוד')} | לקוח: {item.get('שם לקוח')} | יישוב: {item.get('עיר')} | סטטוס: {item.get('status')}"):
-                    st.write(f"**כתובת:** {item.get('כביש')} {item.get('מספר בית')}, קומה {item.get('קומה')}, {item.get('עיר')}")
-                    st.write(f"**טלפון לקוח:** {item.get('טלפון')}")
-                    st.write(f"**הערות:** {item.get('הערות', 'אין')}")
-                    
-                    c_phone = format_whatsapp_phone(item.get("טלפון", ""))
-                    wa_msg = urllib.parse.quote("שלום, השליח בדרך אליך לקבלת המשלוח.")
-                    wa_link = f"https://wa.me/{c_phone}?text={wa_msg}"
-                    
-                    waze_query = urllib.parse.quote(f"{item.get('כביש', '')} {item.get('מספר בית', '')}, {item.get('עיר', '')}")
-                    waze_link = f"https://waze.com/ul?q={waze_query}&navigate=yes"
-                    
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.markdown(f'<a href="{wa_link}" target="_blank"><button style="background-color:#25d366; color:white; border:none; padding:8px; border-radius:5px; width:100%;">וואטסאפ</button></a>', unsafe_allow_html=True)
-                    with col2:
-                        st.markdown(f'<a href="{waze_link}" target="_blank"><button style="background-color:#33ccff; color:white; border:none; padding:8px; border-radius:5px; width:100%;">נווט ב-Waze</button></a>', unsafe_allow_html=True)
-                    with col3:
-                        if item.get("status") != "נמסר":
-                            if st.button("סמן כנמסר ✅", key=f"courier_del_{idx}"):
-                                item["status"] = "נמסר"
-                                save_deliveries_db(st.session_state.deliveries)
-                                st.success("הסטטוס עודכן בהצלחה!")
-                                st.rerun()
-
-    elif courier_menu == "🗺️ סידור מסלול אישי":
-        st.title("🗺️ סידור מסלול המשלוחים שלך")
-        my_active_deliveries = [
-            d for d in st.session_state.deliveries
-            if str(d.get("courier")).strip().lower() == str(st.session_state.username).strip().lower()
-            and d.get("status") not in ["נמסר", "סורב על ידי הלקוח"]
-        ]
-        
-        if not my_active_deliveries:
-            st.info("אין לך משלוחים פעילים לסידור מסלול.")
-        else:
-            all_cities = list(set([d.get("עיר", "אחר") for d in my_active_deliveries]))
-            col1, col2 = st.columns(2)
-            with col1:
-                start_c = st.selectbox("נקודת התחלה:", all_cities)
-            with col2:
-                end_c = st.selectbox("נקודת סיום:", all_cities)
-                
-            if st.button("סדר מסלול אוטומטי"):
-                remaining = [d for d in my_active_deliveries if d.get("עיר") != end_c]
-                ends = [d for d in my_active_deliveries if d.get("עיר") == end_c]
-                sorted_r = []
-                cur = start_c
-                while remaining:
-                    nxt = min(remaining, key=lambda x: 0 if x.get("עיר") == cur else len(str(x.get("עיר"))))
-                    sorted_r.append(nxt)
-                    cur = nxt.get("עיר")
-                    remaining.remove(nxt)
-                sorted_r.extend(ends)
-                st.session_state.saved_routes[st.session_state.username] = sorted_r
-                st.success("המסלול עודכן בהצלחה!")
-                
-            active_route = st.session_state.saved_routes.get(st.session_state.username, my_active_deliveries)
-            st.markdown("### תחנות המסלול שלך לפי סדר:")
-            for idx, st_item in enumerate(active_route, 1):
-                st.markdown(f"**תחנה {idx}: {st_item.get('שם לקוח')} - {st_item.get('עיר')} ({st_item.get('כביש')} {st_item.get('מספר בית')})**")
-                w_query = urllib.parse.quote(f"{st_item.get('כביש', '')} {st_item.get('מספר בית', '')}, {st_item.get('עיר', '')}")
-                w_link = f"https://waze.com/ul?q={w_query}&navigate=yes"
-                st.markdown(f'<a href="{w_link}" target="_blank"><button style="background-color:#33ccff; color:white; border:none; padding:5px 10px; border-radius:5px;">נווט ב-Waze</button></a>', unsafe_allow_html=True)
-                st.divider()
-
-    elif courier_menu == "🔐 החלפת סיסמה אישית":
-        st.title("🔐 החלפת סיסמה אישית")
-        with st.form("courier_change_pwd"):
-            cpw = st.text_input("סיסמה נוכחית:", type="password")
-            npw = st.text_input("סיסמה חדשה:", type="password")
-            npw2 = st.text_input("אימות סיסמה חדשה:", type="password")
-            if st.form_submit_button("שמור סיסמה חדשה"):
-                uname = st.session_state.username
-                if cpw != st.session_state.couriers_db[uname].get("password"):
-                    st.error("הסיסמה הנוכחית שגויה.")
-                elif not npw or npw != npw2:
-                    st.error("הסיסמאות החדשות אינן תואמות.")
-                else:
-                    st.session_state.couriers_db[uname]["password"] = npw
+                    st.session_state.couriers_db[current_user]["password"] = new_p
                     save_users_db(st.session_state.couriers_db)
                     st.success("הסיסמה עודכנה בהצלחה!")
