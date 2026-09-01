@@ -127,10 +127,11 @@ def load_contracts_data():
       "חברה",
       "שם מלא",
       "ת.ז",
-      "כתובת",
+      "עיר/מושב",
       "אימייל",
       "טלפון",
-      "ח.פ / עוסק פטור",
+      "סוג עוסק",
+      "ח.פ / עוסק",
       "תאריך רישום",
   ])
 
@@ -161,6 +162,7 @@ if "logged_in" not in st.session_state:
   st.session_state.username = ""
   st.session_state.role = ""
   st.session_state.company = ""
+  st.session_state.contract_signed = True
 
 TRANSLATIONS = {
     "עברית (Hebrew)": {
@@ -169,6 +171,7 @@ TRANSLATIONS = {
         "username": "שם משתמש",
         "password": "סיסמה",
         "login_btn": "התחבר למערכת",
+        "register_tab": "📝 הרשמה חדשה וחוזה התקשרות",
         "login_error": "שם משתמש או סיסמה שגויים.",
         "logout": "התנתק (Logout)",
         "admin_menu": "תפריט ניהול ראשי",
@@ -193,6 +196,7 @@ TRANSLATIONS = {
         "username": "اسم المستخدم",
         "password": "كلمة المرور",
         "login_btn": "تسجيل الدخول",
+        "register_tab": "📝 تسجيل جديد وعقد الاتفاقية",
         "login_error": "خطأ في اسم المستخدم أو كلمة المرور.",
         "logout": "تسجيل الخروج",
         "admin_menu": "قائمة الإدارة الرئيسية",
@@ -225,6 +229,7 @@ def logout_user():
   st.session_state.username = ""
   st.session_state.role = ""
   st.session_state.company = ""
+  st.session_state.contract_signed = True
   st.rerun()
 
 
@@ -232,34 +237,146 @@ if not st.session_state.logged_in:
   st.title(t["title"])
   st.markdown("---")
 
-  col1, col2, col3 = st.columns([1, 2, 1])
-  with col2:
-    st.subheader(t["login_title"])
-    with st.form("login_form"):
-      username_input = st.text_input(t["username"])
-      password_input = st.text_input(t["password"], type="password")
-      submit_btn = st.form_submit_button(t["login_btn"], use_container_width=True)
+  auth_tab1, auth_tab2 = st.tabs([t["login_title"], t["register_tab"]])
 
-      if submit_btn:
-        db = st.session_state.couriers_db
-        matched_user = None
-        for u_key in db.keys():
-          if u_key.lower() == username_input.strip().lower():
-            matched_user = u_key
-            break
+  with auth_tab1:
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+      with st.form("login_form"):
+        username_input = st.text_input(t["username"])
+        password_input = st.text_input(t["password"], type="password")
+        submit_btn = st.form_submit_button(
+            t["login_btn"], use_container_width=True
+        )
 
-        if matched_user and str(db[matched_user].get("password", "")) == str(
-            password_input.strip()
+        if submit_btn:
+          db = st.session_state.couriers_db
+          matched_user = None
+          for u_key in db.keys():
+            if u_key.lower() == username_input.strip().lower():
+              matched_user = u_key
+              break
+
+          if matched_user and str(db[matched_user].get("password", "")) == str(
+              password_input.strip()
+          ):
+            st.session_state.logged_in = True
+            st.session_state.username = matched_user
+            st.session_state.role = db[matched_user].get("role", "שליח")
+            st.session_state.company = db[matched_user].get(
+                "company", "Independent"
+            )
+            st.session_state.contract_signed = db[matched_user].get(
+                "contract_signed", True
+            )
+            st.rerun()
+          else:
+            st.error(t["login_error"])
+
+  with auth_tab2:
+    st.subheader("📝 טופס התרשמות וחוזה התקשרות - Speedy Delivery")
+    st.markdown(
+        """
+**תנאי שימוש, הצהרה ופטור מלא מאחריות משפטית:**
+
+1. **מהות הפלטפורמה:** מערכת "Speedy Delivery" משמשת כפלטפורמה טכנולוגית עצמאית.
+2. **העדר יחסי עובד-מעביד:** מוסכם בזאת במפורש כי לא מתקיימים יחסי עובד-מעביד.
+3. **אחריות בלעדית של השליח:** השליח נושא באחריות המלאה והבלעדית לכל נזק או אובדן במשלוח.
+4. **פטור מלא מאחריות למפעיל המערכת:** מפעיל המערכת פטור מאחריות לנזקי גוף, רכוש ותאונות.
+5. **תשלומים והתחייבות פיננסית:** השליח/מנהל מתחייב להסדיר את התשלומים בהתאם למשלוחים שבוצעו וטופלו במערכת.
+6. **הרשאה מלאה לבדיקת משלוחים שסורבו:** ניתנת בזה הרשאה מלאה ובלעדית למפעיל המערכת לבדוק, ליצור קשר ולוודא באופן ישיר מול הלקוחות את כל המשלוחים שדווחו כסורבים או נדחו.
+7. **זכות תביעה אישית:** מפעיל המערכת רשאי להגיש תביעה משפטית אישית בגין אי-הסדרת תשלום.
+8. **שיפוי:** השליח מתחייב לשפות את מפעיל המערכת בגין כל נזק.
+    """
+    )
+    st.divider()
+
+    with st.form("registration_form"):
+      reg_username = st.text_input("שם משתמש רצוי (לכניסה למערכת)*")
+      reg_password = st.text_input("סיסמה רצויה*", type="password")
+      reg_fullname = st.text_input("שם מלא (חובה)*")
+      reg_id = st.text_input("תעודת זהות (חובה)*")
+      reg_city = st.text_input("עיר / מושב (חובה)*")
+      reg_email = st.text_input("דואר אלקטרוני (חובה)*")
+      reg_phone = st.text_input("טלפון נייד (חובה)*")
+
+      reg_role = st.selectbox(
+          "תפקיד מבוקש*", ["שליח", "מנהל חברת משלוחים (Company Admin)"]
+      )
+      reg_company_name = st.text_input(
+          "שם חברת משלוחים (אם יש, או כתוב Independent):", value="Independent"
+      )
+
+      reg_business_type = st.selectbox(
+          "סוג עוסק*", ["עוסק מורשה", "עוסק פטור", "ללא תיק / שליח פרטי"]
+      )
+      reg_hp = st.text_input(
+          "מספר ח.פ / עוסק מורשה (הזן אם רלוונטי, אחרת השאר ריק):"
+      )
+
+      agree_terms = st.checkbox(
+          "אני מאשר/ת שקראתי והסכמתי לכל תנאי החוזה, הבטיחות וכתב ההצהרה"
+          " והפטור מאחריות משפטית*"
+      )
+
+      register_submit = st.form_submit_button(
+          "חתום והירשם למערכת 🚀", use_container_width=True
+      )
+
+      if register_submit:
+        if (
+            not reg_username
+            or not reg_password
+            or not reg_fullname
+            or not reg_id
+            or not reg_city
+            or not reg_email
+            or not reg_phone
         ):
-          st.session_state.logged_in = True
-          st.session_state.username = matched_user
-          st.session_state.role = db[matched_user].get("role", "שליח")
-          st.session_state.company = db[matched_user].get(
-              "company", "Independent"
-          )
-          st.rerun()
+          st.error("אנא מלא את כל שדות החובה המסומנים בכוכבית (*).")
+        elif not agree_terms:
+          st.error("עליך לאשר את תנאי החוזה וההצהרה כדי להירשם.")
+        elif reg_username in st.session_state.couriers_db:
+          st.error("שם המשתמש כבר קיים במערכת, בחר שם משתמש אחר.")
         else:
-          st.error(t["login_error"])
+          # שמירת המשתמש במסד הנתונים
+          formatted_ph = format_whatsapp_phone(reg_phone)
+          st.session_state.couriers_db[reg_username] = {
+              "password": reg_password,
+              "role": reg_role,
+              "phone": formatted_ph,
+              "company": reg_company_name if reg_company_name else "Independent",
+              "contract_signed": True,
+          }
+          save_users_db(st.session_state.couriers_db)
+
+          # הוספה לפנקס החוזים הדיגיטליים
+          contracts_df = load_contracts_data()
+          new_contract_row = {
+              "שם משתמש": reg_username,
+              "תפקיד": reg_role,
+              "חברה": (
+                  reg_company_name if reg_company_name else "Independent"
+              ),
+              "שם מלא": reg_fullname,
+              "ת.ז": reg_id,
+              "עיר/מושב": reg_city,
+              "אימייל": reg_email,
+              "טלפון": formatted_ph,
+              "סוג עוסק": reg_business_type,
+              "ח.פ / עוסק": reg_hp if reg_hp else "לא נדרש",
+              "תאריך רישום": get_israel_time(),
+          }
+          contracts_df = pd.concat(
+              [contracts_df, pd.DataFrame([new_contract_row])],
+              ignore_index=True,
+          )
+          save_contracts_data(contracts_df)
+
+          st.success(
+              "🎉 הרישום בוצע בהצלחה! החוזה שלך נשמר במערכת. כעת תוכל לעבור"
+              " ללשונית 'כניסת משתמשים ושליחים' ולהתחבר."
+          )
 
 elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
   st.sidebar.title("מנהל ראשי (הפלטפורמה)")
