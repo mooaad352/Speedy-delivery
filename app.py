@@ -832,6 +832,132 @@ elif st.session_state.role == "מנהל מערכת ראשי (Super Admin)":
                     save_users_db(st.session_state.couriers_db)
                     st.success("הסיסמה עודכנה בהצלחה!")
 
+elif st.session_state.role == "מנהל חברה (Company Admin)":
+    st.sidebar.title(f"מנהל חברה: {st.session_state.company}")
+    comp_menu = st.sidebar.radio(
+        "תפריט מנהל חברה",
+        [
+            "📦 ניהול משלוחי החברה והשליחים",
+            "➕ הוספת משלוח ושיוך לשליח",
+            "👥 השליחים שלי בחברה",
+            "🔐 החלפת סיסמה אישית",
+        ]
+    )
+    if st.sidebar.button(t["logout"]):
+        logout_user()
+
+    my_company_name = st.session_state.company
+    company_couriers = [
+        u for u, i in st.session_state.couriers_db.items()
+        if i.get("role") == "שליח" and str(i.get("company", "")).strip().lower() == str(my_company_name).strip().lower()
+    ]
+
+    if comp_menu == "📦 ניהול משלוחי החברה והשליחים":
+        st.title("📦 ניהול משלוחים ושליחים תחת החברה שלי")
+        company_deliveries = [
+            d for d in st.session_state.deliveries
+            if str(d.get("courier", "")) in company_couriers or str(d.get("company", "")) == my_company_name
+        ]
+
+        if not company_deliveries:
+            st.info("אין עדיין משלוחים המשוייכים לחברה או לשליחים שלך.")
+        else:
+            for idx, item in enumerate(company_deliveries):
+                status_color = "🟢" if item.get("status") == "נמסר" else "🟠"
+                with st.expander(f"{status_color} 📦 לקוח: {item.get('שם לקוח', '')} | שליח מוקצה: `{item.get('courier', '')}` | סטטוס: {item.get('status', '')}"):
+                    st.write(f"**ברקוד:** {item.get('ברקוד', '')} | **טלפון:** {item.get('טלפון', '')} | **כתובת:** {item.get('כביש', '')} {item.get('מספר בית', '')}, {item.get('עיר', '')}")
+                    
+                    # אפשרות לשנות את השיוך לשליח אחר מתוך השליחים של החברה בלבד
+                    if company_couriers:
+                        current_c = item.get("courier", "")
+                        new_c = st.selectbox(
+                            "העבר לשליח אחר בחברה:",
+                            company_couriers,
+                            index=company_couriers.index(current_c) if current_c in company_couriers else 0,
+                            key=f"comp_reassign_{idx}"
+                        )
+                        if new_c != current_c:
+                            if st.button("שמור שיוך חדש", key=f"btn_comp_reassign_{idx}"):
+                                item["courier"] = new_c
+                                save_deliveries_db(st.session_state.deliveries)
+                                st.success("השליח עודכן בהצלחה!")
+                                st.rerun()
+
+                    if st.button(f"🗑️ מחק/הסר משלוח מהרשימה", key=f"comp_del_{idx}"):
+                        real_idx = st.session_state.deliveries.index(item)
+                        st.session_state.deliveries.pop(real_idx)
+                        save_deliveries_db(st.session_state.deliveries)
+                        st.success("המשלוח הוסר בהצלחה!")
+                        st.rerun()
+
+    elif comp_menu == "➕ הוספת משלוח ושיוך לשליח":
+        st.title("➕ הוספת משלוח חדש ושיוך לשליח מהחברה")
+        if not company_couriers:
+            warning_msg = "אין לך שליחים רשומים תחת החברה שלך כרגע. אנא בקש מהם להירשם ולבחור את שם החברה שלך."
+            st.warning(warning_msg)
+        else:
+            with st.form("company_add_delivery_form"):
+                d_barcode = st.text_input("ברקוד משלוח:", value=f"DEL-{int(datetime.now().timestamp())}")
+                d_client = st.text_input("שם הלקוח:*")
+                d_phone = st.text_input("טלפון הלקוח:*")
+                d_street = st.text_input("כביש / רחוב:")
+                d_house = st.text_input("מספר בית:")
+                d_floor = st.text_input("קומה:")
+                d_city = st.text_input("עיר / יישוב:*")
+                d_notes = st.text_area("הערות:")
+                assigned_c = st.selectbox("שייך לשליח מהחברה:", company_couriers)
+
+                if st.form_submit_button("הוסף משלוח ושייך לשליח 🚀") and d_client and d_phone and d_city:
+                    new_item = {
+                        "ברקוד": d_barcode,
+                        "שם לקוח": d_client,
+                        "שם חברה": my_company_name,
+                        "טלפון": format_whatsapp_phone(d_phone),
+                        "כביש": d_street,
+                        "מספר בית": d_house,
+                        "קומה": d_floor,
+                        "עיר": d_city,
+                        "הערות": d_notes,
+                        "status": "ממתין",
+                        "courier": assigned_c,
+                        "company": my_company_name,
+                        "date": get_israel_time(),
+                    }
+                    st.session_state.deliveries.append(new_item)
+                    save_deliveries_db(st.session_state.deliveries)
+                    st.success("המשלוח נוסף בהצלחה ושויך לשליח המבוקש!")
+
+    elif comp_menu == "👥 השליחים שלי בחברה":
+        st.title("👥 השליחים המשוייכים לחברה שלי")
+        if not company_couriers:
+            st.info("אין שליחים רשומים תחת חברה זו כרגע.")
+        else:
+            for c_usr in company_couriers:
+                c_info = st.session_state.couriers_db[c_usr]
+                c_deliveries = [d for d in st.session_state.deliveries if str(d.get("courier")) == c_usr]
+                delivered_count = len([d for d in c_deliveries if d.get("status") == "נמסר"])
+                st.markdown(f"**שליח:** `{c_usr}` | **טלפון:** {c_info.get('phone', '-')} | **סך משלוחים:** {len(c_deliveries)} | **נמסרו:** {delivered_count}")
+                st.divider()
+
+    elif comp_menu == "🔐 החלפת סיסמה אישית":
+        st.title("🔐 החלפת סיסמה אישית")
+        with st.form("change_comp_pwd"):
+            old_p = st.text_input("סיסמה נוכחית:", type="password")
+            new_p = st.text_input("סיסמה חדשה:", type="password")
+            confirm_p = st.text_input("אימות סיסמה חדשה:", type="password")
+
+            if st.form_submit_button("עדכן סיסמה"):
+                current_user = st.session_state.username
+                stored_pwd = st.session_state.couriers_db[current_user].get("password", "")
+                if old_p != stored_pwd:
+                    st.error("הסיסמה הנוכחית שגויה.")
+                elif not new_p or new_p != confirm_p:
+                    st.error("הסיסמאות החדשות אינן תואמות או ריקות.")
+                else:
+                    st.session_state.couriers_db[current_user]["password"] = new_p
+                    save_users_db(st.session_state.couriers_db)
+                    st.success("הסיסמה עודכנה בהצלחה!")
+
 else:
     st.sidebar.title(f"שלום, {st.session_state.username} 🚚")
     courier_menu = st.sidebar.radio(
